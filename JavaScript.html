@@ -1,432 +1,96 @@
 <script>
 let currentClient = null;
-let lastSearchResults = [];
-let allTreatmentLogs = []; 
-let filterState = { date: null, therapist: null }; 
 
 window.onload = function() {
   const today = new Date().toISOString().split('T')[0];
-  document.querySelectorAll('input[type="date"]').forEach(el => {
-    if(!el.value) el.value = today;
-  });
+  document.querySelectorAll('input[type="date"]').forEach(el => el.value = today);
+  loadSystemStaff();
   updateNavState();
-  loadTherapistOptions(); 
-  renderCalendar();
 };
 
-function autoDetectGender(input) {
-  const idValue = input.value.trim();
-  const genderInput = document.getElementById('genderInput');
-  if (idValue.length >= 2) {
-    const secondChar = idValue.charAt(1);
-    genderInput.value = secondChar === '1' ? '男' : (secondChar === '2' ? '女' : '');
-  } else {
-    genderInput.value = '';
-  }
-}
-
-// 載入治療師名單
-function loadTherapistOptions() {
-  const inputSel = document.getElementById('inputTherapist');
-  const filterSel = document.getElementById('filterTherapist');
-  
-  if(!inputSel || !filterSel) return;
-
-  inputSel.innerHTML = '<option value="" disabled selected>載入中...</option>';
-  filterSel.innerHTML = '<option value="">載入中...</option>';
-
-  google.script.run.withSuccessHandler(list => {
-     inputSel.innerHTML = '';
-     filterSel.innerHTML = '';
-
-     const defaultInputOpt = document.createElement('option');
-     defaultInputOpt.value = "";
-     defaultInputOpt.textContent = "請選擇治療師";
-     defaultInputOpt.disabled = true;
-     defaultInputOpt.selected = true;
-     inputSel.appendChild(defaultInputOpt);
-
-     const defaultFilterOpt = document.createElement('option');
-     defaultFilterOpt.value = "";
-     defaultFilterOpt.textContent = "所有執行人員";
-     filterSel.appendChild(defaultFilterOpt);
-     
-     list.forEach(name => {
-         const opt1 = document.createElement('option');
-         opt1.value = name;
-         opt1.textContent = name;
-         inputSel.appendChild(opt1);
-
-         const opt2 = document.createElement('option');
-         opt2.value = name;
-         opt2.textContent = name;
-         filterSel.appendChild(opt2);
-     });
-  }).getSystemTherapists();
-}
-
-// 載入個案歷史紀錄
-function loadTreatmentHistory() {
-  if (!currentClient) return;
-  const container = document.getElementById('historyListContainer');
-  container.innerHTML = '<div class="flex justify-center py-8"><div class="loader"></div></div>';
-  
-  allTreatmentLogs = [];
-  
-  google.script.run
-    .withSuccessHandler(logs => {
-       allTreatmentLogs = logs || [];
-       applyLogFilters(); 
-    })
-    .withFailureHandler(error => {
-       container.innerHTML = `<p class="text-center text-red-400 py-8">載入失敗：${error}</p>`;
-       console.error(error);
-    })
-    .getClientHistory(currentClient['個案編號']);
-}
-
-// Calendar Logic
-let currentCalendarDate = new Date();
-function renderCalendar() {
-  const container = document.getElementById('customCalendar');
-  if(!container) return;
-  
-  const year = currentCalendarDate.getFullYear();
-  const month = currentCalendarDate.getMonth();
-  const firstDay = new Date(year, month, 1).getDay();
-  const daysInMonth = new Date(year, month + 1, 0).getDate();
-  
-  let html = `<div class="flex justify-between items-center mb-4 text-sm font-bold text-gray-700"><button onclick="changeMonth(-1)" class="p-1 hover:bg-gray-100 rounded">&lt;</button><span>${year}年 ${month + 1}月</span><button onclick="changeMonth(1)" class="p-1 hover:bg-gray-100 rounded">&gt;</button></div><div class="grid grid-cols-7 gap-1 text-center text-xs text-gray-400 mb-2"><span>日</span><span>一</span><span>二</span><span>三</span><span>四</span><span>五</span><span>六</span></div><div class="grid grid-cols-7 gap-1">`;
-  for(let i=0; i<firstDay; i++) html += `<div class="calendar-day empty"></div>`;
-  const todayStr = new Date().toISOString().split('T')[0];
-  const selectedStr = filterState.date;
-  for(let d=1; d<=daysInMonth; d++) {
-     const dateStr = `${year}-${String(month+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
-     let classes = "calendar-day";
-     if (dateStr === todayStr) classes += " today";
-     if (dateStr === selectedStr) classes += " selected";
-     html += `<div class="${classes}" onclick="selectCalendarDate('${dateStr}')">${d}</div>`;
-  }
-  html += `</div>`;
-  container.innerHTML = html;
-}
-function changeMonth(delta) { currentCalendarDate.setMonth(currentCalendarDate.getMonth() + delta); renderCalendar(); }
-function selectCalendarDate(dateStr) {
-  filterState.date = (filterState.date === dateStr) ? null : dateStr;
-  document.getElementById('filterDate').value = filterState.date || '';
-  renderCalendar();
-  applyLogFilters();
-}
-function resetFilters() {
-  filterState = { date: null, therapist: null };
-  document.getElementById('filterDate').value = '';
-  document.getElementById('filterTherapist').value = '';
-  renderCalendar();
-  applyLogFilters();
-}
-
-function applyLogFilters() {
-  const domDate = document.getElementById('filterDate').value;
-  const domTherapist = document.getElementById('filterTherapist').value;
-  if (domDate) filterState.date = domDate;
-  filterState.therapist = domTherapist;
-  
-  const filtered = allTreatmentLogs.filter(log => {
-     let matchDate = true;
-     let matchTherapist = true;
-     if (filterState.date) {
-         // 統一日期格式進行比對
-         const logD = log['治療日期'].replace(/\//g, '-');
-         const filD = filterState.date.replace(/\//g, '-');
-         matchDate = logD.includes(filD) || filD.includes(logD);
-     }
-     if (filterState.therapist) matchTherapist = log['執行治療師'] === filterState.therapist;
-     return matchDate && matchTherapist;
-  });
-  renderHistoryList(filtered);
-}
-
-function renderHistoryList(logs) {
-  const container = document.getElementById('historyListContainer');
-  const countEl = document.getElementById('historyCount');
-  if(countEl) countEl.textContent = logs.length;
-  
-  container.innerHTML = '';
-  
-  if (logs.length === 0) { 
-    if(allTreatmentLogs.length === 0) {
-        container.innerHTML = `<div class="flex flex-col items-center justify-center py-12 text-gray-400"><p class="text-sm">尚無紀錄</p></div>`;
-    } else {
-        container.innerHTML = `<div class="flex flex-col items-center justify-center py-12 text-gray-400"><p class="text-sm">查無符合條件的紀錄</p></div>`;
+// 載入醫師、護理師、治療師名單
+function loadSystemStaff() {
+  google.script.run.withSuccessHandler(staff => {
+    // 醫師 (A欄)
+    const docSelect = document.getElementById('selectDoctor');
+    if(docSelect) {
+      docSelect.innerHTML = '<option value="" disabled selected>請選擇醫師</option>';
+      staff.doctors.forEach(name => docSelect.innerHTML += `<option value="${name}">${name}</option>`);
     }
-    return; 
-  }
-
-  window.currentRenderedLogs = logs;
-
-  logs.forEach((log, index) => {
-     const div = document.createElement('div');
-     div.className = "bg-white border border-gray-100 rounded-lg p-4 hover:shadow-md transition group relative mb-3";
-     div.innerHTML = `
-       <div class="flex justify-between items-start mb-2">
-         <div class="flex items-center gap-3">
-            <span class="bg-gray-100 text-gray-600 text-xs px-2 py-1 rounded font-medium border border-gray-200">${log['治療日期']}</span>
-            <span class="text-sm font-bold text-emerald-600">${log['執行治療師'] || '未紀錄'}</span>
-         </div>
-         <button onclick="editLogFromRendered(${index})" class="text-gray-300 hover:text-emerald-600 transition p-1" title="編輯此紀錄">
-            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"></path></svg>
-         </button>
-       </div>
-       <div class="pl-1">
-         ${log['當日主訴'] ? `<p class="text-xs text-gray-500 mb-1"><span class="font-bold mr-1">主訴:</span>${log['當日主訴']}</p>` : ''}
-         <p class="text-sm text-gray-700 whitespace-pre-wrap leading-relaxed mt-2">${log['治療內容'] || '<span class="text-gray-300 italic">無治療內容</span>'}</p>
-         ${log['備註/下次治療'] ? `<div class="mt-3 pt-2 border-t border-dashed border-gray-100 text-xs text-indigo-500"><span class="font-bold">備註:</span> ${log['備註/下次治療']}</div>` : ''}
-       </div>
-     `;
-     container.appendChild(div);
-  });
+    // 護理師 (B欄)
+    const nurseSelect = document.getElementById('selectNurse');
+    if(nurseSelect) {
+      nurseSelect.innerHTML = '<option value="" disabled selected>請選擇護理師</option>';
+      staff.nurses.forEach(name => nurseSelect.innerHTML += `<option value="${name}">${name}</option>`);
+    }
+    // 治療師 (C欄)
+    const therapistSelect = document.getElementById('inputTherapist');
+    if(therapistSelect) {
+      therapistSelect.innerHTML = '<option value="" disabled selected>請選擇治療師</option>';
+      staff.therapists.forEach(name => therapistSelect.innerHTML += `<option value="${name}">${name}</option>`);
+    }
+  }).getSystemStaff();
 }
 
-function editLogFromRendered(index) {
-  const log = window.currentRenderedLogs[index];
-  if(log) editLog(log);
-}
-
-function editLog(log) {
-  document.getElementById('logId').value = log['紀錄ID'] || '';
-  
-  // 處理日期格式以符合 input type=date
-  if(log['治療日期']) {
-      const d = new Date(log['治療日期']);
-      if(!isNaN(d)) document.getElementById('inputDate').value = d.toISOString().split('T')[0];
-  }
-  
-  const sel = document.getElementById('inputTherapist');
-  const exists = [...sel.options].some(o => o.value === log['執行治療師']);
-  if (!exists && log['執行治療師']) {
-      const opt = document.createElement('option');
-      opt.value = log['執行治療師'];
-      opt.textContent = log['執行治療師'] + " (歷史)";
-      sel.appendChild(opt);
-  }
-  sel.value = log['執行治療師'];
-
-  document.getElementById('inputComplaint').value = log['當日主訴'] || '';
-  document.getElementById('inputContent').value = log['治療內容'] || '';
-  document.getElementById('inputNote').value = log['備註/下次治療'] || '';
-  
-  const title = document.getElementById('formTitle');
-  if(title) {
-    title.textContent = '編輯紀錄';
-    title.className = "text-lg font-bold text-emerald-600";
-  }
-  
-  document.getElementById('treatmentForm').scrollIntoView({ behavior: 'smooth' });
-}
-
-function resetTreatmentForm() {
-  const form = document.getElementById('treatmentForm');
-  if(form) form.reset();
-  
-  const logIdInput = document.getElementById('logId');
-  if(logIdInput) logIdInput.value = '';
-  
-  const title = document.getElementById('formTitle');
-  if(title) {
-    title.textContent = '新增紀錄';
-    title.className = "text-lg font-bold text-gray-700";
-  }
-  
-  const dateInput = document.getElementById('inputDate');
-  if(dateInput) dateInput.value = new Date().toISOString().split('T')[0];
-  
-  const therapistInput = document.getElementById('inputTherapist');
-  if(therapistInput) therapistInput.selectedIndex = 0;
-  
-  if(currentClient) {
-      document.querySelectorAll('.auto-fill-id').forEach(i => i.value = currentClient['個案編號']);
-  }
-}
-
-// Navigation
+// 導覽切換
 function navTo(viewName) {
-  if (!currentClient && viewName !== 'search') { 
-      alert("請先搜尋並選取個案。"); 
-      navTo('search'); 
-      return; 
-  }
-  
+  if (!currentClient && viewName !== 'search') { alert("請先選取個案。"); return; }
   const views = ['search', 'basic', 'images', 'treatment', 'maintenance', 'doctor', 'tracking', 'overview'];
   views.forEach(v => {
-    const el = document.getElementById('view-' + v);
-    if(el) el.classList.add('hidden');
-    const btn = document.getElementById('btn-' + v);
-    if(btn) btn.classList.remove('active');
+    document.getElementById('view-' + v)?.classList.add('hidden');
+    document.getElementById('btn-' + v)?.classList.remove('active');
   });
+  document.getElementById('view-' + viewName)?.classList.remove('hidden');
+  document.getElementById('btn-' + viewName)?.classList.add('active');
 
-  const targetView = document.getElementById('view-' + viewName);
-  if(targetView) targetView.classList.remove('hidden');
-  
-  const targetBtn = document.getElementById('btn-' + viewName);
-  if(targetBtn) targetBtn.classList.add('active');
-
-  const titleMap = { 'search': '搜尋個案', 'basic': '基本資料', 'images': '影像總覽', 'treatment': '治療紀錄', 'maintenance': '保養項目', 'doctor': '醫師看診', 'tracking': '個管追蹤', 'overview': '個案總覽' };
-  const pageTitle = document.getElementById('pageTitle');
-  if(pageTitle) pageTitle.textContent = titleMap[viewName] || '康飛運醫';
-  
-  if(viewName === 'images') loadClientImages();
-  if(viewName === 'treatment') { 
-      loadTreatmentHistory(); 
-      resetTreatmentForm(); 
-  }
+  if(viewName === 'doctor') loadDoctorHistory();
+  if(viewName === 'treatment') loadTreatmentHistory();
 }
 
-function selectClient(client) {
-  currentClient = client;
-  updateNavState();
-  renderBasicInfoView(client);
-  document.querySelectorAll('.auto-fill-id').forEach(input => input.value = client['個案編號']);
-  navTo('treatment');
-}
-
-function updateNavState() {
-  const infoBar = document.getElementById('topBarClientInfo');
-  if (currentClient && infoBar) {
-    infoBar.classList.remove('hidden');
-    document.getElementById('headerClientName').textContent = currentClient['姓名'];
-    document.getElementById('headerClientDob').textContent = currentClient['生日'] || '無生日';
-  } else if(infoBar) {
-    infoBar.classList.add('hidden');
-  }
-}
-
-function resetSearch() {
-  currentClient = null;
-  updateNavState();
-  document.getElementById('searchInput').value = '';
-  document.getElementById('searchResults').innerHTML = '';
-  navTo('search');
-}
-
-function handleSearch() {
-  const keyword = document.getElementById('searchInput').value.trim();
-  if (!keyword) return;
-  const container = document.getElementById('searchResults');
-  container.innerHTML = '<div class="text-center py-10"><div class="loader mx-auto"></div><p class="text-gray-400 mt-4">搜尋資料庫中...</p></div>';
-  google.script.run.withSuccessHandler(renderSearchResults).searchClient(keyword);
-}
-
-function renderSearchResults(data) {
-  const container = document.getElementById('searchResults');
-  container.innerHTML = '';
-  if (data.length === 0) { 
-      container.innerHTML = '<div class="text-center py-10 text-gray-400 border-2 border-dashed border-gray-200 rounded-xl">查無此人</div>'; 
-      return; 
-  }
-  data.forEach(client => {
-    const div = document.createElement('div');
-    div.className = "bg-white p-5 rounded-xl shadow-sm border border-gray-100 hover:border-emerald-400 cursor-pointer transition flex justify-between items-center group";
-    div.onclick = () => selectClient(client);
-    div.innerHTML = `<div class="flex items-center gap-4"><div class="h-10 w-10 rounded-full bg-emerald-100 text-emerald-600 flex items-center justify-center font-bold text-lg">${client['姓名'][0]}</div><div><div class="flex items-center gap-2"><span class="font-bold text-gray-800 text-lg">${client['姓名']}</span><span class="text-xs bg-gray-100 text-gray-500 px-2 py-0.5 rounded border border-gray-200">${client['性別'] || '未填'}</span></div><div class="text-sm text-gray-500 mt-0.5 flex gap-3"><span>ID: ${client['個案編號']}</span><span>📞 ${client['電話']}</span></div></div></div><div class="text-emerald-500 opacity-0 group-hover:opacity-100 transition-opacity"><svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path></svg></div>`;
-    container.appendChild(div);
-  });
-}
-
-function renderBasicInfoView(client) {
-  const container = document.getElementById('basicInfoContent');
-  if(!container) return;
-  const fields = [{label:'姓名',key:'姓名'},{label:'個案編號',key:'個案編號'},{label:'電話',key:'電話'},{label:'生日',key:'生日'},{label:'身分證字號',key:'身分證字號'},{label:'性別',key:'性別'},{label:'特殊疾病',key:'慢性病或特殊疾病'},{label:'建立日期',key:'建立日期'}];
-  let html = '';
-  fields.forEach(f => { html += `<div class="p-4 bg-gray-50 rounded-lg border border-gray-100"><p class="text-xs text-gray-400 mb-1">${f.label}</p><p class="font-medium text-gray-800 break-words">${client[f.key]||'--'}</p></div>`; });
-  if(client['GoogleDrive資料夾連結']) html += `<div class="col-span-2 p-4 bg-blue-50 rounded-lg border border-blue-100 flex items-center justify-between"><div><p class="text-xs text-blue-400 mb-1">雲端資料夾</p><p class="text-sm text-blue-800">已連結至 Google Drive</p></div><a href="${client['GoogleDrive資料夾連結']}" target="_blank" class="bg-blue-600 text-white px-4 py-2 rounded text-sm hover:bg-blue-700 transition">開啟資料夾</a></div>`;
-  container.innerHTML = html;
-}
-
-function loadClientImages(){
-  const container = document.getElementById('imageGalleryContainer');
-  if(!container) return;
-  if(!currentClient||!currentClient['GoogleDrive資料夾連結']){ container.innerHTML='<p class="col-span-full text-center text-gray-400 py-10">無資料夾連結</p>'; return; }
-  container.innerHTML='<div class="col-span-full text-center py-10"><div class="loader mx-auto"></div></div>';
-  google.script.run.withSuccessHandler(imgs => {
-    container.innerHTML='';
-    if(!imgs || !imgs.length){ container.innerHTML='<p class="col-span-full text-center text-gray-400 py-10">尚無影像</p>'; return; }
-    imgs.forEach(img => {
-       const div = document.createElement('div');
-       div.className="group relative aspect-square bg-gray-100 rounded-lg overflow-hidden border border-gray-200 cursor-pointer";
-       div.onclick=()=>window.open(img.url,'_blank');
-       div.innerHTML=`<img src="${img.thumbnail}" class="w-full h-full object-cover group-hover:scale-105 transition duration-500"><div class="absolute bottom-0 left-0 right-0 bg-black/60 p-2 opacity-0 group-hover:opacity-100 transition"><p class="text-white text-[10px] truncate">${new Date(img.created).toLocaleDateString()}</p></div>`;
-       container.appendChild(div);
+// 載入歷史看診
+function loadDoctorHistory() {
+  const container = document.getElementById('doctorHistoryList');
+  container.innerHTML = '<div class="py-10 flex justify-center"><div class="loader"></div></div>';
+  google.script.run.withSuccessHandler(logs => {
+    if (!logs || logs.length === 0) {
+      container.innerHTML = '<div class="bg-gray-50 border-2 border-dashed border-gray-100 rounded-2xl py-12 text-center text-gray-400 text-sm">尚無歷史紀錄</div>';
+      return;
+    }
+    let html = '';
+    logs.forEach(log => {
+      html += `
+        <div class="bg-white border border-gray-100 rounded-2xl p-5 shadow-sm">
+          <div class="flex justify-between items-center mb-4">
+            <span class="text-xs font-bold bg-emerald-50 text-emerald-600 px-3 py-1 rounded-full border border-emerald-100">${log['日期']}</span>
+            <span class="text-sm font-bold text-gray-700">醫師: ${log['看診醫師']} | 護理: ${log['護理師']}</span>
+          </div>
+          <div class="grid grid-cols-2 gap-3 text-xs">
+            <div class="bg-gray-50 p-3 rounded-lg"><p class="text-gray-400 mb-1">主訴 (S)</p>${log['主訴']||'--'}</div>
+            <div class="bg-gray-50 p-3 rounded-lg"><p class="text-gray-400 mb-1">檢查 (O)</p>${log['客觀檢查']||'--'}</div>
+          </div>
+        </div>`;
     });
-  }).getCaseImages(currentClient['GoogleDrive資料夾連結']);
+    container.innerHTML = html;
+  }).getClientHistory(currentClient['個案編號'], 'Doctor_Consultation');
 }
 
-function triggerImageUpload(){
-   const input = document.getElementById('caseImageInput');
-   const btn = document.getElementById('uploadBtnText');
-   if(!input || input.files.length===0) return alert("請選擇檔案");
-   if(btn) btn.textContent='上傳中...';
-   const file = input.files[0];
-   const reader = new FileReader();
-   reader.onload=e=>{
-     google.script.run.withSuccessHandler(res=>{
-        if(btn) btn.textContent='上傳';
-        if(res.success){ alert("成功"); loadClientImages(); } else alert("失敗: "+res.message);
-     }).uploadCaseImage(e.target.result.split(',')[1], file.type, file.name, currentClient['GoogleDrive資料夾連結']);
-   };
-   reader.readAsDataURL(file);
-}
-
+// 通用提交
 function submitForm(type) {
-  if (!currentClient) return alert("未選取個案");
-  const config = { 
-      'treatment': {id:'treatmentForm', func:'saveData', sheet:'Treatment_Logs'}, 
-      'doctor': {id:'doctorForm', func:'saveDoctorConsultation'}, 
-      'tracking': {id:'trackingForm', func:'saveCaseTracking'} 
+  const config = {
+    'doctor': { id: 'doctorForm', sheet: 'Doctor_Consultation', callback: loadDoctorHistory },
+    'treatment': { id: 'treatmentForm', sheet: 'Treatment_Logs', callback: loadTreatmentHistory }
   };
-  const setting = config[type];
-  const form = document.getElementById(setting.id);
-  if(!form.checkValidity()){ form.reportValidity(); return; }
-  
+  const settings = config[type];
+  const form = document.getElementById(settings.id);
   const formData = new FormData(form);
   const data = {};
-  formData.forEach((v,k)=>data[k]=v);
-  
-  if(type==='treatment') {
-      google.script.run.withSuccessHandler(res => {
-          alert(res.message || "儲存成功！");
-          resetTreatmentForm();
-          loadTreatmentHistory();
-      }).saveData(setting.sheet, data);
-  } else {
-      google.script.run.withSuccessHandler(res => {
-          alert(res.message || "儲存成功！");
-          form.reset();
-          document.querySelectorAll('.auto-fill-id').forEach(i=>i.value=currentClient['個案編號']);
-      })[setting.func](data);
-  }
-}
+  formData.forEach((v, k) => data[k] = v);
 
-function submitNewClient(){
-  const form=document.getElementById('addClientForm');
-  if(!form.checkValidity()){ form.reportValidity(); return; }
-  const data={}; 
-  new FormData(form).forEach((v,k)=>data[k]=v);
-  if(!data['個案編號']) {
-      data['個案編號']='CF'+new Date().toISOString().slice(2,10).replace(/-/g,'')+Math.floor(Math.random()*1000).toString().padStart(3,'0');
-  }
-  google.script.run.withSuccessHandler(()=>{ 
-      alert("建立成功"); 
-      closeModal('addClientModal'); 
-      form.reset(); 
-  }).saveData('Client_Basic_Info', data);
-}
-
-function openModal(id){ 
-    const el = document.getElementById(id);
-    if(el) el.classList.remove('hidden'); 
-}
-function closeModal(id){ 
-    const el = document.getElementById(id);
-    if(el) el.classList.add('hidden'); 
+  google.script.run.withSuccessHandler(res => {
+    alert(res.message);
+    form.reset();
+    document.querySelectorAll('.auto-fill-id').forEach(i => i.value = currentClient['個案編號']);
+    settings.callback();
+  }).saveData(settings.sheet, data);
 }
 </script>
