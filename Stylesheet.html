@@ -1,0 +1,58 @@
+<!-- Tailwind CSS -->
+<script src="https://cdn.tailwindcss.com"></script>
+
+<!-- Google Fonts (Optional but recommended for the look) -->
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@300;400;500;700&display=swap" rel="stylesheet">
+
+<style>
+  body {
+    font-family: 'Noto Sans TC', sans-serif;
+    overflow: hidden; /* 防止整個頁面滾動，由內容區域滾動 */
+    background-color: #f3f4f6;
+  }
+
+  /* 自定義滾動條 (隱藏式但可滾動，或細條) */
+  ::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+  }
+  ::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  ::-webkit-scrollbar-thumb {
+    background: #cbd5e1;
+    border-radius: 3px;
+  }
+  ::-webkit-scrollbar-thumb:hover {
+    background: #94a3b8;
+  }
+
+  /* 導覽列激活狀態 (綠色) */
+  .nav-item.active {
+    background-color: #10b981; /* Emerald-500 */
+    color: white;
+    font-weight: 500;
+  }
+  .nav-item {
+    color: #9ca3af; /* Gray-400 */
+    transition: all 0.2s;
+  }
+  .nav-item:hover:not(.active) {
+    background-color: #1f2937; /* Gray-800 */
+    color: white;
+  }
+
+  /* Loading Spinner */
+  .loader {
+    border: 3px solid #f3f3f3;
+    border-radius: 50%;
+    border-top: 3px solid #10b981;
+    width: 24px;
+    height: 24px;
+    animation: spin 1s linear infinite;
+  }
+  @keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+  }
+</style>
