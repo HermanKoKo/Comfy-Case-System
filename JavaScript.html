@@ -8,14 +8,15 @@ window.onload = function() {
   // 1. 設定所有日期欄位初始值為今日
   document.querySelectorAll('input[type="date"]').forEach(el => el.value = today);
 
-  // 2. 初始化 Flatpickr 美化日曆 (解決滾動跟隨與點擊問題)
+  // 2. 初始化 Flatpickr 美化日曆
   flatpickr('input[type="date"]', {
     locale: "zh_tw",
     dateFormat: "Y-m-d",
     disableMobile: "true", 
     allowInput: true,
-    // 【重要】：static: true 確保日曆跟隨輸入框，不因頁面滾動而跑位
     static: true, 
+    // 【新增修改】：將月份顯示方式改為下拉選單 (Dropdown)
+    monthSelectorType: "dropdown", 
     onChange: function(selectedDates, dateStr, instance) {
       if (instance.element.id === 'filterDate') {
         applyLogFilters();

@@ -8,93 +8,126 @@
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
 
 <style>
-  /* === Flatpickr 縮小版與翡翠綠客製化 === */
+  /* === Flatpickr 進階美化與結構調整 === */
   
   /* 1. 縮小整體外框寬度與字體 */
   .flatpickr-calendar {
-    width: 260px !important; /* 原本約 307px，縮小至 260px */
+    width: 250px !important; /* 寬度微調以符合緊湊佈局 */
     background: #fff;
-    border-radius: 1.25rem !important; /* 稍微減小圓角以搭配縮小後的比例 */
-    box-shadow: 0 10px 15px -3px rgb(0 0 0 / 0.1) !important;
+    border-radius: 1.25rem !important;
+    box-shadow: 0 10px 25px -5px rgb(0 0 0 / 0.1) !important;
     border: 1px solid #e2e8f0 !important;
     font-family: 'Noto Sans TC', sans-serif !important;
-    font-size: 13px !important; /* 縮小字體 */
   }
 
-  /* 2. 縮小月份標題高度與間距 */
-  .flatpickr-months {
-    height: 30px !important;
-  }
-  .flatpickr-months .flatpickr-month {
-    height: 30px !important;
-    color: #1e293b !important;
-    fill: #1e293b !important;
-  }
+  /* 2. 放大並美化月份與年份下拉選單 (修正點 1) */
   .flatpickr-current-month {
-    padding: 0 !important;
-    font-size: 100% !important;
-  }
-
-  /* 3. 縮小星期欄位高度與間距 */
-  .flatpickr-weekdays {
-    height: 24px !important;
-  }
-  span.flatpickr-weekday {
-    font-size: 11px !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    font-size: 16px !important; /* 放大年月字體 */
     font-weight: 700 !important;
-    color: #94a3b8 !important;
+    color: #1e293b !important;
+    padding: 10px 0 !important;
   }
 
-  /* 4. 縮小日期格子 (Day Container) */
+  /* 月份下拉選單美化 */
+  .flatpickr-monthDropdown-months {
+    background: transparent !important;
+    border: none !important;
+    border-radius: 6px !important;
+    padding: 2px 6px !important;
+    cursor: pointer !important;
+    font-weight: 700 !important;
+    font-size: 16px !important; /* 同步放大 */
+    color: #1e293b !important;
+    appearance: none !important; /* 移除原生樣式 */
+    transition: background 0.2s;
+  }
+  
+  .flatpickr-monthDropdown-months:hover {
+    background: #ecfdf5 !important; /* 翡翠綠淺色背景 */
+    color: #10b981 !important;
+  }
+
+  /* 年份選單樣式 (Flatpickr 年份為數值輸入，美化為下拉質感) */
+  .numInput.cur-year {
+    font-weight: 700 !important;
+    font-size: 16px !important; /* 同步放大 */
+    color: #1e293b !important;
+    padding: 2px 4px !important;
+    border-radius: 6px !important;
+    transition: background 0.2s;
+  }
+
+  .numInput.cur-year:hover {
+    background: #ecfdf5 !important;
+  }
+
+  /* 3. 縮減日期格子間距 (修正點 2) */
   .dayContainer {
-    width: 260px !important;
-    min-width: 260px !important;
-    max-width: 260px !important;
-    padding: 0 !important;
-  }
-  .flatpickr-day {
-    max-width: 34px !important; /* 縮小格子寬度 */
-    height: 34px !important;     /* 縮小格子高度 */
-    line-height: 34px !important; /* 文字對齊中央 */
-    margin: 1px !important;       /* 緊湊間距 */
-    border-radius: 8px !important;
+    width: 238px !important; /* 緊湊寬度 */
+    min-width: 238px !important;
+    max-width: 238px !important;
+    padding: 0 6px 6px 6px !important;
   }
 
-  /* 5. 保持翡翠綠配色 (Selected, Today, Hover) */
+  .flatpickr-day {
+    max-width: 34px !important; 
+    height: 34px !important;     
+    line-height: 34px !important; 
+    margin: 0 !important; /* 間距縮減為 0 */
+    border-radius: 8px !important;
+    font-size: 13px !important;
+  }
+
+  /* 4. 保持翡翠綠配色樣式 */
   .flatpickr-day.selected, .flatpickr-day.selected:hover, .flatpickr-day.selected:focus {
     background: #10b981 !important; 
     border-color: #10b981 !important;
     color: #fff !important;
   }
+
   .flatpickr-day:hover {
     background: #ecfdf5 !important;
     border-color: #ecfdf5 !important;
+    color: #10b981 !important;
   }
+
   .flatpickr-day.today {
     border-color: #10b981 !important;
     color: #10b981 !important;
   }
 
-  /* 6. 解決滾動位移：確保 static 模式下的定位正確 */
+  /* 箭頭美化 */
+  .flatpickr-prev-month, .flatpickr-next-month {
+    padding: 4px !important;
+    margin: 5px !important;
+  }
+  
+  .flatpickr-prev-month:hover svg, .flatpickr-next-month:hover svg {
+    fill: #10b981 !important;
+  }
+
+  /* 解決滾動位移與圖標隱藏 */
   .flatpickr-wrapper {
     display: block !important;
     width: 100% !important;
   }
 
-  /* 隱藏原生日期圖標 */
   input[type="date"]::-webkit-calendar-picker-indicator {
     display: none !important;
     -webkit-appearance: none;
   }
 
-  /* === 頁面基礎樣式 (保持您原本的設定) === */
+  /* === 頁面基礎樣式 (保持現有配色) === */
   body {
     font-family: 'Noto Sans TC', sans-serif;
     overflow: hidden; 
     background-color: #f3f4f6;
   }
 
-  /* 自定義滾動條 (保持您原本的設定) */
+  /* 自定義滾動條 */
   ::-webkit-scrollbar {
     width: 6px;
     height: 6px;
@@ -110,16 +143,18 @@
     background: #94a3b8;
   }
 
-  /* 導覽列激活狀態 (保持您原本的設定) */
+  /* 導覽列激活狀態 (Emerald-500) */
   .nav-item.active {
     background-color: #10b981;
     color: white;
     font-weight: 500;
   }
+  
   .nav-item {
     color: #9ca3af;
     transition: all 0.2s;
   }
+  
   .nav-item:hover:not(.active) {
     background-color: #1f2937;
     color: white;
