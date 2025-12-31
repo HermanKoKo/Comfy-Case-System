@@ -1,7 +1,10 @@
 /**
- * Api.gs - 核心邏輯層
+ * ==========================================
+ * 核心邏輯層 (Api.gs)
+ * ==========================================
  */
 
+// 1. 搜尋功能 (優化：使用 getDisplayValues)
 function searchClient(keyword) {
   try {
     const ss = SpreadsheetApp.openById(CONFIG.SPREADSHEET_ID);
@@ -15,7 +18,7 @@ function searchClient(keyword) {
       const row = data[i];
       const id = String(row[0]).replace(/^'/, '').trim().toLowerCase();
       const name = String(row[1]).trim().toLowerCase();
-      const phone = String(row[4]).replace(/^'/, '').trim();
+      const phone = String(row[4]).replace(/^'/, '').trim().toLowerCase();
       if (id.includes(query) || name.includes(query) || phone.includes(query)) {
         results.push({
           '個案編號': row[0], '姓名': row[1], '生日': row[2], '身分證字號': row[3],
@@ -28,13 +31,15 @@ function searchClient(keyword) {
   } catch (e) { throw new Error(e.message); }
 }
 
+// 2. 通用資料儲存功能
 function saveData(sheetName, dataObj) {
   const lock = LockService.getScriptLock();
   try {
     lock.waitLock(10000); 
     const ss = SpreadsheetApp.openById(CONFIG.SPREADSHEET_ID);
-    const sheet = ss.getSheetByName(sheetName);
-    if (!sheet) throw new Error("找不到工作表: " + sheetName);
+    const targetSheetName = sheetName || CONFIG.SHEETS.CLIENT;
+    const sheet = ss.getSheetByName(targetSheetName);
+    if (!sheet) throw new Error("找不到工作表 [" + targetSheetName + "]");
 
     const rawHeaders = sheet.getRange(1, 1, 1, sheet.getLastColumn()).getValues()[0];
     const headerMap = {}; 
@@ -43,7 +48,7 @@ function saveData(sheetName, dataObj) {
     let rowIndexToUpdate = -1;
     let existingRecordId = dataObj['紀錄ID'];
     
-    if (existingRecordId) {
+    if (existingRecordId && targetSheetName !== CONFIG.SHEETS.CLIENT) {
        const idIdx = headerMap['紀錄id'];
        if (idIdx !== undefined && sheet.getLastRow() > 1) {
          const allIds = sheet.getRange(2, idIdx + 1, sheet.getLastRow() - 1, 1).getValues().flat();
@@ -58,7 +63,7 @@ function saveData(sheetName, dataObj) {
         for (let key in dataObj) {
             if (key.replace(/\s+/g, '').toLowerCase() === cleanH) { val = dataObj[key]; break; }
         }
-        if (cleanH === '紀錄id' && !val) return 'R' + Utilities.formatDate(new Date(), ss.getSpreadsheetTimeZone(), 'yyyyMMddHHmmss') + Math.floor(Math.random()*900+100);
+        if (cleanH === '紀錄id') return val || 'R' + Utilities.formatDate(new Date(), ss.getSpreadsheetTimeZone(), 'yyyyMMddHHmmss') + Math.floor(Math.random()*900+100);
         if (cleanH.includes('時間') || cleanH.includes('日期')) {
             if ((cleanH === '建立時間' || cleanH === '建立日期') && rowIndexToUpdate > -1) return sheet.getRange(rowIndexToUpdate, headerMap[cleanH]+1).getValue();
             return val || Utilities.formatDate(new Date(), ss.getSpreadsheetTimeZone(), 'yyyy-MM-dd HH:mm:ss');
@@ -77,6 +82,10 @@ function saveData(sheetName, dataObj) {
   } catch (e) { throw new Error(e.message); } finally { lock.releaseLock(); }
 }
 
+function saveDoctorConsultation(formObj) { return saveData(CONFIG.SHEETS.DOCTOR, formObj); }
+function saveCaseTracking(formObj) { return saveData(CONFIG.SHEETS.TRACKING, formObj); }
+
+// 3. 系統資料讀取 (醫師:A, 護理師:B, 治療師:C)
 function getSystemStaff() {
   try {
     const ss = SpreadsheetApp.openById(CONFIG.SPREADSHEET_ID);
@@ -86,13 +95,14 @@ function getSystemStaff() {
     if (lastRow < 2) return { doctors: [], nurses: [], therapists: [] };
     const data = sheet.getRange(2, 1, lastRow - 1, 3).getValues();
     return {
-      doctors: data.map(r => r[0]).filter(v => String(v).trim() !== ""),
-      nurses: data.map(r => r[1]).filter(v => String(v).trim() !== ""),
-      therapists: data.map(r => r[2]).filter(v => String(v).trim() !== "")
+      doctors: data.map(r => r[0]).filter(v => v !== ""),
+      nurses: data.map(r => r[1]).filter(v => v !== ""),
+      therapists: data.map(r => r[2]).filter(v => v !== "")
     };
   } catch (e) { return { doctors: [], nurses: [], therapists: [] }; }
 }
 
+// 4. 歷史紀錄讀取 (通用)
 function getClientHistory(clientId, sheetName) {
   try {
     if (!clientId) return [];
@@ -113,6 +123,6 @@ function getClientHistory(clientId, sheetName) {
         result.push(obj);
       }
     }
-    return result.reverse();
+    return result.sort((a,b) => new Date(b['治療日期'] || b['日期']) - new Date(a['治療日期'] || a['日期']));
   } catch (e) { return []; }
 }

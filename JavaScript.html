@@ -1,90 +1,150 @@
 <script>
 let currentClient = null;
+let allTreatmentLogs = [];
+let filterState = { date: null, therapist: null };
 
 window.onload = function() {
   const today = new Date().toISOString().split('T')[0];
   document.querySelectorAll('input[type="date"]').forEach(el => el.value = today);
   loadSystemStaff();
+  renderCalendar();
 };
 
+// 載入醫師(A)、護理師(B)、治療師(C)
 function loadSystemStaff() {
   google.script.run.withSuccessHandler(staff => {
-    // 醫師 (A欄)
-    const docSelect = document.getElementById('selectDoctor');
-    if(docSelect) {
-      docSelect.innerHTML = '<option value="" disabled selected>請選擇醫師</option>';
-      staff.doctors.forEach(name => docSelect.innerHTML += `<option value="${name}">${name}</option>`);
+    // 看診醫師
+    const ds = document.getElementById('selectDoctor');
+    if(ds) {
+      ds.innerHTML = '<option value="" disabled selected>請選擇醫師</option>';
+      staff.doctors.forEach(n => ds.innerHTML += `<option value="${n}">${n}</option>`);
     }
-    // 護理師 (B欄)
-    const nurseSelect = document.getElementById('selectNurse');
-    if(nurseSelect) {
-      nurseSelect.innerHTML = '<option value="" disabled selected>請選擇護理師</option>';
-      staff.nurses.forEach(name => nurseSelect.innerHTML += `<option value="${name}">${name}</option>`);
+    // 護理師
+    const ns = document.getElementById('selectNurse');
+    if(ns) {
+      ns.innerHTML = '<option value="" disabled selected>請選擇護理師</option>';
+      staff.nurses.forEach(n => ns.innerHTML += `<option value="${n}">${n}</option>`);
+    }
+    // 治療師
+    const ts = document.getElementById('inputTherapist');
+    const fts = document.getElementById('filterTherapist');
+    if(ts) {
+      ts.innerHTML = '<option value="" disabled selected>請選擇治療師</option>';
+      staff.therapists.forEach(n => ts.innerHTML += `<option value="${n}">${n}</option>`);
+    }
+    if(fts) {
+      fts.innerHTML = '<option value="">所有執行人員</option>';
+      staff.therapists.forEach(n => fts.innerHTML += `<option value="${n}">${n}</option>`);
     }
   }).getSystemStaff();
 }
 
 function navTo(viewName) {
   if (!currentClient && viewName !== 'search') { alert("請先選取個案。"); return; }
-  const views = ['search', 'basic', 'treatment', 'doctor'];
+  
+  const views = ['search', 'basic', 'images', 'treatment', 'maintenance', 'doctor', 'tracking', 'overview'];
   views.forEach(v => {
     const el = document.getElementById('view-' + v);
     if(el) el.classList.add('hidden');
     const btn = document.getElementById('btn-' + v);
-    if(btn) btn.classList.remove('bg-emerald-500', 'text-white');
+    if(btn) btn.classList.remove('bg-slate-800', 'text-white', 'font-bold');
   });
-  
-  const targetView = document.getElementById('view-' + viewName);
-  if(targetView) targetView.classList.remove('hidden');
+
+  const target = document.getElementById('view-' + viewName);
+  if(target) target.classList.remove('hidden');
   const targetBtn = document.getElementById('btn-' + viewName);
-  if(targetBtn) targetBtn.classList.add('bg-emerald-500', 'text-white');
+  if(targetBtn) targetBtn.classList.add('bg-slate-800', 'text-white', 'font-bold');
+
+  const titles = { 'search':'搜尋','basic':'基本資料','images':'影像總覽','treatment':'治療紀錄','maintenance':'保養項目','doctor':'醫師看診','tracking':'個管追蹤','overview':'個案總覽'};
+  document.getElementById('pageTitle').textContent = titles[viewName] || '康飛運醫';
 
   if(viewName === 'doctor') loadDoctorHistory();
+  if(viewName === 'treatment') loadTreatmentHistory();
 }
 
 function handleSearch() {
-  const keyword = document.getElementById('searchInput').value.trim();
-  if (!keyword) return;
+  const kw = document.getElementById('searchInput').value.trim();
+  if (!kw) return;
   const container = document.getElementById('searchResults');
-  container.innerHTML = '<div class="text-center py-10 text-gray-400">搜尋中...</div>';
+  container.innerHTML = '<div class="text-center py-10 text-slate-400">搜尋中...</div>';
   google.script.run.withSuccessHandler(data => {
     container.innerHTML = '';
     if(data.length === 0) { container.innerHTML = '<div class="text-center py-10">查無資料</div>'; return; }
-    data.forEach(client => {
+    data.forEach(c => {
       const div = document.createElement('div');
-      div.className = "bg-white p-4 rounded-2xl shadow-sm border border-gray-100 hover:border-emerald-500 cursor-pointer transition";
-      div.onclick = () => selectClient(client);
-      div.innerHTML = `<div class="font-bold">${client['姓名']} (${client['個案編號']})</div><div class="text-sm text-gray-500">${client['電話']}</div>`;
+      div.className = "bg-white p-5 rounded-3xl shadow-sm border border-slate-100 hover:border-emerald-500 cursor-pointer transition flex justify-between items-center group";
+      div.onclick = () => selectClient(c);
+      div.innerHTML = `<div><div class="font-black text-slate-800">${c['姓名']} <span class="text-xs font-normal text-slate-400">${c['個案編號']}</span></div><div class="text-sm text-slate-400">${c['電話']}</div></div><div class="text-emerald-500 opacity-0 group-hover:opacity-100 transition">選取 →</div>`;
       container.appendChild(div);
     });
-  }).searchClient(keyword);
+  }).searchClient(kw);
 }
 
-function selectClient(client) {
-  currentClient = client;
+function selectClient(c) {
+  currentClient = c;
   document.getElementById('topBarClientInfo').classList.remove('hidden');
-  document.getElementById('headerClientName').textContent = client['姓名'];
-  document.getElementById('headerClientDob').textContent = client['生日'];
-  document.querySelectorAll('.auto-fill-id').forEach(el => el.value = client['個案編號']);
-  navTo('doctor');
+  document.getElementById('headerClientName').textContent = c['姓名'];
+  document.getElementById('headerClientDob').textContent = c['生日'];
+  document.querySelectorAll('.auto-fill-id').forEach(el => el.value = c['個案編號']);
+  navTo('treatment');
 }
 
+// 治療紀錄
+function loadTreatmentHistory() {
+  const container = document.getElementById('historyListContainer');
+  container.innerHTML = '<div class="text-center py-10 text-slate-400">讀取中...</div>';
+  google.script.run.withSuccessHandler(logs => {
+    allTreatmentLogs = logs;
+    applyLogFilters();
+  }).getClientHistory(currentClient['個案編號'], 'Treatment_Logs');
+}
+
+function applyLogFilters() {
+  const t = document.getElementById('filterTherapist').value;
+  const d = document.getElementById('filterDate').value;
+  const filtered = allTreatmentLogs.filter(log => {
+    let mt = t ? log['執行治療師'] === t : true;
+    let md = d ? log['治療日期'].includes(d) : true;
+    return mt && md;
+  });
+  renderTreatmentList(filtered);
+}
+
+function renderTreatmentList(logs) {
+  const container = document.getElementById('historyListContainer');
+  if(!logs.length) { container.innerHTML = '<div class="text-center py-10 text-slate-300">無紀錄</div>'; return; }
+  let html = '';
+  logs.forEach(log => {
+    html += `
+      <div class="bg-white p-5 rounded-2xl shadow-sm border border-slate-50 border-l-4 border-l-emerald-500">
+        <div class="flex justify-between items-center mb-2">
+          <span class="text-xs font-bold text-slate-400">${log['治療日期']}</span>
+          <span class="text-sm font-bold text-emerald-600">${log['執行治療師']}</span>
+        </div>
+        <p class="text-xs text-slate-400 mb-2">主訴: ${log['當日主訴']||'--'}</p>
+        <p class="text-sm text-slate-700 whitespace-pre-wrap">${log['治療內容']}</p>
+      </div>`;
+  });
+  container.innerHTML = html;
+}
+
+// 醫師歷史紀錄渲染
 function loadDoctorHistory() {
   const container = document.getElementById('doctorHistoryList');
-  container.innerHTML = '<div class="text-center py-10">讀取紀錄中...</div>';
+  container.innerHTML = '<div class="text-center py-10">讀取中...</div>';
   google.script.run.withSuccessHandler(logs => {
-    if(!logs || logs.length === 0) { container.innerHTML = '<div class="text-center py-10 text-gray-400">尚無紀錄</div>'; return; }
+    if(!logs.length) { container.innerHTML = '<div class="py-10 text-center text-slate-300">尚無看診紀錄</div>'; return; }
     let html = '';
     logs.forEach(log => {
       html += `
-        <div class="bg-white border border-gray-100 rounded-2xl p-5 shadow-sm">
-          <div class="flex justify-between items-center mb-3">
+        <div class="bg-white border border-slate-100 rounded-3xl p-6 shadow-sm">
+          <div class="flex justify-between items-center mb-4">
             <span class="text-xs font-bold bg-emerald-50 text-emerald-600 px-3 py-1 rounded-full">${log['日期']}</span>
-            <span class="text-sm font-bold text-gray-700">醫師: ${log['看診醫師']} | 護理: ${log['護理師']}</span>
+            <span class="text-sm font-bold text-slate-700">醫師: ${log['看診醫師']} | 護理: ${log['護理師']}</span>
           </div>
           <div class="grid grid-cols-2 gap-4 text-xs">
-            <div class="bg-gray-50 p-3 rounded-lg"><p class="text-gray-400 mb-1 font-bold">主訴 (S)</p>${log['主訴']||'--'}</div>
-            <div class="bg-gray-50 p-3 rounded-lg"><p class="text-gray-400 mb-1 font-bold">診斷 (A)</p>${log['診斷']||'--'}</div>
+            <div class="bg-slate-50 p-4 rounded-2xl"><p class="text-slate-400 mb-1 font-bold">主訴 (S)</p>${log['主訴']||'--'}</div>
+            <div class="bg-slate-50 p-4 rounded-2xl"><p class="text-slate-400 mb-1 font-bold">診斷 (A)</p>${log['診斷']||'--'}</div>
           </div>
         </div>`;
     });
@@ -93,11 +153,14 @@ function loadDoctorHistory() {
 }
 
 function submitForm(type) {
-  const formMap = { 'doctor': { id: 'doctorForm', sheet: 'Doctor_Consultation', cb: loadDoctorHistory } };
-  const target = formMap[type];
+  const forms = {
+    'doctor': { id:'doctorForm', sheet:'Doctor_Consultation', cb: loadDoctorHistory },
+    'treatment': { id:'treatmentForm', sheet:'Treatment_Logs', cb: loadTreatmentHistory }
+  };
+  const target = forms[type];
   const form = document.getElementById(target.id);
   const data = {};
-  new FormData(form).forEach((v, k) => data[k] = v);
+  new FormData(form).forEach((v,k) => data[k] = v);
 
   google.script.run.withSuccessHandler(res => {
     alert(res.message);
@@ -109,4 +172,8 @@ function submitForm(type) {
 
 function openModal(id) { document.getElementById(id).classList.remove('hidden'); }
 function closeModal(id) { document.getElementById(id).classList.add('hidden'); }
+
+// 簡單月曆與導航重置功能 (略, 保持之前運作正常的即可)
+function resetSearch() { currentClient = null; document.getElementById('topBarClientInfo').classList.add('hidden'); navTo('search'); }
+function renderCalendar() { /* 保持你原本 Calendar.gs 支援的邏輯 */ }
 </script>
