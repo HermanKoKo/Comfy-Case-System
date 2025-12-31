@@ -1,31 +1,45 @@
 <script>
 let currentClient = null;
 let allTreatmentLogs = [];
-let filterState = { date: null, therapist: null };
 
 window.onload = function() {
   const today = new Date().toISOString().split('T')[0];
+  
+  // 1. 設定所有日期欄位初始值為今日
   document.querySelectorAll('input[type="date"]').forEach(el => el.value = today);
+
+  // 2. 初始化 Flatpickr 美化日曆 (解決滾動跟隨與點擊問題)
+  flatpickr('input[type="date"]', {
+    locale: "zh_tw",
+    dateFormat: "Y-m-d",
+    disableMobile: "true", 
+    allowInput: true,
+    // 【重要】：static: true 確保日曆跟隨輸入框，不因頁面滾動而跑位
+    static: true, 
+    onChange: function(selectedDates, dateStr, instance) {
+      if (instance.element.id === 'filterDate') {
+        applyLogFilters();
+      }
+    }
+  });
+
   loadSystemStaff();
   renderCalendar();
 };
 
-// 載入醫師(A)、護理師(B)、治療師(C)
+// 載入醫師、護理師、治療師
 function loadSystemStaff() {
   google.script.run.withSuccessHandler(staff => {
-    // 看診醫師
     const ds = document.getElementById('selectDoctor');
     if(ds) {
       ds.innerHTML = '<option value="" disabled selected>請選擇醫師</option>';
       staff.doctors.forEach(n => ds.innerHTML += `<option value="${n}">${n}</option>`);
     }
-    // 護理師
     const ns = document.getElementById('selectNurse');
     if(ns) {
       ns.innerHTML = '<option value="" disabled selected>請選擇護理師</option>';
       staff.nurses.forEach(n => ns.innerHTML += `<option value="${n}">${n}</option>`);
     }
-    // 治療師
     const ts = document.getElementById('inputTherapist');
     const fts = document.getElementById('filterTherapist');
     if(ts) {
@@ -89,7 +103,7 @@ function selectClient(c) {
   navTo('treatment');
 }
 
-// 治療紀錄
+// 治療紀錄讀取
 function loadTreatmentHistory() {
   const container = document.getElementById('historyListContainer');
   container.innerHTML = '<div class="text-center py-10 text-slate-400">讀取中...</div>';
@@ -126,54 +140,164 @@ function renderTreatmentList(logs) {
       </div>`;
   });
   container.innerHTML = html;
+}/**
+ * 統一處理表單提交
+ */
+function submitForm(type) {
+  if (!currentClient) { alert("請先選擇個案"); return; }
+
+  // --- 醫師看診儲存邏輯 ---
+  if (type === 'doctor') {
+    const formData = {
+      clientId: currentClient['個案編號'],
+      date: document.getElementById('doctorDate').value,
+      doctor: document.getElementById('selectDoctor').value,
+      nurse: document.getElementById('selectNurse').value,
+      complaint: document.querySelector('#view-doctor textarea[name="主訴"]').value,
+      objective: document.querySelector('#view-doctor textarea[name="客觀檢查"]').value,
+      diagnosis: document.querySelector('#view-doctor textarea[name="診斷"]').value,
+      plan: document.querySelector('#view-doctor textarea[name="治療計畫"]').value,
+      remark: document.getElementById('doctorRemark').value // 抓取備註資料
+    };
+
+    if (!formData.date || !formData.doctor) { alert("請填寫日期與醫師"); return; }
+
+    // 儲存按鈕狀態切換 (Loading 效果)
+    const btn = event.target;
+    const originalText = btn.innerText;
+    btn.disabled = true;
+    btn.innerText = "儲存中...";
+
+    google.script.run
+      .withSuccessHandler(res => {
+        btn.disabled = false;
+        btn.innerText = originalText;
+        alert(res.message);
+        
+        if(res.success) {
+          // 重置表單
+          document.getElementById('doctorForm').reset();
+          
+          // 【關鍵修改位置】：手動清空備註欄位，確保 UI 完全乾淨
+          document.getElementById('doctorRemark').value = '';
+          
+          // 重新整理歷史列表以顯示最新資料
+          loadDoctorHistory(); 
+        }
+      })
+      .withFailureHandler(err => {
+        btn.disabled = false;
+        btn.innerText = originalText;
+        alert("儲存失敗（系統錯誤）：" + err);
+      })
+      .saveDoctorConsultation(formData);
+
+  // --- 治療紀錄儲存邏輯 ---
+  } else if (type === 'treatment') {
+    const formData = {
+      '個案編號': currentClient['個案編號'],
+      '治療日期': document.getElementById('inputDate').value,
+      '執行治療師': document.getElementById('inputTherapist').value,
+      '當日主訴': document.getElementById('inputComplaint').value,
+      '治療內容': document.getElementById('inputContent').value
+    };
+
+    if (!formData['治療日期'] || !formData['執行治療師']) { alert("請填寫日期與治療師"); return; }
+
+    google.script.run
+      .withSuccessHandler(res => {
+        alert(res.message);
+        if(res.success) {
+          document.getElementById('treatmentForm').reset();
+          loadTreatmentHistory();
+        }
+      })
+      .saveData('Treatment_Logs', formData);
+  }
 }
 
-// 醫師歷史紀錄渲染
+/**
+ * 醫師歷史紀錄渲染：顯示完整 SOAP (S, O, A, P) + 備註
+ */
 function loadDoctorHistory() {
   const container = document.getElementById('doctorHistoryList');
-  container.innerHTML = '<div class="text-center py-10">讀取中...</div>';
+  container.innerHTML = '<div class="text-center py-10 text-slate-400">讀取中...</div>';
+  
   google.script.run.withSuccessHandler(logs => {
-    if(!logs.length) { container.innerHTML = '<div class="py-10 text-center text-slate-300">尚無看診紀錄</div>'; return; }
+    if(!logs || !logs.length) { 
+      container.innerHTML = '<div class="py-10 text-center text-slate-300">尚無看診紀錄</div>'; 
+      return; 
+    }
+    
     let html = '';
     logs.forEach(log => {
       html += `
-        <div class="bg-white border border-slate-100 rounded-3xl p-6 shadow-sm">
-          <div class="flex justify-between items-center mb-4">
-            <span class="text-xs font-bold bg-emerald-50 text-emerald-600 px-3 py-1 rounded-full">${log['日期']}</span>
-            <span class="text-sm font-bold text-slate-700">醫師: ${log['看診醫師']} | 護理: ${log['護理師']}</span>
+        <div class="bg-white border border-slate-100 rounded-3xl p-8 shadow-sm mb-6 transition hover:shadow-md">
+          <!-- 頂部資訊：日期、醫師、護理師 -->
+          <div class="flex justify-between items-center mb-6">
+            <span class="text-xs font-bold bg-emerald-50 text-emerald-600 px-4 py-1.5 rounded-full ring-1 ring-emerald-100">
+              ${log['看診日期'] || '--'}
+            </span>
+            <span class="text-sm font-bold text-slate-500">
+              醫師：<span class="text-slate-800 mr-3">${log['看診醫師'] || '--'}</span>
+              護理：<span class="text-slate-800">${log['護理師'] || '--'}</span>
+            </span>
           </div>
-          <div class="grid grid-cols-2 gap-4 text-xs">
-            <div class="bg-slate-50 p-4 rounded-2xl"><p class="text-slate-400 mb-1 font-bold">主訴 (S)</p>${log['主訴']||'--'}</div>
-            <div class="bg-slate-50 p-4 rounded-2xl"><p class="text-slate-400 mb-1 font-bold">診斷 (A)</p>${log['診斷']||'--'}</div>
+          
+          <!-- 核心 SOAP 2x2 網格 -->
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6 text-xs">
+            <!-- S: 主訴 -->
+            <div class="bg-blue-50/50 p-4 rounded-2xl border border-blue-100">
+              <p class="text-blue-600 mb-2 font-black flex items-center gap-1.5">
+                <span class="w-1.5 h-1.5 bg-blue-500 rounded-full"></span>主訴 (S)
+              </p>
+              <div class="text-slate-700 leading-relaxed whitespace-pre-wrap">${log['S_主訴'] || '--'}</div>
+            </div>
+            
+            <!-- O: 檢查 -->
+            <div class="bg-indigo-50/50 p-4 rounded-2xl border border-indigo-100">
+              <p class="text-indigo-600 mb-2 font-black flex items-center gap-1.5">
+                <span class="w-1.5 h-1.5 bg-indigo-500 rounded-full"></span>客觀檢查 (O)
+              </p>
+              <div class="text-slate-700 leading-relaxed whitespace-pre-wrap">${log['O_客觀檢查'] || '--'}</div>
+            </div>
+            
+            <!-- A: 診斷 -->
+            <div class="bg-amber-50/50 p-4 rounded-2xl border border-amber-100">
+              <p class="text-amber-600 mb-2 font-black flex items-center gap-1.5">
+                <span class="w-1.5 h-1.5 bg-amber-500 rounded-full"></span>診斷評估 (A)
+              </p>
+              <div class="text-slate-700 leading-relaxed whitespace-pre-wrap">${log['A_診斷'] || '--'}</div>
+            </div>
+            
+            <!-- P: 計畫 -->
+            <div class="bg-emerald-50/50 p-4 rounded-2xl border border-emerald-100">
+              <p class="text-emerald-600 mb-2 font-black flex items-center gap-1.5">
+                <span class="w-1.5 h-1.5 bg-emerald-500 rounded-full"></span>治療計畫 (P)
+              </p>
+              <div class="text-slate-700 leading-relaxed whitespace-pre-wrap">${log['P_治療計劃'] || '--'}</div>
+            </div>
           </div>
+
+          <!-- 備註區塊 (若有內容才顯示) -->
+          ${log['備註'] && log['備註'] !== '--' ? `
+          <div class="bg-slate-50 p-5 rounded-2xl border border-dashed border-slate-200">
+            <p class="text-slate-400 mb-2 font-black text-[10px] uppercase tracking-widest flex items-center gap-1.5">
+              <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M7 8h10M7 12h4m1 8l-4-4H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-3l-4 4z"></path></svg>
+              備註 REMARK
+            </p>
+            <div class="text-slate-600 text-xs leading-relaxed whitespace-pre-wrap">${log['備註']}</div>
+          </div>` : ''}
         </div>`;
     });
     container.innerHTML = html;
   }).getClientHistory(currentClient['個案編號'], 'Doctor_Consultation');
 }
 
-function submitForm(type) {
-  const forms = {
-    'doctor': { id:'doctorForm', sheet:'Doctor_Consultation', cb: loadDoctorHistory },
-    'treatment': { id:'treatmentForm', sheet:'Treatment_Logs', cb: loadTreatmentHistory }
-  };
-  const target = forms[type];
-  const form = document.getElementById(target.id);
-  const data = {};
-  new FormData(form).forEach((v,k) => data[k] = v);
-
-  google.script.run.withSuccessHandler(res => {
-    alert(res.message);
-    form.reset();
-    document.querySelectorAll('.auto-fill-id').forEach(el => el.value = currentClient['個案編號']);
-    target.cb();
-  }).saveData(target.sheet, data);
-}
-
+// 基礎工具函數
 function openModal(id) { document.getElementById(id).classList.remove('hidden'); }
 function closeModal(id) { document.getElementById(id).classList.add('hidden'); }
-
-// 簡單月曆與導航重置功能 (略, 保持之前運作正常的即可)
 function resetSearch() { currentClient = null; document.getElementById('topBarClientInfo').classList.add('hidden'); navTo('search'); }
-function renderCalendar() { /* 保持你原本 Calendar.gs 支援的邏輯 */ }
+function renderCalendar() { /* 支援治療紀錄分頁的月曆渲染 */ }
+
 </script>

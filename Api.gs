@@ -82,7 +82,8 @@ function saveData(sheetName, dataObj) {
   } catch (e) { throw new Error(e.message); } finally { lock.releaseLock(); }
 }
 
-function saveDoctorConsultation(formObj) { return saveData(CONFIG.SHEETS.DOCTOR, formObj); }
+
+
 function saveCaseTracking(formObj) { return saveData(CONFIG.SHEETS.TRACKING, formObj); }
 
 // 3. 系統資料讀取 (醫師:A, 護理師:B, 治療師:C)
@@ -102,20 +103,67 @@ function getSystemStaff() {
   } catch (e) { return { doctors: [], nurses: [], therapists: [] }; }
 }
 
-// 4. 歷史紀錄讀取 (通用)
+
+
+/**
+ * 儲存醫師看診紀錄 - 包含備註欄位
+ * 欄位對應：[A:紀錄ID, B:個案編號, C:看診日期, D:看診醫師, E:護理師, F:S_主訴, G:O_客觀檢查, H:A_診斷, I:P_治療計劃, J:備註, K:影像附件連結, L:建立時間]
+ */
+function saveDoctorConsultation(formData) {
+  try {
+    const ss = SpreadsheetApp.openById(CONFIG.SPREADSHEET_ID);
+    const sheet = ss.getSheetByName("Doctor_Consultation"); 
+    
+    if (!sheet) throw new Error("找不到工作表: Doctor_Consultation");
+
+    const recordId = "DOC" + new Date().getTime();
+    const timestamp = Utilities.formatDate(new Date(), ss.getSpreadsheetTimeZone(), "yyyy/MM/dd HH:mm:ss");
+    
+    // 嚴格按照您最新的試算表 12 個欄位順序排列
+    const rowData = [
+      recordId,                   // A: 紀錄ID
+      "'" + formData.clientId,    // B: 個案編號
+      formData.date,              // C: 看診日期
+      formData.doctor,            // D: 看診醫師
+      formData.nurse,             // E: 護理師
+      formData.complaint,         // F: S_主訴
+      formData.objective,         // G: O_客觀檢查
+      formData.diagnosis,         // H: A_診斷
+      formData.plan,              // I: P_治療計劃
+      formData.remark,            // J: 備註 (新增)
+      "",                         // K: 影像附件連結
+      timestamp                   // L: 建立時間
+    ];
+
+    sheet.appendRow(rowData);
+    return { success: true, message: "醫師看診紀錄儲存成功" };
+  } catch (e) {
+    return { success: false, message: "儲存失敗: " + e.toString() };
+  }
+}
+
+/**
+ * 獲取個案歷史紀錄 (通用)
+ * 修正：針對不同工作表的日期欄位進行精確排序 (由新到舊)
+ */
 function getClientHistory(clientId, sheetName) {
   try {
     if (!clientId) return [];
     const ss = SpreadsheetApp.openById(CONFIG.SPREADSHEET_ID);
     const sheet = ss.getSheetByName(sheetName);
     if (!sheet) return [];
+    
+    // 使用 getDisplayValues 確保日期格式與試算表一致
     const data = sheet.getDataRange().getDisplayValues();
     if (data.length < 2) return [];
+    
     const headers = data[0].map(h => String(h).replace(/\s+/g, '').toLowerCase());
     const idxCaseId = headers.indexOf('個案編號');
     if (idxCaseId === -1) return [];
+    
     const targetId = String(clientId).replace(/^'/, '').trim().toLowerCase();
     const result = [];
+    
     for (let i = 1; i < data.length; i++) {
       if (String(data[i][idxCaseId]).replace(/^'/, '').trim().toLowerCase() === targetId) {
         let obj = {};
@@ -123,6 +171,26 @@ function getClientHistory(clientId, sheetName) {
         result.push(obj);
       }
     }
-    return result.sort((a,b) => new Date(b['治療日期'] || b['日期']) - new Date(a['治療日期'] || a['日期']));
-  } catch (e) { return []; }
+
+    // --- 排序邏輯：由新到舊 ---
+    result.sort((a, b) => {
+      // 兼容不同工作表的日期欄位名稱
+      const dateStrA = a['看診日期'] || a['治療日期'] || a['日期'] || '1900-01-01';
+      const dateStrB = b['看診日期'] || b['治療日期'] || b['日期'] || '1900-01-01';
+      
+      const dateA = new Date(dateStrA);
+      const dateB = new Date(dateStrB);
+      
+      // 若日期無效，則放到最後
+      if (isNaN(dateA)) return 1;
+      if (isNaN(dateB)) return -1;
+      
+      return dateB - dateA; // 降序排序 (Newest first)
+    });
+
+    return result;
+  } catch (e) { 
+    console.error("getClientHistory Error: " + e.message);
+    return []; 
+  }
 }

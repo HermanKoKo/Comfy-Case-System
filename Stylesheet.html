@@ -1,17 +1,100 @@
 <!-- Tailwind CSS -->
 <script src="https://cdn.tailwindcss.com"></script>
 
-<!-- Google Fonts (Optional but recommended for the look) -->
+<!-- Google Fonts -->
 <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@300;400;500;700&display=swap" rel="stylesheet">
 
+<!-- Flatpickr 日曆核心樣式 -->
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
+
 <style>
+  /* === Flatpickr 縮小版與翡翠綠客製化 === */
+  
+  /* 1. 縮小整體外框寬度與字體 */
+  .flatpickr-calendar {
+    width: 260px !important; /* 原本約 307px，縮小至 260px */
+    background: #fff;
+    border-radius: 1.25rem !important; /* 稍微減小圓角以搭配縮小後的比例 */
+    box-shadow: 0 10px 15px -3px rgb(0 0 0 / 0.1) !important;
+    border: 1px solid #e2e8f0 !important;
+    font-family: 'Noto Sans TC', sans-serif !important;
+    font-size: 13px !important; /* 縮小字體 */
+  }
+
+  /* 2. 縮小月份標題高度與間距 */
+  .flatpickr-months {
+    height: 30px !important;
+  }
+  .flatpickr-months .flatpickr-month {
+    height: 30px !important;
+    color: #1e293b !important;
+    fill: #1e293b !important;
+  }
+  .flatpickr-current-month {
+    padding: 0 !important;
+    font-size: 100% !important;
+  }
+
+  /* 3. 縮小星期欄位高度與間距 */
+  .flatpickr-weekdays {
+    height: 24px !important;
+  }
+  span.flatpickr-weekday {
+    font-size: 11px !important;
+    font-weight: 700 !important;
+    color: #94a3b8 !important;
+  }
+
+  /* 4. 縮小日期格子 (Day Container) */
+  .dayContainer {
+    width: 260px !important;
+    min-width: 260px !important;
+    max-width: 260px !important;
+    padding: 0 !important;
+  }
+  .flatpickr-day {
+    max-width: 34px !important; /* 縮小格子寬度 */
+    height: 34px !important;     /* 縮小格子高度 */
+    line-height: 34px !important; /* 文字對齊中央 */
+    margin: 1px !important;       /* 緊湊間距 */
+    border-radius: 8px !important;
+  }
+
+  /* 5. 保持翡翠綠配色 (Selected, Today, Hover) */
+  .flatpickr-day.selected, .flatpickr-day.selected:hover, .flatpickr-day.selected:focus {
+    background: #10b981 !important; 
+    border-color: #10b981 !important;
+    color: #fff !important;
+  }
+  .flatpickr-day:hover {
+    background: #ecfdf5 !important;
+    border-color: #ecfdf5 !important;
+  }
+  .flatpickr-day.today {
+    border-color: #10b981 !important;
+    color: #10b981 !important;
+  }
+
+  /* 6. 解決滾動位移：確保 static 模式下的定位正確 */
+  .flatpickr-wrapper {
+    display: block !important;
+    width: 100% !important;
+  }
+
+  /* 隱藏原生日期圖標 */
+  input[type="date"]::-webkit-calendar-picker-indicator {
+    display: none !important;
+    -webkit-appearance: none;
+  }
+
+  /* === 頁面基礎樣式 (保持您原本的設定) === */
   body {
     font-family: 'Noto Sans TC', sans-serif;
-    overflow: hidden; /* 防止整個頁面滾動，由內容區域滾動 */
+    overflow: hidden; 
     background-color: #f3f4f6;
   }
 
-  /* 自定義滾動條 (隱藏式但可滾動，或細條) */
+  /* 自定義滾動條 (保持您原本的設定) */
   ::-webkit-scrollbar {
     width: 6px;
     height: 6px;
@@ -27,18 +110,18 @@
     background: #94a3b8;
   }
 
-  /* 導覽列激活狀態 (綠色) */
+  /* 導覽列激活狀態 (保持您原本的設定) */
   .nav-item.active {
-    background-color: #10b981; /* Emerald-500 */
+    background-color: #10b981;
     color: white;
     font-weight: 500;
   }
   .nav-item {
-    color: #9ca3af; /* Gray-400 */
+    color: #9ca3af;
     transition: all 0.2s;
   }
   .nav-item:hover:not(.active) {
-    background-color: #1f2937; /* Gray-800 */
+    background-color: #1f2937;
     color: white;
   }
 
@@ -56,3 +139,7 @@
     100% { transform: rotate(360deg); }
   }
 </style>
+
+<!-- 引入 Flatpickr 主程式與語系 -->
+<script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
+<script src="https://cdn.jsdelivr.net/npm/flatpickr/dist/l10n/zh-tw.js"></script>
