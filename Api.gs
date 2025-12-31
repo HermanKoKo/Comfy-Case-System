@@ -16,7 +16,8 @@ function searchClient(keyword) {
     const lastRow = sheet.getLastRow();
     if (lastRow <= 1) return [];
 
-    const data = sheet.getDataRange().getValues();
+    // 搜尋建議用 getDisplayValues 以確保電話號碼 0 開頭不消失
+    const data = sheet.getDataRange().getDisplayValues(); 
     const results = [];
     const query = String(keyword).trim().toLowerCase();
 
@@ -24,23 +25,22 @@ function searchClient(keyword) {
 
     for (let i = 1; i < data.length; i++) {
       const row = data[i];
-      // 資料清洗
       const id = String(row[0]).replace(/^'/, '').trim().toLowerCase();
       const name = String(row[1]).trim().toLowerCase();
       const phoneRaw = String(row[4]).replace(/^'/, '').trim().toLowerCase();
       const phoneClean = phoneRaw.replace(/-/g, '');
 
       if (id.includes(query) || name.includes(query) || phoneRaw.includes(query) || phoneClean.includes(query)) {
-        let dob = row[2];
-        if (dob instanceof Date) dob = Utilities.formatDate(dob, ss.getSpreadsheetTimeZone(), 'yyyy-MM-dd');
-        
-        let createdDate = row[8];
-        if (createdDate instanceof Date) createdDate = Utilities.formatDate(createdDate, ss.getSpreadsheetTimeZone(), 'yyyy-MM-dd HH:mm:ss');
-
         results.push({
-          '個案編號': row[0], '姓名': row[1], '生日': dob, '身分證字號': row[3],
-          '電話': row[4], '性別': row[5], '慢性病或特殊疾病': row[6],
-          'GoogleDrive資料夾連結': row[7], '建立日期': createdDate
+          '個案編號': row[0], 
+          '姓名': row[1], 
+          '生日': row[2], 
+          '身分證字號': row[3],
+          '電話': row[4], 
+          '性別': row[5], 
+          '慢性病或特殊疾病': row[6],
+          'GoogleDrive資料夾連結': row[7], 
+          '建立日期': row[8]
         });
       }
     }
@@ -63,39 +63,36 @@ function saveData(sheetName, dataObj) {
     const sheet = ss.getSheetByName(targetSheetName);
     if (!sheet) throw new Error("找不到工作表 [" + targetSheetName + "]");
 
-    // 取得標題列並建立 "標準化標題 -> 欄位索引" 的對照表
-    const rawHeaders = sheet.getRange(1, 1, 1, sheet.getLastColumn()).getValues()[0];
-    const headerMap = {}; // Key: CleanHeader, Value: OriginalHeaderIndex
+    const lastCol = sheet.getLastColumn() || 1;
+    const rawHeaders = sheet.getRange(1, 1, 1, lastCol).getValues()[0];
+    const headerMap = {}; 
     rawHeaders.forEach((h, i) => {
-        // 標準化：轉字串 -> 去空白 -> 轉小寫
         const clean = String(h).replace(/\s+/g, '').toLowerCase();
         headerMap[clean] = i;
     });
     
-    // 編輯模式檢查
     let rowIndexToUpdate = -1;
     let existingRecordId = dataObj['紀錄ID'];
     
     if (existingRecordId && targetSheetName !== CONFIG.SHEETS.CLIENT) {
        const idIdx = headerMap['紀錄id'];
        if (idIdx !== undefined) {
-         const allIds = sheet.getRange(2, idIdx + 1, sheet.getLastRow() - 1 || 1, 1).getValues().flat();
-         const matchIndex = allIds.indexOf(existingRecordId);
-         if (matchIndex > -1) rowIndexToUpdate = matchIndex + 2;
+         const lastRow = sheet.getLastRow();
+         if (lastRow > 1) {
+           const allIds = sheet.getRange(2, idIdx + 1, lastRow - 1, 1).getValues().flat();
+           const matchIndex = allIds.indexOf(existingRecordId);
+           if (matchIndex > -1) rowIndexToUpdate = matchIndex + 2;
+         }
        }
     }
 
-    // 新增個案建立資料夾
     let generatedFolderUrl = '';
     if (targetSheetName === CONFIG.SHEETS.CLIENT && !dataObj['GoogleDrive資料夾連結'] && dataObj['個案編號'] && dataObj['姓名']) {
          try { generatedFolderUrl = createOrGetCaseFolder(CONFIG.PARENT_FOLDER_ID, dataObj['個案編號'], dataObj['姓名']); } catch (e) {}
     }
 
-    // 準備寫入資料
     const rowData = rawHeaders.map(rawH => {
         const cleanH = String(rawH).replace(/\s+/g, '').toLowerCase();
-        
-        // 從 dataObj 找對應的值 (也要把 dataObj 的 key 標準化來比對)
         let val = '';
         for (let key in dataObj) {
             if (key.replace(/\s+/g, '').toLowerCase() === cleanH) {
@@ -107,11 +104,9 @@ function saveData(sheetName, dataObj) {
         if (cleanH === '紀錄id') return val || 'R' + Utilities.formatDate(new Date(), ss.getSpreadsheetTimeZone(), 'yyyyMMddHHmmss') + Math.floor(Math.random()*900+100);
         
         if (cleanH.includes('時間') || cleanH.includes('日期')) {
-            // 如果是建立時間且是更新模式，讀取原值
             if ((cleanH === '建立時間' || cleanH === '建立日期') && rowIndexToUpdate > -1) {
                 return sheet.getRange(rowIndexToUpdate, headerMap[cleanH]+1).getValue();
             }
-            // 如果 dataObj 有傳日期 (如 治療日期)，直接使用；否則填入當下時間
             if (val) return val; 
             if (cleanH === '建立時間' || cleanH === '建立日期') return Utilities.formatDate(new Date(), ss.getSpreadsheetTimeZone(), 'yyyy-MM-dd HH:mm:ss');
         }
@@ -119,7 +114,8 @@ function saveData(sheetName, dataObj) {
         if (cleanH === 'googledrive資料夾連結') return generatedFolderUrl || val;
         
         if (cleanH === '電話' || cleanH === '身分證字號' || cleanH === '個案編號') {
-            return (val && String(val).startsWith("'")) ? val : ("'" + (val || ""));
+            let sVal = String(val || "");
+            return sVal.startsWith("'") ? sVal : ("'" + sVal);
         }
         
         return val === undefined ? '' : val;
@@ -133,13 +129,13 @@ function saveData(sheetName, dataObj) {
        return { success: true, message: "資料已新增", folderUrl: generatedFolderUrl };
     }
   } catch (e) {
+    console.error("儲存錯誤:", e);
     throw new Error(e.message);
   } finally {
     lock.releaseLock();
   }
 }
 
-// Wrapper Functions
 function saveDoctorConsultation(formObj) { return saveData(CONFIG.SHEETS.DOCTOR, formObj); }
 function saveCaseTracking(formObj) { return saveData(CONFIG.SHEETS.TRACKING, formObj); }
 
@@ -166,21 +162,21 @@ function getSystemTherapists() {
 
 function getClientHistory(clientId) {
   try {
+    if (!clientId) return [];
     const ss = SpreadsheetApp.openById(CONFIG.SPREADSHEET_ID);
     const sheet = ss.getSheetByName(CONFIG.SHEETS.TREATMENT);
     if (!sheet) return [];
     
-    const data = sheet.getDataRange().getValues();
+    // 關鍵修復：使用 getDisplayValues 避免 Date 物件傳輸失敗
+    const data = sheet.getDataRange().getDisplayValues();
     if (data.length < 2) return [];
 
-    // 1. 建立標題索引 (標準化：去空白、轉小寫)
     const rawHeaders = data[0];
     const map = {};
     rawHeaders.forEach((h, i) => {
         map[String(h).replace(/\s+/g, '').toLowerCase()] = i;
     });
     
-    // 2. 取得關鍵欄位 Index
     const idxId = map['紀錄id'];
     const idxCaseId = map['個案編號'];
     const idxDate = map['治療日期'];
@@ -188,37 +184,23 @@ function getClientHistory(clientId) {
     const idxComplaint = map['當日主訴'];
     const idxContent = map['治療內容'];
     
-    // 容錯：備註欄位可能叫 "備註" 或 "備註/下次治療"
     let idxNote = map['備註/下次治療'];
     if (idxNote === undefined) idxNote = map['備註'];
 
-    // 檢查必要欄位
-    if (idxCaseId === undefined || idxDate === undefined) {
-        // 若找不到欄位，回傳空陣列 (避免報錯)
-        return [];
-    }
+    if (idxCaseId === undefined || idxDate === undefined) return [];
 
     const logs = [];
     const targetId = String(clientId).replace(/^'/, '').trim().toLowerCase();
 
     for (let i = 1; i < data.length; i++) {
       const row = data[i];
-      // ID 比對：去單引號、去空白、轉小寫
       const rowId = String(row[idxCaseId]).replace(/^'/, '').trim().toLowerCase();
 
       if (rowId === targetId) {
-        
-        let dateStr = row[idxDate];
-        if (dateStr instanceof Date) {
-          dateStr = Utilities.formatDate(dateStr, ss.getSpreadsheetTimeZone(), 'yyyy-MM-dd');
-        } else {
-          dateStr = dateStr ? String(dateStr) : "";
-        }
-
         logs.push({
           '紀錄ID': idxId !== undefined ? row[idxId] : '',
           '個案編號': row[idxCaseId],
-          '治療日期': dateStr,
+          '治療日期': row[idxDate], // 已是字串
           '執行治療師': idxTherapist !== undefined ? row[idxTherapist] : '',
           '當日主訴': idxComplaint !== undefined ? row[idxComplaint] : '',
           '治療內容': idxContent !== undefined ? row[idxContent] : '',
@@ -227,21 +209,19 @@ function getClientHistory(clientId) {
       }
     }
     
-    // 日期排序
+    // 排序
     return logs.sort((a, b) => {
-       const dA = a['治療日期'] ? new Date(a['治療日期']) : new Date(0);
-       const dB = b['治療日期'] ? new Date(b['治療日期']) : new Date(0);
-       return dB - dA;
+       return new Date(b['治療日期']) - new Date(a['治療日期']);
     });
     
   } catch (e) {
-    console.error(e);
+    console.error("讀取歷史紀錄錯誤:", e);
     return [];
   }
 }
 
 // ------------------------------------------
-// 4. Drive & Image (保持不變)
+// 4. Drive & Image 
 // ------------------------------------------
 function createOrGetCaseFolder(parentId, caseId, name) {
   const folderName = `${caseId}_${name}`;
