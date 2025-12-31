@@ -8,80 +8,101 @@
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
 
 <style>
-  /* === Flatpickr 進階美化與結構調整 === */
+  /* === Flatpickr 進階美化與結構調整 (修正裁切、對齊與放大版本) === */
   
-  /* 1. 縮小整體外框寬度與字體 */
+  /* 1. 整體外框：寬度維持 220px (約 15% 放大) */
   .flatpickr-calendar {
-    width: 250px !important; /* 寬度微調以符合緊湊佈局 */
+    width: 220px !important; 
     background: #fff;
-    border-radius: 1.25rem !important;
-    box-shadow: 0 10px 25px -5px rgb(0 0 0 / 0.1) !important;
+    border-radius: 1.15rem !important;
+    box-shadow: 0 10px 20px -5px rgb(0 0 0 / 0.1) !important;
     border: 1px solid #e2e8f0 !important;
     font-family: 'Noto Sans TC', sans-serif !important;
+    padding: 8px !important;
+    box-sizing: border-box !important;
   }
 
-  /* 2. 放大並美化月份與年份下拉選單 (修正點 1) */
+  /* 2. 修正內層容器寬度，解決週五週六被裁切的問題 */
+  .flatpickr-innerContainer,
+  .flatpickr-rContainer,
+  .flatpickr-days,
+  .dayContainer {
+    width: 100% !important;
+    min-width: 100% !important;
+    max-width: 100% !important;
+  }
+
+  /* 3. 調整月份與年份區域 (深灰色文字) */
   .flatpickr-current-month {
     display: flex !important;
     align-items: center !important;
     justify-content: center !important;
-    font-size: 16px !important; /* 放大年月字體 */
+    font-size: 16px !important;
     font-weight: 700 !important;
-    color: #1e293b !important;
-    padding: 10px 0 !important;
+    padding: 4px 0 !important;
+    color: #374151 !important; /* 深灰色 */
   }
 
-  /* 月份下拉選單美化 */
   .flatpickr-monthDropdown-months {
-    background: transparent !important;
+    background: #ffffff !important;
     border: none !important;
-    border-radius: 6px !important;
-    padding: 2px 6px !important;
+    border-radius: 4px !important;
+    padding: 0 4px !important;
     cursor: pointer !important;
     font-weight: 700 !important;
-    font-size: 16px !important; /* 同步放大 */
-    color: #1e293b !important;
-    appearance: none !important; /* 移除原生樣式 */
-    transition: background 0.2s;
+    font-size: 16px !important; 
+    color: #374151 !important; 
+    appearance: none !important;
+    height: 28px !important;
   }
   
-  .flatpickr-monthDropdown-months:hover {
-    background: #ecfdf5 !important; /* 翡翠綠淺色背景 */
-    color: #10b981 !important;
-  }
+  .flatpickr-monthDropdown-months:hover { color: #10b981 !important; }
 
-  /* 年份選單樣式 (Flatpickr 年份為數值輸入，美化為下拉質感) */
   .numInput.cur-year {
     font-weight: 700 !important;
-    font-size: 16px !important; /* 同步放大 */
-    color: #1e293b !important;
-    padding: 2px 4px !important;
-    border-radius: 6px !important;
-    transition: background 0.2s;
+    font-size: 16px !important; 
+    color: #374151 !important; 
+    padding: 0 2px !important;
+    background: #ffffff !important;
   }
 
-  .numInput.cur-year:hover {
-    background: #ecfdf5 !important;
+  /* 4. 修正對齊問題：星期標題區 (100% / 7 = 14.2857%) */
+  .flatpickr-weekdays {
+    height: 30px !important;
+    background: #ffffff !important;
+    display: flex !important;
+    width: 100% !important;
+    justify-content: space-between !important;
   }
 
-  /* 3. 縮減日期格子間距 (修正點 2) */
-  .dayContainer {
-    width: 238px !important; /* 緊湊寬度 */
-    min-width: 238px !important;
-    max-width: 238px !important;
-    padding: 0 6px 6px 6px !important;
-  }
-
-  .flatpickr-day {
-    max-width: 34px !important; 
-    height: 34px !important;     
-    line-height: 34px !important; 
-    margin: 0 !important; /* 間距縮減為 0 */
-    border-radius: 8px !important;
+  .flatpickr-weekday {
     font-size: 13px !important;
+    color: #64748b !important;
+    font-weight: 500 !important;
+    flex: 0 0 14.2857% !important; 
+    max-width: 14.2857% !important;
+    display: flex !important;
+    justify-content: center !important;
+    align-items: center !important;
   }
 
-  /* 4. 保持翡翠綠配色樣式 */
+  /* 5. 修正對齊問題：日期格子 (與星期精確對齊) */
+  .flatpickr-day {
+    flex: 0 0 14.2857% !important;
+    max-width: 14.2857% !important; 
+    height: 30px !important;     
+    line-height: 30px !important; 
+    margin: 1px 0 !important; 
+    border-radius: 8px !important;
+    font-size: 14px !important;
+    display: flex !important;
+    justify-content: center !important;
+    align-items: center !important;
+    box-sizing: border-box !important;
+    border: 1px solid transparent !important;
+  }
+
+  /* 6. 保持翡翠綠配色樣式 */
   .flatpickr-day.selected, .flatpickr-day.selected:hover, .flatpickr-day.selected:focus {
     background: #10b981 !important; 
     border-color: #10b981 !important;
@@ -99,10 +120,22 @@
     color: #10b981 !important;
   }
 
-  /* 箭頭美化 */
+  /* 非本月日期 */
+  .flatpickr-day.prevMonthDay, .flatpickr-day.nextMonthDay {
+    color: #e5e7eb !important;
+  }
+
+  /* 箭頭樣式 */
   .flatpickr-prev-month, .flatpickr-next-month {
     padding: 4px !important;
-    margin: 5px !important;
+    margin: 2px !important;
+    height: 30px !important;
+    z-index: 10;
+  }
+
+  .flatpickr-prev-month svg, .flatpickr-next-month svg {
+    width: 12px !important;
+    height: 12px !important;
   }
   
   .flatpickr-prev-month:hover svg, .flatpickr-next-month:hover svg {

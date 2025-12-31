@@ -8,15 +8,21 @@ window.onload = function() {
   // 1. 設定所有日期欄位初始值為今日
   document.querySelectorAll('input[type="date"]').forEach(el => el.value = today);
 
-  // 2. 初始化 Flatpickr 美化日曆
+  // 2. 初始化 Flatpickr
   flatpickr('input[type="date"]', {
     locale: "zh_tw",
     dateFormat: "Y-m-d",
-    disableMobile: "true", 
+    disableMobile: true, 
     allowInput: true,
     static: true, 
-    // 【新增修改】：將月份顯示方式改為下拉選單 (Dropdown)
     monthSelectorType: "dropdown", 
+    onOpen: function(selectedDates, dateStr, instance) {
+      const calendar = instance.calendarContainer;
+      if (calendar) {
+        // 修改此處寬度以匹配 CSS
+        calendar.style.width = "220px"; 
+      }
+    },
     onChange: function(selectedDates, dateStr, instance) {
       if (instance.element.id === 'filterDate') {
         applyLogFilters();
@@ -28,7 +34,7 @@ window.onload = function() {
   renderCalendar();
 };
 
-// 載入醫師、護理師、治療師
+// 載入醫師、護理師、治療師名單
 function loadSystemStaff() {
   google.script.run.withSuccessHandler(staff => {
     const ds = document.getElementById('selectDoctor');
@@ -54,8 +60,14 @@ function loadSystemStaff() {
   }).getSystemStaff();
 }
 
+/**
+ * 修改後的導覽函式：增加基本資料渲染觸發
+ */
 function navTo(viewName) {
-  if (!currentClient && viewName !== 'search') { alert("請先選取個案。"); return; }
+  if (!currentClient && viewName !== 'search') { 
+    alert("請先選取個案。"); 
+    return; 
+  }
   
   const views = ['search', 'basic', 'images', 'treatment', 'maintenance', 'doctor', 'tracking', 'overview'];
   views.forEach(v => {
@@ -70,13 +82,27 @@ function navTo(viewName) {
   const targetBtn = document.getElementById('btn-' + viewName);
   if(targetBtn) targetBtn.classList.add('bg-slate-800', 'text-white', 'font-bold');
 
-  const titles = { 'search':'搜尋','basic':'基本資料','images':'影像總覽','treatment':'治療紀錄','maintenance':'保養項目','doctor':'醫師看診','tracking':'個管追蹤','overview':'個案總覽'};
+  const titles = { 
+    'search':'搜尋',
+    'basic':'基本資料',
+    'images':'影像總覽',
+    'treatment':'治療紀錄',
+    'maintenance':'保養項目',
+    'doctor':'醫師看診',
+    'tracking':'個管追蹤',
+    'overview':'個案總覽'
+  };
   document.getElementById('pageTitle').textContent = titles[viewName] || '康飛運醫';
 
+  // 視圖切換後的自動行為
+  if(viewName === 'basic') renderBasicInfo();
   if(viewName === 'doctor') loadDoctorHistory();
   if(viewName === 'treatment') loadTreatmentHistory();
 }
 
+/**
+ * 處理個案搜尋
+ */
 function handleSearch() {
   const kw = document.getElementById('searchInput').value.trim();
   if (!kw) return;
@@ -89,81 +115,254 @@ function handleSearch() {
       const div = document.createElement('div');
       div.className = "bg-white p-5 rounded-3xl shadow-sm border border-slate-100 hover:border-emerald-500 cursor-pointer transition flex justify-between items-center group";
       div.onclick = () => selectClient(c);
-      div.innerHTML = `<div><div class="font-black text-slate-800">${c['姓名']} <span class="text-xs font-normal text-slate-400">${c['個案編號']}</span></div><div class="text-sm text-slate-400">${c['電話']}</div></div><div class="text-emerald-500 opacity-0 group-hover:opacity-100 transition">選取 →</div>`;
+      div.innerHTML = `
+        <div>
+          <div class="font-black text-slate-800">${c['姓名']} <span class="text-xs font-normal text-slate-400">${c['個案編號']}</span></div>
+          <div class="text-sm text-slate-400">${c['電話']}</div>
+        </div>
+        <div class="text-emerald-500 opacity-0 group-hover:opacity-100 transition">選取 →</div>`;
       container.appendChild(div);
     });
   }).searchClient(kw);
-}
-
+}/**
+ * 選取個案後的初始化動作
+ */
 function selectClient(c) {
   currentClient = c;
+  
+  // 更新頁首個案標籤
   document.getElementById('topBarClientInfo').classList.remove('hidden');
   document.getElementById('headerClientName').textContent = c['姓名'];
   document.getElementById('headerClientDob').textContent = c['生日'];
+  
+  // 自動填寫各分頁表單所需的個案編號
   document.querySelectorAll('.auto-fill-id').forEach(el => el.value = c['個案編號']);
-  navTo('treatment');
+  
+  // 跳轉至基本資料頁面
+  navTo('basic');
 }
 
-// 治療紀錄讀取
+/**
+ * 將目前選取的個案資料填入基本資料頁面
+ */
+function renderBasicInfo() {
+  if (!currentClient) return;
+
+  // 電話格式化函式：將 0912345678 轉為 0912-345-678
+  const formatPhone = (phoneStr) => {
+    if (!phoneStr) return '--';
+    const clean = phoneStr.toString().replace(/\D/g, ''); // 移除所有非數字字元
+    if (clean.length === 10) {
+      return `${clean.substring(0, 4)}-${clean.substring(4, 7)}-${clean.substring(7)}`;
+    }
+    return phoneStr; // 若格式不符則回傳原樣
+  };
+
+  // 填入資料
+  document.getElementById('display-client-id').textContent = currentClient['個案編號'] || '--';
+  document.getElementById('display-name').textContent = currentClient['姓名'] || '--';
+  document.getElementById('display-gender').textContent = currentClient['性別'] || '--';
+  document.getElementById('display-birthday').textContent = currentClient['生日'] || '--';
+  document.getElementById('display-id-number').textContent = currentClient['身分證字號'] || '--';
+  
+  // 格式化電話
+  document.getElementById('display-phone').textContent = formatPhone(currentClient['電話']);
+  
+  // 填入新增的緊急聯絡資訊 (對應 Google Sheets Header)
+  document.getElementById('display-emergency-name').textContent = currentClient['緊急聯絡人'] || '--';
+  document.getElementById('display-emergency-phone').textContent = formatPhone(currentClient['緊急聯絡人電話']);
+  
+  // 處理備註欄位 (對應試算表：慢性病或特殊疾病)
+  const notesText = currentClient['慢性病或特殊疾病'];
+  document.getElementById('display-notes').textContent = (notesText && notesText.trim() !== "") ? notesText : '尚無備註紀錄。';
+}
+
+
+
+
+
+
+/**
+ * 自動辨識性別 (身分證第2碼)
+ */
+function autoDetectGender(input) {
+  const idNo = input.value.trim().toUpperCase();
+  const preview = document.getElementById('genderPreview');
+  
+  if (idNo.length >= 2) {
+    const secondChar = idNo.charAt(1);
+    if (secondChar === '1') {
+      preview.textContent = "男";
+      preview.style.color = "#047857"; // 深綠色
+    } else if (secondChar === '2') {
+      preview.textContent = "女";
+      preview.style.color = "#db2777"; // 桃紅色
+    } else {
+      preview.textContent = "格式錯誤";
+      preview.style.color = "#ef4444"; // 紅色
+    }
+  } else {
+    preview.textContent = "請輸入身分證";
+    preview.style.color = "#059669";
+  }
+}
+
+/**
+ * 建立個案資料：提交至後端
+ */
+function submitNewClient() {
+  // 1. 抓取表單資料
+  const data = {
+    name: document.getElementById('addName').value.trim(),
+    dob: document.getElementById('addDob').value,
+    idNo: document.getElementById('addIdNo').value.trim().toUpperCase(),
+    phone: document.getElementById('addPhone').value.trim(),
+    emerName: document.getElementById('addEmerName').value.trim(),
+    emerPhone: document.getElementById('addEmerPhone').value.trim(),
+    chronic: document.getElementById('addChronic').value.trim(),
+    gender: document.getElementById('genderPreview').textContent
+  };
+
+  // 2. 基礎前端檢查
+  if (!data.name || !data.dob || !data.phone) {
+    alert("請完整填寫姓名、生日與聯絡電話");
+    return;
+  }
+  if (data.gender === "請輸入身分證" || data.gender === "格式錯誤") {
+    alert("請輸入正確的身分證字號以辨識性別");
+    return;
+  }
+
+  // 3. 按鈕 Loading 狀態處理
+  const btn = document.getElementById('btnSubmitClient');
+  const originalText = btn.innerText;
+  btn.disabled = true;
+  btn.innerText = "資料處理中，請稍候...";
+
+  // 4. 呼叫後端 Api.gs
+  google.script.run
+    .withSuccessHandler(function(res) {
+      btn.disabled = false;
+      btn.innerText = originalText;
+
+      if (res.success) {
+        alert("【新增完成】\n個案編號：" + res.clientId);
+        
+        // 關閉彈窗並重設表單
+        closeModal('addClientModal');
+        document.getElementById('addClientForm').reset();
+        document.getElementById('genderPreview').textContent = "請輸入身分證";
+        
+        // 自動載入新個案資料到基本資料頁面
+        selectClient(res.fullData); 
+      } else {
+        alert("錯誤：" + res.message);
+      }
+    })
+    .withFailureHandler(function(err) {
+      btn.disabled = false;
+      btn.innerText = originalText;
+      alert("系統連線失敗：" + err);
+    })
+    .createNewClient(data);
+}
+
+
+/**
+ * 載入個案的治療紀錄歷史
+ */
 function loadTreatmentHistory() {
   const container = document.getElementById('historyListContainer');
-  container.innerHTML = '<div class="text-center py-10 text-slate-400">讀取中...</div>';
+  container.innerHTML = `
+    <div class="flex flex-col items-center justify-center py-20 text-slate-300">
+      <div class="loader mb-4"></div>
+      <p class="text-sm font-medium">紀錄載入中...</p>
+    </div>`;
+
   google.script.run.withSuccessHandler(logs => {
-    allTreatmentLogs = logs;
+    allTreatmentLogs = logs || [];
     applyLogFilters();
   }).getClientHistory(currentClient['個案編號'], 'Treatment_Logs');
 }
 
+/**
+ * 根據左側篩選器過濾紀錄
+ */
 function applyLogFilters() {
-  const t = document.getElementById('filterTherapist').value;
-  const d = document.getElementById('filterDate').value;
+  const therapistFilter = document.getElementById('filterTherapist').value;
+  const dateFilter = document.getElementById('filterDate').value;
+
   const filtered = allTreatmentLogs.filter(log => {
-    let mt = t ? log['執行治療師'] === t : true;
-    let md = d ? log['治療日期'].includes(d) : true;
-    return mt && md;
+    // 欄位名稱請對應試算表標題：執行治療師、治療日期
+    let matchTherapist = therapistFilter ? log['執行治療師'] === therapistFilter : true;
+    let matchDate = dateFilter ? (log['治療日期'] && log['治療日期'].includes(dateFilter)) : true;
+    return matchTherapist && matchDate;
   });
+
   renderTreatmentList(filtered);
 }
 
+/**
+ * 渲染治療紀錄列表至 UI
+ */
 function renderTreatmentList(logs) {
   const container = document.getElementById('historyListContainer');
-  if(!logs.length) { container.innerHTML = '<div class="text-center py-10 text-slate-300">無紀錄</div>'; return; }
+  
+  if (!logs || logs.length === 0) {
+    container.innerHTML = `
+      <div class="bg-white border border-dashed border-slate-200 rounded-3xl py-16 text-center">
+        <p class="text-slate-400 text-sm">此篩選條件下無任何紀錄</p>
+      </div>`;
+    return;
+  }
+
   let html = '';
   logs.forEach(log => {
     html += `
-      <div class="bg-white p-5 rounded-2xl shadow-sm border border-slate-50 border-l-4 border-l-emerald-500">
-        <div class="flex justify-between items-center mb-2">
-          <span class="text-xs font-bold text-slate-400">${log['治療日期']}</span>
-          <span class="text-sm font-bold text-emerald-600">${log['執行治療師']}</span>
+      <div class="bg-white p-6 rounded-3xl shadow-sm border border-slate-100 border-l-4 border-l-emerald-500 transition hover:shadow-md">
+        <div class="flex justify-between items-center mb-3">
+          <div class="flex items-center gap-2">
+            <span class="text-xs font-bold text-slate-400 bg-slate-50 px-2 py-1 rounded-lg">${log['治療日期'] || '--'}</span>
+          </div>
+          <span class="text-sm font-black text-emerald-600">${log['執行治療師'] || '--'}</span>
         </div>
-        <p class="text-xs text-slate-400 mb-2">主訴: ${log['當日主訴']||'--'}</p>
-        <p class="text-sm text-slate-700 whitespace-pre-wrap">${log['治療內容']}</p>
+        <div class="space-y-3">
+          ${log['當日主訴'] ? `
+          <div class="flex gap-2">
+            <span class="text-[10px] font-bold text-slate-300 uppercase mt-1">S</span>
+            <p class="text-xs text-slate-400 italic">主訴：${log['當日主訴']}</p>
+          </div>` : ''}
+          <div class="flex gap-2">
+            <span class="text-[10px] font-bold text-emerald-300 uppercase mt-1">P</span>
+            <p class="text-sm text-slate-700 leading-relaxed whitespace-pre-wrap">${log['治療內容'] || '--'}</p>
+          </div>
+        </div>
       </div>`;
   });
   container.innerHTML = html;
-}/**
+}
+
+/**
  * 統一處理表單提交
  */
 function submitForm(type) {
   if (!currentClient) { alert("請先選擇個案"); return; }
 
-  // --- 醫師看診儲存邏輯 ---
   if (type === 'doctor') {
     const formData = {
       clientId: currentClient['個案編號'],
-      date: document.getElementById('doctorDate').value,
+      date: document.getElementById('doctorConsultDate').value, // 已對應 Index.html 修正後的 ID
       doctor: document.getElementById('selectDoctor').value,
       nurse: document.getElementById('selectNurse').value,
       complaint: document.querySelector('#view-doctor textarea[name="主訴"]').value,
       objective: document.querySelector('#view-doctor textarea[name="客觀檢查"]').value,
       diagnosis: document.querySelector('#view-doctor textarea[name="診斷"]').value,
       plan: document.querySelector('#view-doctor textarea[name="治療計畫"]').value,
-      remark: document.getElementById('doctorRemark').value // 抓取備註資料
+      remark: document.getElementById('doctorRemark').value
     };
 
     if (!formData.date || !formData.doctor) { alert("請填寫日期與醫師"); return; }
 
-    // 儲存按鈕狀態切換 (Loading 效果)
     const btn = event.target;
     const originalText = btn.innerText;
     btn.disabled = true;
@@ -174,30 +373,23 @@ function submitForm(type) {
         btn.disabled = false;
         btn.innerText = originalText;
         alert(res.message);
-        
         if(res.success) {
-          // 重置表單
           document.getElementById('doctorForm').reset();
-          
-          // 【關鍵修改位置】：手動清空備註欄位，確保 UI 完全乾淨
           document.getElementById('doctorRemark').value = '';
-          
-          // 重新整理歷史列表以顯示最新資料
           loadDoctorHistory(); 
         }
       })
       .withFailureHandler(err => {
         btn.disabled = false;
         btn.innerText = originalText;
-        alert("儲存失敗（系統錯誤）：" + err);
+        alert("儲存失敗：" + err);
       })
       .saveDoctorConsultation(formData);
 
-  // --- 治療紀錄儲存邏輯 ---
   } else if (type === 'treatment') {
     const formData = {
       '個案編號': currentClient['個案編號'],
-      '治療日期': document.getElementById('inputDate').value,
+      '治療日期': document.getElementById('treatmentDate').value, // 已對應 Index.html 修正後的 ID
       '執行治療師': document.getElementById('inputTherapist').value,
       '當日主訴': document.getElementById('inputComplaint').value,
       '治療內容': document.getElementById('inputContent').value
@@ -218,7 +410,7 @@ function submitForm(type) {
 }
 
 /**
- * 醫師歷史紀錄渲染：顯示完整 SOAP (S, O, A, P) + 備註
+ * 醫師歷史紀錄渲染
  */
 function loadDoctorHistory() {
   const container = document.getElementById('doctorHistoryList');
@@ -234,7 +426,6 @@ function loadDoctorHistory() {
     logs.forEach(log => {
       html += `
         <div class="bg-white border border-slate-100 rounded-3xl p-8 shadow-sm mb-6 transition hover:shadow-md">
-          <!-- 頂部資訊：日期、醫師、護理師 -->
           <div class="flex justify-between items-center mb-6">
             <span class="text-xs font-bold bg-emerald-50 text-emerald-600 px-4 py-1.5 rounded-full ring-1 ring-emerald-100">
               ${log['看診日期'] || '--'}
@@ -245,42 +436,25 @@ function loadDoctorHistory() {
             </span>
           </div>
           
-          <!-- 核心 SOAP 2x2 網格 -->
           <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6 text-xs">
-            <!-- S: 主訴 -->
             <div class="bg-blue-50/50 p-4 rounded-2xl border border-blue-100">
-              <p class="text-blue-600 mb-2 font-black flex items-center gap-1.5">
-                <span class="w-1.5 h-1.5 bg-blue-500 rounded-full"></span>主訴 (S)
-              </p>
+              <p class="text-blue-600 mb-2 font-black flex items-center gap-1.5"><span class="w-1.5 h-1.5 bg-blue-500 rounded-full"></span>主訴 (S)</p>
               <div class="text-slate-700 leading-relaxed whitespace-pre-wrap">${log['S_主訴'] || '--'}</div>
             </div>
-            
-            <!-- O: 檢查 -->
             <div class="bg-indigo-50/50 p-4 rounded-2xl border border-indigo-100">
-              <p class="text-indigo-600 mb-2 font-black flex items-center gap-1.5">
-                <span class="w-1.5 h-1.5 bg-indigo-500 rounded-full"></span>客觀檢查 (O)
-              </p>
+              <p class="text-indigo-600 mb-2 font-black flex items-center gap-1.5"><span class="w-1.5 h-1.5 bg-indigo-500 rounded-full"></span>客觀檢查 (O)</p>
               <div class="text-slate-700 leading-relaxed whitespace-pre-wrap">${log['O_客觀檢查'] || '--'}</div>
             </div>
-            
-            <!-- A: 診斷 -->
             <div class="bg-amber-50/50 p-4 rounded-2xl border border-amber-100">
-              <p class="text-amber-600 mb-2 font-black flex items-center gap-1.5">
-                <span class="w-1.5 h-1.5 bg-amber-500 rounded-full"></span>診斷評估 (A)
-              </p>
+              <p class="text-amber-600 mb-2 font-black flex items-center gap-1.5"><span class="w-1.5 h-1.5 bg-amber-500 rounded-full"></span>診斷評估 (A)</p>
               <div class="text-slate-700 leading-relaxed whitespace-pre-wrap">${log['A_診斷'] || '--'}</div>
             </div>
-            
-            <!-- P: 計畫 -->
             <div class="bg-emerald-50/50 p-4 rounded-2xl border border-emerald-100">
-              <p class="text-emerald-600 mb-2 font-black flex items-center gap-1.5">
-                <span class="w-1.5 h-1.5 bg-emerald-500 rounded-full"></span>治療計畫 (P)
-              </p>
+              <p class="text-emerald-600 mb-2 font-black flex items-center gap-1.5"><span class="w-1.5 h-1.5 bg-emerald-500 rounded-full"></span>治療計畫 (P)</p>
               <div class="text-slate-700 leading-relaxed whitespace-pre-wrap">${log['P_治療計劃'] || '--'}</div>
             </div>
           </div>
 
-          <!-- 備註區塊 (若有內容才顯示) -->
           ${log['備註'] && log['備註'] !== '--' ? `
           <div class="bg-slate-50 p-5 rounded-2xl border border-dashed border-slate-200">
             <p class="text-slate-400 mb-2 font-black text-[10px] uppercase tracking-widest flex items-center gap-1.5">
@@ -295,10 +469,14 @@ function loadDoctorHistory() {
   }).getClientHistory(currentClient['個案編號'], 'Doctor_Consultation');
 }
 
+
+
 // 基礎工具函數
 function openModal(id) { document.getElementById(id).classList.remove('hidden'); }
 function closeModal(id) { document.getElementById(id).classList.add('hidden'); }
 function resetSearch() { currentClient = null; document.getElementById('topBarClientInfo').classList.add('hidden'); navTo('search'); }
-function renderCalendar() { /* 支援治療紀錄分頁的月曆渲染 */ }
+function renderCalendar() { /* 月曆渲染邏輯保留 */ }
+function editClientInfo() { alert("編輯功能開發中..."); }
+
 
 </script>

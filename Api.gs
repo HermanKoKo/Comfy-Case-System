@@ -143,6 +143,64 @@ function saveDoctorConsultation(formData) {
 }
 
 /**
+ * 後端：寫入試算表並建立 Google Drive 資料夾
+ */
+function createNewClient(data) {
+  try {
+    const ss = SpreadsheetApp.openById(CONFIG.SPREADSHEET_ID);
+    const sheet = ss.getSheetByName("Client_Basic_Info");
+    
+    // 1. 自動產生個案編號 (CF + 當天年月日 + 3位流水)
+    const now = new Date();
+    const datePart = Utilities.formatDate(now, "GMT+8", "yyyyMMdd");
+    const lastRow = sheet.getLastRow();
+    // 簡單流水號邏輯：直接取行數
+    const suffix = (lastRow + 1).toString().padStart(3, '0');
+    const clientId = "CF" + datePart + suffix;
+
+    // 2. 自動建立 Google Drive 資料夾
+    let folderUrl = "";
+    try {
+      // 在根目錄建立資料夾 (建議之後可在 CONFIG 指定父資料夾 ID)
+      const folder = DriveApp.createFolder(clientId + "_" + data.name);
+      folderUrl = folder.getUrl();
+    } catch (e) {
+      folderUrl = "資料夾建立失敗";
+    }
+
+    // 3. 準備寫入的資料列 (順序對應您的圖1)
+    // A:編號, B:姓名, C:生日, D:身分證, E:電話, F:性別, G:緊急聯絡人, H:緊急聯絡電話, I:慢性病, J:Drive, K:建立日期
+    const newRow = [
+      clientId,           // A
+      data.name,          // B
+      data.dob,           // C
+      data.idNo,          // D
+      "'" + data.phone,   // E (加 ' 符號防止科學符號)
+      data.gender,        // F
+      data.emerName,      // G
+      "'" + data.emerPhone,// H
+      data.chronic,       // I
+      folderUrl,          // J
+      now                 // K
+    ];
+
+    sheet.appendRow(newRow);
+
+    // 4. 回傳完整個案物件供前端渲染
+    const headers = sheet.getRange(1, 1, 1, sheet.getLastColumn()).getValues()[0];
+    const fullData = {};
+    headers.forEach((h, i) => {
+      fullData[h] = newRow[i];
+    });
+
+    return { success: true, clientId: clientId, fullData: fullData };
+
+  } catch (e) {
+    return { success: false, message: e.toString() };
+  }
+}
+
+/**
  * 獲取個案歷史紀錄 (通用)
  * 修正：針對不同工作表的日期欄位進行精確排序 (由新到舊)
  */
