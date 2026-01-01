@@ -4,6 +4,7 @@ let allTreatmentLogs = [];
 let allOverviewRecords = []; 
 let currentOverviewCategory = 'all'; 
 let currentCalDate = new Date();
+let isMonthPickerMode = false; // ★ 新增：控制是否顯示年月選單
 
 window.onload = function() {
   const today = new Date().toISOString().split('T')[0];
@@ -17,13 +18,19 @@ window.onload = function() {
     dateFormat: "Y-m-d",
     disableMobile: true, 
     allowInput: true,
-    static: true, // 強制靜態定位，防止漂浮
+    static: true, 
     onOpen: function(selectedDates, dateStr, instance) {
       if(instance.calendarContainer) instance.calendarContainer.style.width = "220px"; 
     },
     onChange: function(selectedDates, dateStr, instance) {
       if (instance.element.id === 'filterDate') {
         applyLogFilters();
+        // 當透過 input 更改日期時，確保月曆切換到該月並顯示日曆模式
+        if (selectedDates.length > 0) {
+          currentCalDate = new Date(selectedDates[0]);
+          isMonthPickerMode = false;
+          renderTreatmentCalendar();
+        }
       }
     }
   });
@@ -531,31 +538,141 @@ function printOverviewReport() {
   window.print();
 }
 
+// ★★★ 核心修改：渲染治療月曆 (支援兩種模式：日曆 / 年月選單) ★★★
 function renderTreatmentCalendar() {
   const container = document.getElementById('treatmentCalendar');
   if(!container) return;
+  
   const year = currentCalDate.getFullYear();
-  const month = currentCalDate.getMonth();
+  const month = currentCalDate.getMonth(); // 0-11
   const monthNames = ["1月", "2月", "3月", "4月", "5月", "6月", "7月", "8月", "9月", "10月", "11月", "12月"];
-  let html = `<div class="cal-header flex justify-between items-center mb-4"><button onclick="changeCalMonth(-1)" class="p-1 hover:bg-slate-100 rounded-lg text-slate-400 hover:text-emerald-500 transition"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M15 19l-7-7 7-7"></path></svg></button><div class="font-bold text-slate-700 text-sm">${year}年 ${monthNames[month]}</div><button onclick="changeCalMonth(1)" class="p-1 hover:bg-slate-100 rounded-lg text-slate-400 hover:text-emerald-500 transition"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M9 5l7 7-7 7"></path></svg></button></div><div class="grid grid-cols-7 gap-1 text-center"><div class="text-[10px] text-slate-400 font-bold py-1">日</div><div class="text-[10px] text-slate-400 font-bold py-1">一</div><div class="text-[10px] text-slate-400 font-bold py-1">二</div><div class="text-[10px] text-slate-400 font-bold py-1">三</div><div class="text-[10px] text-slate-400 font-bold py-1">四</div><div class="text-[10px] text-slate-400 font-bold py-1">五</div><div class="text-[10px] text-slate-400 font-bold py-1">六</div>`;
-  const firstDay = new Date(year, month, 1).getDay();
-  const daysInMonth = new Date(year, month + 1, 0).getDate();
-  const todayStr = new Date().toISOString().split('T')[0];
-  const recordedDates = new Set(allTreatmentLogs.map(log => log['治療日期']));
-  for (let i = 0; i < firstDay; i++) html += `<div class="h-8"></div>`;
-  for (let day = 1; day <= daysInMonth; day++) {
-    const dateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
-    const isToday = dateStr === todayStr ? 'bg-slate-800 text-white shadow-md' : 'text-slate-600 hover:bg-slate-50';
-    const hasRecord = recordedDates.has(dateStr) ? 'ring-1 ring-emerald-400 bg-emerald-50 text-emerald-700 font-bold' : '';
-    const finalClass = (dateStr === todayStr) ? 'bg-slate-800 text-white shadow-md' : hasRecord;
-    const dot = (recordedDates.has(dateStr) && dateStr === todayStr) ? '<span class="absolute bottom-0.5 w-1 h-1 bg-emerald-400 rounded-full"></span>' : '';
-    html += `<div onclick="selectDateFromCal('${dateStr}')" class="h-8 w-8 mx-auto flex flex-col items-center justify-center rounded-full cursor-pointer text-xs transition relative ${finalClass}">${day}${dot}</div>`;
+  
+  let html = '';
+
+  // --- 模式 A: 年月選擇模式 (顯示 12 個月份格子) ---
+  if (isMonthPickerMode) {
+    // Header: 只能切換年份
+    html += `
+      <div class="cal-header">
+        <button type="button" onclick="changePickerYear(-1)" class="p-1 hover:bg-slate-100 rounded-lg text-slate-400 hover:text-emerald-500 transition">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path></svg>
+        </button>
+        
+        <div class="cal-title-btn bg-slate-100 text-emerald-600" onclick="toggleMonthPicker()">
+          <span>${year}年</span>
+          <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 15l7-7 7 7"></path></svg>
+        </div>
+        
+        <button type="button" onclick="changePickerYear(1)" class="p-1 hover:bg-slate-100 rounded-lg text-slate-400 hover:text-emerald-500 transition">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path></svg>
+        </button>
+      </div>
+
+      <div class="cal-month-grid">
+    `;
+
+    // 產生 12 個月份按鈕
+    for (let m = 0; m < 12; m++) {
+      // 標示出當前選中的月份
+      const isCurrent = (m === month) ? 'is-current' : '';
+      html += `<div onclick="selectMonthFromPicker(${m})" class="cal-month-item ${isCurrent}">${m + 1}月</div>`;
+    }
+    html += `</div>`;
+
+  } 
+  // --- 模式 B: 標準日曆模式 (顯示日期格子) ---
+  else {
+    // 取得資料狀態
+    const selectedDateVal = document.getElementById('filterDate').value; 
+    const recordedDates = new Set(allTreatmentLogs.map(log => log['治療日期'] ? log['治療日期'].trim() : ""));
+
+    // Header: 切換月份
+    html += `
+      <div class="cal-header">
+        <button type="button" onclick="changeCalMonth(-1)" class="p-1 hover:bg-slate-100 rounded-lg text-slate-400 hover:text-emerald-500 transition">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path></svg>
+        </button>
+        
+        <div class="cal-title-btn" onclick="toggleMonthPicker()" title="切換年份月份">
+          <span>${year}年 ${monthNames[month]}</span>
+          <svg class="w-3 h-3 text-slate-300" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
+        </div>
+        
+        <button type="button" onclick="changeCalMonth(1)" class="p-1 hover:bg-slate-100 rounded-lg text-slate-400 hover:text-emerald-500 transition">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path></svg>
+        </button>
+      </div>
+      
+      <div class="cal-grid">
+        <div class="cal-weekday" style="color:#ef4444">日</div>
+        <div class="cal-weekday">一</div>
+        <div class="cal-weekday">二</div>
+        <div class="cal-weekday">三</div>
+        <div class="cal-weekday">四</div>
+        <div class="cal-weekday">五</div>
+        <div class="cal-weekday">六</div>
+    `;
+
+    const firstDay = new Date(year, month, 1).getDay();
+    const daysInMonth = new Date(year, month + 1, 0).getDate();
+    
+    for (let i = 0; i < firstDay; i++) {
+      html += `<div class="cal-day other-month"></div>`;
+    }
+
+    for (let day = 1; day <= daysInMonth; day++) {
+      const dateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+      let classList = "cal-day";
+      
+      if (dateStr === selectedDateVal) classList += " is-selected";
+      if (recordedDates.has(dateStr)) classList += " has-record";
+      
+      html += `<div onclick="selectDateFromCal('${dateStr}')" class="${classList}">${day}</div>`;
+    }
+    html += `</div>`;
   }
-  html += `</div>`; container.innerHTML = html;
+  
+  container.innerHTML = html;
 }
 
-function changeCalMonth(offset) { currentCalDate.setMonth(currentCalDate.getMonth() + offset); renderTreatmentCalendar(); }
-function selectDateFromCal(date) { document.getElementById('filterDate').value = date; applyLogFilters(); }
+// 切換「日曆模式」與「年月選單模式」
+function toggleMonthPicker() {
+  isMonthPickerMode = !isMonthPickerMode;
+  renderTreatmentCalendar();
+}
+
+// 在選單模式中切換年份
+function changePickerYear(offset) {
+  currentCalDate.setFullYear(currentCalDate.getFullYear() + offset);
+  renderTreatmentCalendar();
+}
+
+// 選擇月份後，回到日曆模式
+function selectMonthFromPicker(newMonth) {
+  currentCalDate.setMonth(newMonth);
+  isMonthPickerMode = false; // 關閉選單
+  renderTreatmentCalendar(); // 重繪日曆
+}
+
+// 在日曆模式中切換月份
+function changeCalMonth(offset) { 
+  currentCalDate.setMonth(currentCalDate.getMonth() + offset); 
+  renderTreatmentCalendar(); 
+}
+
+// 選擇日期
+function selectDateFromCal(date) { 
+  const dateInput = document.getElementById('filterDate');
+  if (dateInput) {
+    if (dateInput._flatpickr) {
+      dateInput._flatpickr.setDate(date, true);
+    } else {
+      dateInput.value = date;
+      applyLogFilters();
+    }
+  }
+  renderTreatmentCalendar();
+}
 
 function resetTreatmentFilter() {
   const therapistSelect = document.getElementById('filterTherapist');
@@ -569,6 +686,9 @@ function resetTreatmentFilter() {
     }
   }
   applyLogFilters();
+  // 重置時切換回日曆模式
+  isMonthPickerMode = false;
+  currentCalDate = new Date();
   renderTreatmentCalendar();
 }
 
