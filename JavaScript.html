@@ -284,7 +284,7 @@ function navTo(viewName) {
   if(viewName === 'tracking') loadTrackingHistory();
   if(viewName === 'overview') loadOverviewData(); 
   
-  // ★ 新增：載入影像資料
+  // 載入影像資料
   if(viewName === 'images') loadClientImages();
 }
 
@@ -486,19 +486,32 @@ function submitForm(type) {
   if (!currentClient) { alert("請先選擇個案"); return; }
   const btn = type === 'tracking' ? document.querySelector('#trackingForm button[type="submit"]') : event.target;
   const originalText = btn ? btn.innerText : "儲存"; if(btn) { btn.disabled = true; btn.innerText = "儲存中..."; }
+  
   if (type === 'doctor') {
     const formData = { clientId: currentClient['個案編號'], date: document.getElementById('doctorConsultDate').value, doctor: document.getElementById('selectDoctor').value, nurse: document.getElementById('selectNurse').value, complaint: document.querySelector('#view-doctor textarea[name="主訴"]').value, objective: document.querySelector('#view-doctor textarea[name="客觀檢查"]').value, diagnosis: document.querySelector('#view-doctor textarea[name="診斷"]').value, plan: document.querySelector('#view-doctor textarea[name="治療計畫"]').value, remark: document.getElementById('doctorRemark').value };
     if (!formData.date || !formData.doctor) { alert("請填寫日期與醫師"); if(btn){btn.disabled=false; btn.innerText=originalText;} return; }
     google.script.run.withSuccessHandler(res => { if(btn){btn.disabled=false; btn.innerText=originalText;} if (res && res.message) { alert(res.message); if(res.success){ document.getElementById('doctorForm').reset(); loadDoctorHistory(); } } }).saveDoctorConsultation(formData);
+  
   } else if (type === 'treatment') {
-    const formData = { '個案編號': currentClient['個案編號'], '治療日期': document.getElementById('treatmentDate').value, '執行治療師': document.getElementById('inputTherapist').value, '當日主訴': document.getElementById('inputComplaint').value, '治療內容': document.getElementById('inputContent').value };
+    // ★★★ 修改處：新增 '備註/下次治療' 欄位 ★★★
+    const formData = { 
+      '個案編號': currentClient['個案編號'], 
+      '治療日期': document.getElementById('treatmentDate').value, 
+      '執行治療師': document.getElementById('inputTherapist').value, 
+      '當日主訴': document.getElementById('inputComplaint').value, 
+      '治療內容': document.getElementById('inputContent').value,
+      '備註/下次治療': document.getElementById('inputNextPlan').value // 對應 Index.html 新增的 ID
+    };
+    
     if (!formData['治療日期'] || !formData['執行治療師']) { alert("請填寫日期與治療師"); if(btn){btn.disabled=false; btn.innerText=originalText;} return; }
     google.script.run.withSuccessHandler(res => { if(btn){btn.disabled=false; btn.innerText=originalText;} if (res && res.message) { alert(res.message); if(res.success){ document.getElementById('treatmentForm').reset(); loadTreatmentHistory(); } } }).saveData('Treatment_Logs', formData);
+  
   } else if (type === 'maintenance') {
     const form = document.getElementById('maintenanceForm');
     const formData = { clientId: currentClient['個案編號'], date: document.getElementById('maintenanceDate').value, staff: document.getElementById('selectMaintStaff').value, item: document.getElementById('selectMaintItem').value, bp: form.querySelector('input[name="血壓"]').value, spo2: form.querySelector('input[name="血氧"]').value, hr: form.querySelector('input[name="心律"]').value, temp: form.querySelector('input[name="體溫"]').value, remark: form.querySelector('textarea[name="備註"]').value };
     if (!formData.date || !formData.staff || !formData.item) { alert("請完整填寫日期、人員與項目"); if(btn){btn.disabled=false; btn.innerText=originalText;} return; }
     google.script.run.withSuccessHandler(res => { if(btn){btn.disabled=false; btn.innerText=originalText;} if (res && res.message) { alert(res.message); if(res.success){ form.reset(); document.getElementById('maintenanceDate').value = new Date().toISOString().split('T')[0]; loadMaintenanceHistory(); } } }).saveMaintenanceRecord(formData);
+  
   } else if (type === 'tracking') {
     const formData = { clientId: currentClient['個案編號'], trackDate: document.getElementById('trackDate').value, trackStaff: document.getElementById('trackStaff').value, trackType: document.getElementById('trackType').value, content: document.getElementById('trackContent').value };
     if (!formData.trackDate || !formData.trackStaff || !formData.trackType || !formData.content) { alert("請完整填寫日期、人員、項目與內容"); if(btn) { btn.disabled = false; btn.innerText = originalText; } return; }
@@ -549,7 +562,7 @@ function applyLogFilters() {
 
 function renderTreatmentList(logs) {
   const container = document.getElementById('historyListContainer'); if(!logs.length) { container.innerHTML = '<div class="text-center py-10 text-slate-300">無紀錄</div>'; return; }
-  let html = ''; logs.forEach(log => { html += `<div class="bg-white p-5 rounded-2xl shadow-sm border border-slate-50 border-l-4 border-l-emerald-500 mb-4"><div class="flex justify-between items-center mb-2"><span class="text-xs font-bold text-slate-400">${log['治療日期']}</span><span class="text-sm font-bold text-emerald-600">${log['執行治療師']}</span></div><p class="text-xs text-slate-400 mb-2">主訴: ${log['當日主訴']||'--'}</p><p class="text-sm text-slate-700 whitespace-pre-wrap">${log['治療內容']}</p></div>`; }); container.innerHTML = html;
+  let html = ''; logs.forEach(log => { html += `<div class="bg-white p-5 rounded-2xl shadow-sm border border-slate-50 border-l-4 border-l-emerald-500 mb-4"><div class="flex justify-between items-center mb-2"><span class="text-xs font-bold text-slate-400">${log['治療日期']}</span><span class="text-sm font-bold text-emerald-600">${log['執行治療師']}</span></div><p class="text-xs text-slate-400 mb-2">主訴: ${log['當日主訴']||'--'}</p><p class="text-sm text-slate-700 whitespace-pre-wrap">${log['治療內容']}</p>${log['備註/下次治療'] ? `<p class="mt-2 text-xs text-slate-500 bg-slate-50 p-2 rounded">備註: ${log['備註/下次治療']}</p>` : ''}</div>`; }); container.innerHTML = html;
 }
 
 function loadOverviewData() {
