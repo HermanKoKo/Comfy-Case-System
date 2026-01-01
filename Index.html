@@ -220,12 +220,13 @@
                </div>
             </div>
             
-            <!-- 右側：新增表單 -->
+            <!-- 右側：新增表單 (修改重點) -->
             <div class="lg:col-span-2">
-               <form id="treatmentForm" class="bg-white p-4 rounded-[2.5rem] shadow-sm border-t-4 border-emerald-500 border-x border-b border-slate-100 space-y-2 h-full">
+               <!-- 修改：使用 flex flex-col 讓內部元素可以自動填滿高度 -->
+               <form id="treatmentForm" class="bg-white p-4 rounded-[2.5rem] shadow-sm border-t-4 border-emerald-500 border-x border-b border-slate-100 h-full flex flex-col gap-2">
                  
                  <!-- 表單標題 -->
-                 <div class="flex items-center justify-between mb-2">
+                 <div class="flex items-center justify-between">
                    <h3 class="font-black text-slate-800 text-lg flex items-center gap-2">
                      <span class="material-icons-outlined text-2xl text-emerald-500">add_circle</span> 新增治療紀錄
                    </h3>
@@ -260,10 +261,10 @@
                    <textarea id="inputComplaint" class="w-full px-5 py-2.5 bg-slate-50 border border-slate-100 rounded-2xl outline-none focus:border-emerald-500 transition-all h-14 resize-none"></textarea>
                  </div>
 
-                 <!-- 治療內容 (修改：放大高度至 h-48) -->
-                 <div class="space-y-1">
+                 <!-- 治療內容 (修改：加入 flex-1 讓它自動佔滿剩餘空間，textarea 高度設為 h-full) -->
+                 <div class="space-y-1 flex-1 flex flex-col">
                    <label class="text-xs font-bold text-slate-400 ml-1">治療內容</label>
-                   <textarea id="inputContent" required class="w-full px-5 py-2.5 bg-slate-50 border border-slate-100 rounded-2xl outline-none focus:border-emerald-500 transition-all h-48 resize-none"></textarea>
+                   <textarea id="inputContent" required class="w-full px-5 py-2.5 bg-slate-50 border border-slate-100 rounded-2xl outline-none focus:border-emerald-500 transition-all h-full resize-none"></textarea>
                  </div>
                  
                  <!-- 備註 / 下次治療 -->
@@ -272,7 +273,7 @@
                    <textarea id="inputNextPlan" class="w-full px-5 py-2.5 bg-slate-50 border border-slate-100 rounded-2xl outline-none focus:border-emerald-500 transition-all h-14 resize-none"></textarea>
                  </div>
                  
-                 <button type="button" onclick="submitForm('treatment')" class="w-full bg-emerald-500 hover:bg-emerald-600 text-white font-black py-3 rounded-2xl shadow-lg shadow-emerald-500/20 transition-all active:scale-[0.98] mt-1">
+                 <button type="button" onclick="submitForm('treatment')" class="w-full bg-emerald-500 hover:bg-emerald-600 text-white font-black py-3 rounded-2xl shadow-lg shadow-emerald-500/20 transition-all active:scale-[0.98]">
                    儲存治療紀錄
                  </button>
                </form>
