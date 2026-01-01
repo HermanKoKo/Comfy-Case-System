@@ -11,20 +11,13 @@ window.onload = function() {
   // 1. 設定表單類日期欄位初始值為今日
   document.querySelectorAll('#treatmentDate, #maintenanceDate, #doctorConsultDate, #trackDate').forEach(el => el.value = today);
 
-  // ★★★ 修復按鈕 Icon 問題 ★★★
-  // 強制將介面上的「醫師看診」按鈕圖示改為支援度較高的 'medical_services'
-  const doctorBtnIcon = document.querySelector('#filter-btn-doctor span.material-icons-outlined');
-  if(doctorBtnIcon) {
-    doctorBtnIcon.textContent = 'medical_services';
-  }
-
   // 2. 初始化一般日期選單 (Flatpickr)
   flatpickr('input[type="date"], #trackDate', {
     locale: "zh_tw",
     dateFormat: "Y-m-d",
     disableMobile: true, 
     allowInput: true,
-    static: true, 
+    static: true, // 強制靜態定位，防止漂浮
     onOpen: function(selectedDates, dateStr, instance) {
       if(instance.calendarContainer) instance.calendarContainer.style.width = "220px"; 
     },
@@ -57,6 +50,8 @@ window.onload = function() {
  * 載入系統下拉選單內容
  */
 function loadSystemStaff() {
+  if (typeof google === 'undefined' || !google.script) return;
+
   google.script.run.withSuccessHandler(staff => {
     const ds = document.getElementById('selectDoctor');
     if(ds) {
@@ -141,21 +136,52 @@ function navTo(viewName) {
  * 處理個案搜尋
  */
 function handleSearch() {
-  const kw = document.getElementById('searchInput').value.trim();
-  if (!kw) return;
+  const inputEl = document.getElementById('searchInput');
+  if (!inputEl) return;
+
+  const kw = inputEl.value.trim();
+  
+  if (!kw) {
+    alert("請輸入姓名或電話號碼");
+    inputEl.focus();
+    return;
+  }
+
   const container = document.getElementById('searchResults');
-  container.innerHTML = '<div class="text-center py-10 text-slate-400">搜尋中...</div>';
-  google.script.run.withSuccessHandler(data => {
-    container.innerHTML = '';
-    if(data.length === 0) { container.innerHTML = '<div class="text-center py-10">查無資料</div>'; return; }
-    data.forEach(c => {
-      const div = document.createElement('div');
-      div.className = "bg-white p-5 rounded-3xl shadow-sm border border-slate-100 hover:border-emerald-500 cursor-pointer transition flex justify-between items-center group";
-      div.onclick = () => selectClient(c);
-      div.innerHTML = `<div><div class="font-black text-slate-800">${c['姓名']} <span class="text-xs font-normal text-slate-400">${c['個案編號']}</span></div><div class="text-sm text-slate-400">${c['電話']}</div></div><div class="text-emerald-500 opacity-0 group-hover:opacity-100 transition">選取 →</div>`;
-      container.appendChild(div);
-    });
-  }).searchClient(kw);
+  container.innerHTML = '<div class="text-center py-10 text-slate-400 flex flex-col items-center gap-2"><span class="material-icons-outlined animate-spin">sync</span><span>搜尋中...</span></div>';
+
+  if (typeof google === 'undefined' || !google.script) {
+    container.innerHTML = '<div class="text-center py-10 text-red-400">無法連接後端資料庫</div>';
+    return;
+  }
+
+  google.script.run
+    .withSuccessHandler(data => {
+      container.innerHTML = '';
+      if(data.length === 0) { 
+        container.innerHTML = '<div class="text-center py-10 text-slate-400 bg-slate-50 rounded-2xl border border-dashed border-slate-200">查無資料</div>'; 
+        return; 
+      }
+      
+      data.forEach(c => {
+        const div = document.createElement('div');
+        div.className = "bg-white p-5 rounded-3xl shadow-sm border border-slate-100 hover:border-emerald-500 cursor-pointer transition flex justify-between items-center group mb-3";
+        div.onclick = () => selectClient(c);
+        div.innerHTML = `
+          <div>
+            <div class="font-black text-slate-800 text-lg">${c['姓名']} <span class="text-xs font-normal text-slate-400 ml-1 bg-slate-100 px-2 py-0.5 rounded-full">${c['個案編號']}</span></div>
+            <div class="text-sm text-slate-400 mt-1 flex items-center gap-1"><span class="material-icons-outlined text-[14px]">phone</span> ${c['電話']}</div>
+          </div>
+          <div class="text-emerald-500 font-bold opacity-0 group-hover:opacity-100 transition flex items-center gap-1">
+            選取 <span class="material-icons-outlined text-sm">arrow_forward</span>
+          </div>`;
+        container.appendChild(div);
+      });
+    })
+    .withFailureHandler(error => {
+      container.innerHTML = `<div class="text-center py-10 text-red-500 bg-red-50 rounded-2xl border border-red-100">發生錯誤：${error.message}</div>`;
+    })
+    .searchClient(kw);
 }
 
 function selectClient(c) {
@@ -286,7 +312,9 @@ function loadTrackingHistory() {
     });
     container.innerHTML = html;
   }).getTrackingHistory(currentClient['個案編號']);
-}function loadTreatmentHistory() {
+}
+
+function loadTreatmentHistory() {
   const container = document.getElementById('historyListContainer');
   container.innerHTML = '<div class="text-center py-10 text-slate-400">讀取中...</div>';
   google.script.run.withSuccessHandler(logs => { allTreatmentLogs = logs || []; applyLogFilters(); renderTreatmentCalendar(); }).getClientHistory(currentClient['個案編號'], 'Treatment_Logs');
@@ -344,10 +372,6 @@ function renderTreatmentList(logs) {
   container.innerHTML = html;
 }
 
-// ==========================================
-// 個案總覽邏輯 (含匯出與列印)
-// ==========================================
-
 function loadOverviewData() {
   const container = document.getElementById('overviewListContainer');
   container.innerHTML = '<div class="text-center py-12 text-slate-400 flex flex-col items-center gap-2"><span class="material-icons-outlined animate-spin">sync</span><span>讀取個案歷程中...</span></div>';
@@ -363,39 +387,27 @@ function loadOverviewData() {
 function setOverviewCategory(cat) {
   currentOverviewCategory = cat;
   
-  // 更新按鈕樣式 (配合 Index.html 中的 Tailwind classes 修改)
-  // 這裡確保不會誤加 w-full 造成跑版
   const btns = ['all', 'doctor', 'maintenance', 'tracking', 'treatment'];
   btns.forEach(b => {
     const btnEl = document.getElementById('filter-btn-' + b);
-    if(btnEl) {
-      if(b === cat) {
-        // 激活樣式: 白底、深色字、有陰影、有框線
-        btnEl.classList.remove('text-slate-500', 'hover:bg-white', 'hover:text-slate-700', 'hover:shadow-sm');
-        btnEl.classList.add('bg-white', 'text-slate-800', 'shadow-sm', 'ring-1', 'ring-slate-200');
-      } else {
-        // 非激活樣式: 灰字、無背景 (Hover 時才顯示背景)
-        btnEl.classList.remove('bg-white', 'text-slate-800', 'shadow-sm', 'ring-1', 'ring-slate-200');
-        btnEl.classList.add('text-slate-500', 'hover:bg-white', 'hover:text-slate-700', 'hover:shadow-sm');
-      }
+    if(b === cat) {
+      btnEl.classList.remove('text-slate-500', 'hover:bg-white');
+      btnEl.classList.add('bg-white', 'text-slate-800', 'shadow-sm', 'ring-1', 'ring-slate-200');
+    } else {
+      btnEl.classList.remove('bg-white', 'text-slate-800', 'shadow-sm', 'ring-1', 'ring-slate-200');
+      btnEl.classList.add('text-slate-500', 'hover:bg-white', 'hover:text-slate-700');
     }
   });
   
   renderOverviewList();
 }
 
-/**
- * 取得當前總覽頁面顯示的資料 (經過篩選後)
- * 用於渲染列表以及匯出 CSV
- */
 function getFilteredOverviewData() {
   const startDate = document.getElementById('overviewStartDate').value;
   const endDate = document.getElementById('overviewEndDate').value;
   
   return allOverviewRecords.filter(item => {
-    // 類別篩選
     if (currentOverviewCategory !== 'all' && item.category !== currentOverviewCategory) return false;
-    // 日期篩選
     if (startDate && item.date < startDate) return false;
     if (endDate && item.date > endDate) return false;
     return true;
@@ -404,9 +416,8 @@ function getFilteredOverviewData() {
 
 function renderOverviewList() {
   const container = document.getElementById('overviewListContainer');
-  const filtered = getFilteredOverviewData(); // 使用封裝好的篩選邏輯
+  const filtered = getFilteredOverviewData();
 
-  // 更新統計文字
   document.getElementById('overviewStats').textContent = `共 ${filtered.length} 筆紀錄`;
 
   if (filtered.length === 0) {
@@ -423,12 +434,10 @@ function renderOverviewList() {
 
   let html = '';
   filtered.forEach(item => {
-    // 根據類別設定樣式，★這裡已修正 Icon 為 medical_services ★
     let icon, colorClass, bgClass;
     switch(item.category) {
       case 'doctor':
-        icon = 'medical_services'; // 從 'stethoscope' 改為 'medical_services'
-        colorClass = 'text-blue-600'; bgClass = 'bg-blue-50';
+        icon = 'stethoscope'; colorClass = 'text-blue-600'; bgClass = 'bg-blue-50';
         break;
       case 'maintenance':
         icon = 'stars'; colorClass = 'text-orange-500'; bgClass = 'bg-orange-50';
@@ -446,7 +455,6 @@ function renderOverviewList() {
     html += `
       <div class="bg-white p-6 rounded-[2rem] border border-slate-100 shadow-sm hover:shadow-md transition-all group">
         <div class="flex items-start gap-5">
-           <!-- 左側日期與圖示 -->
            <div class="flex flex-col items-center gap-2">
               <div class="w-12 h-12 rounded-2xl flex items-center justify-center ${bgClass} ${colorClass}">
                  <span class="material-icons-outlined text-2xl">${icon}</span>
@@ -454,7 +462,6 @@ function renderOverviewList() {
               <div class="text-[10px] font-bold text-slate-400 bg-slate-50 px-2 py-1 rounded-lg">${item.categoryName}</div>
            </div>
            
-           <!-- 右側內容 -->
            <div class="flex-1">
               <div class="flex justify-between items-start mb-2">
                  <div>
@@ -469,7 +476,6 @@ function renderOverviewList() {
                  </div>
               </div>
               
-              <!-- 詳細內容區 (若有) -->
               ${item.detail ? `
               <div class="mt-3 pt-3 border-t border-slate-50 text-sm text-slate-600 leading-relaxed whitespace-pre-wrap">
                  ${item.detail}
@@ -483,9 +489,6 @@ function renderOverviewList() {
   container.innerHTML = html;
 }
 
-/**
- * 匯出目前的總覽資料為 CSV
- */
 function exportOverviewToCSV() {
   const filteredData = getFilteredOverviewData();
   
@@ -494,12 +497,9 @@ function exportOverviewToCSV() {
     return;
   }
 
-  // CSV 標題
   const headers = ["日期", "類別", "標題/摘要", "詳細內容", "執行人員"];
   
-  // 構建 CSV 內容
   const rows = filteredData.map(item => {
-    // 處理欄位內容，避免逗號或換行造成格式錯誤
     const safeTitle = `"${(item.title + ' ' + item.subtitle).replace(/"/g, '""')}"`;
     const safeDetail = item.detail ? `"${item.detail.replace(/"/g, '""')}"` : "";
     
@@ -512,15 +512,11 @@ function exportOverviewToCSV() {
     ].join(",");
   });
 
-  // 加入 BOM (\uFEFF) 讓 Excel 能識別 UTF-8
   const csvContent = "\uFEFF" + headers.join(",") + "\n" + rows.join("\n");
 
-  // 建立 Blob 並下載
   const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
   const url = URL.createObjectURL(blob);
   const link = document.createElement("a");
-  
-  // 檔名範例：王小明_歷程紀錄_2023-10-27.csv
   const fileName = `${currentClient['姓名']}_歷程紀錄_${new Date().toISOString().slice(0,10)}.csv`;
   
   link.setAttribute("href", url);
@@ -531,14 +527,10 @@ function exportOverviewToCSV() {
   document.body.removeChild(link);
 }
 
-/**
- * 列印總覽報表
- */
 function printOverviewReport() {
   window.print();
 }
 
-// 治療月曆與工具函式
 function renderTreatmentCalendar() {
   const container = document.getElementById('treatmentCalendar');
   if(!container) return;
@@ -564,6 +556,22 @@ function renderTreatmentCalendar() {
 
 function changeCalMonth(offset) { currentCalDate.setMonth(currentCalDate.getMonth() + offset); renderTreatmentCalendar(); }
 function selectDateFromCal(date) { document.getElementById('filterDate').value = date; applyLogFilters(); }
+
+function resetTreatmentFilter() {
+  const therapistSelect = document.getElementById('filterTherapist');
+  if (therapistSelect) therapistSelect.value = "";
+  const dateInput = document.getElementById('filterDate');
+  if (dateInput) {
+    if (dateInput._flatpickr) {
+      dateInput._flatpickr.clear();
+    } else {
+      dateInput.value = "";
+    }
+  }
+  applyLogFilters();
+  renderTreatmentCalendar();
+}
+
 function openModal(id) { document.getElementById(id).classList.remove('hidden'); }
 function closeModal(id) { document.getElementById(id).classList.add('hidden'); }
 function resetSearch() { currentClient = null; document.getElementById('topBarClientInfo').classList.add('hidden'); navTo('search'); }

@@ -133,59 +133,87 @@
       </div>
 
       <!-- 治療紀錄視圖 -->
-      <div id="view-treatment" class="hidden max-w-6xl mx-auto flex flex-col md:flex-row gap-8">
-         <div class="w-full md:w-80 space-y-6 no-print">
-           <div class="bg-white p-6 rounded-3xl shadow-sm border border-slate-100 space-y-4">
-              <h4 class="text-xs font-bold text-slate-400 uppercase tracking-widest flex items-center gap-2">
-                <span class="w-1 h-3 bg-emerald-500 rounded-full"></span> 紀錄篩選
-              </h4>
-              <div class="space-y-2">
-                <label class="text-[10px] font-bold text-slate-400 ml-1">執行人員</label>
-                <select id="filterTherapist" onchange="applyLogFilters()" class="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:border-emerald-500 transition-all cursor-pointer"></select>
-              </div>
-              <div class="space-y-2">
-                <label class="text-[10px] font-bold text-slate-400 ml-1">日期查詢</label>
-                <input type="date" id="filterDate" class="w-full px-5 py-3 bg-white border border-slate-200 rounded-2xl outline-none transition-all cursor-pointer hover:border-emerald-400 focus:border-emerald-500">
-              </div>
-           </div>
-           <!-- 月曆組件 -->
-           <div class="bg-white p-6 rounded-3xl shadow-sm border border-slate-100" id="treatmentCalendar"></div>
+      <div id="view-treatment" class="hidden max-w-6xl mx-auto space-y-8">
+         <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 no-print">
+            <div class="space-y-6">
+               <div class="bg-white p-6 rounded-[2rem] shadow-sm border border-slate-100 flex flex-col h-fit">
+                   <h4 class="text-xs font-bold text-slate-400 uppercase tracking-widest flex items-center gap-2 mb-4">
+                      <span class="material-icons-outlined text-lg text-emerald-500">calendar_month</span> 治療月曆
+                   </h4>
+                   <div id="treatmentCalendar"></div>
+               </div>
+               <div class="bg-white p-6 rounded-[2rem] shadow-sm border border-slate-100 space-y-4 h-fit">
+                  <div class="flex justify-between items-center">
+                    <h4 class="text-xs font-bold text-slate-400 uppercase tracking-widest flex items-center gap-2">
+                      <span class="material-icons-outlined text-lg text-emerald-500">filter_alt</span> 快速篩選
+                    </h4>
+                  </div>
+                  <div class="space-y-2">
+                    <label class="text-[10px] font-bold text-slate-400 ml-1">執行人員</label>
+                    <div class="relative">
+                      <select id="filterTherapist" onchange="applyLogFilters()" class="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:border-emerald-500 transition-all cursor-pointer appearance-none text-sm text-slate-700 font-bold">
+                      </select>
+                      <span class="material-icons-outlined absolute right-3 top-2.5 text-slate-400 pointer-events-none text-sm">expand_more</span>
+                    </div>
+                  </div>
+                  <div class="space-y-2">
+                    <label class="text-[10px] font-bold text-slate-400 ml-1">日期查詢</label>
+                    <div class="flex gap-2">
+                       <input type="date" id="filterDate" placeholder="選擇日期" class="flex-1 px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl outline-none transition-all cursor-pointer hover:border-emerald-400 focus:border-emerald-500 text-sm font-bold text-slate-700">
+                       <button onclick="resetTreatmentFilter()" title="清除篩選條件" class="flex items-center justify-center p-2.5 bg-white border border-slate-200 text-slate-400 rounded-xl hover:bg-red-50 hover:text-red-500 hover:border-red-200 transition shadow-sm group">
+                         <span class="material-icons-outlined text-xl group-active:scale-90 transition">delete_outline</span>
+                       </button>
+                    </div>
+                  </div>
+               </div>
+            </div>
+            <div class="lg:col-span-2">
+               <form id="treatmentForm" class="bg-white p-8 rounded-[2.5rem] shadow-sm border border-slate-100 space-y-6 h-full relative overflow-hidden">
+                 <div class="absolute top-0 left-0 w-1.5 h-full bg-emerald-500"></div>
+                 <div class="flex items-center justify-between mb-6">
+                   <h3 class="font-black text-slate-800 text-lg flex items-center gap-2">
+                     <span class="material-icons-outlined text-2xl text-emerald-500">add_circle</span> 新增治療紀錄
+                   </h3>
+                 </div>
+                 <input type="hidden" name="個案編號" class="auto-fill-id">
+                 <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div class="space-y-2">
+                      <label class="text-xs font-bold text-slate-400 ml-1">治療日期</label>
+                      <input type="date" id="treatmentDate" required class="w-full px-5 py-3 bg-slate-50 border border-slate-100 rounded-2xl outline-none focus:border-emerald-500 transition-all cursor-pointer font-bold text-slate-700">
+                    </div>
+                    <div class="space-y-2">
+                      <label class="text-xs font-bold text-slate-400 ml-1">執行治療師</label>
+                      <div class="relative">
+                        <select id="inputTherapist" required class="w-full px-5 py-3 bg-slate-50 border border-slate-100 rounded-2xl outline-none focus:border-emerald-500 transition-all cursor-pointer appearance-none font-bold text-slate-700">
+                           <option value="" disabled selected>請選擇治療師</option>
+                        </select>
+                        <span class="material-icons-outlined absolute right-4 top-3.5 text-slate-400 pointer-events-none">expand_more</span>
+                      </div>
+                    </div>
+                 </div>
+                 <div class="space-y-2">
+                   <label class="text-xs font-bold text-slate-400 ml-1">當日主訴</label>
+                   <textarea id="inputComplaint" placeholder="描述個案今日狀況..." class="w-full px-5 py-4 bg-slate-50 border border-slate-100 rounded-2xl outline-none focus:border-emerald-500 transition-all h-24 resize-none"></textarea>
+                 </div>
+                 <div class="space-y-2">
+                   <label class="text-xs font-bold text-slate-400 ml-1">治療內容</label>
+                   <textarea id="inputContent" required placeholder="請詳述治療細節..." class="w-full px-5 py-4 bg-slate-50 border border-slate-100 rounded-2xl outline-none focus:border-emerald-500 transition-all h-40 resize-none"></textarea>
+                 </div>
+                 <button type="button" onclick="submitForm('treatment')" class="w-full bg-emerald-500 hover:bg-emerald-600 text-white font-black py-4 rounded-2xl shadow-lg shadow-emerald-500/20 transition-all active:scale-[0.98] mt-4">
+                   儲存治療紀錄
+                 </button>
+               </form>
+            </div>
          </div>
-         
-         <div class="flex-1 space-y-8">
-           <form id="treatmentForm" class="bg-white p-8 rounded-[2.5rem] shadow-sm border border-slate-100 space-y-6 no-print">
-             <div class="flex items-center justify-between">
-               <h3 class="font-black text-slate-800 text-lg flex items-center gap-2">
-                 <span class="w-2 h-6 bg-emerald-500 rounded-full"></span> 新增治療紀錄
-               </h3>
+         <div class="pt-2 border-t border-slate-100">
+             <div class="flex items-center gap-3 mb-6">
+               <div class="flex items-center gap-2">
+                  <span class="w-1.5 h-6 bg-emerald-500 rounded-full"></span>
+                  <h4 class="font-black text-slate-800 text-lg">歷史治療清單</h4>
+               </div>
+               <span class="text-[10px] font-bold bg-slate-100 text-slate-400 px-2 py-1 rounded-lg uppercase tracking-widest">History</span>
              </div>
-             <input type="hidden" name="個案編號" class="auto-fill-id">
-             <div class="grid grid-cols-2 gap-6">
-                <div class="space-y-2">
-                  <label class="text-xs font-bold text-slate-400 ml-1">治療日期</label>
-                  <input type="date" id="treatmentDate" required class="w-full px-5 py-3 bg-slate-50 border border-slate-100 rounded-2xl outline-none focus:border-emerald-500 transition-all cursor-pointer">
-                </div>
-                <div class="space-y-2">
-                  <label class="text-xs font-bold text-slate-400 ml-1">執行治療師</label>
-                  <select id="inputTherapist" required class="w-full px-5 py-3 bg-slate-50 border border-slate-100 rounded-2xl outline-none focus:border-emerald-500 transition-all cursor-pointer"></select>
-                </div>
-             </div>
-             <div class="space-y-2">
-               <label class="text-xs font-bold text-slate-400 ml-1">當日主訴</label>
-               <textarea id="inputComplaint" placeholder="描述個案今日狀況..." class="w-full px-5 py-4 bg-slate-50 border border-slate-100 rounded-2xl outline-none focus:border-emerald-500 transition-all h-24 resize-none"></textarea>
-             </div>
-             <div class="space-y-2">
-               <label class="text-xs font-bold text-slate-400 ml-1">治療內容</label>
-               <textarea id="inputContent" required placeholder="請詳述治療細節..." class="w-full px-5 py-4 bg-slate-50 border border-slate-100 rounded-2xl outline-none focus:border-emerald-500 transition-all h-40 resize-none"></textarea>
-             </div>
-             <button type="button" onclick="submitForm('treatment')" class="w-full bg-emerald-500 hover:bg-emerald-600 text-white font-black py-4 rounded-2xl shadow-lg shadow-emerald-500/20 transition-all active:scale-[0.98]">
-               儲存治療紀錄
-             </button>
-           </form>
-           <div class="space-y-4">
-             <h4 class="font-bold text-slate-800 flex items-center gap-2"><span class="w-1 h-4 bg-emerald-500 rounded-full"></span> 歷史治療清單</h4>
              <div id="historyListContainer" class="space-y-4 min-h-[200px]"></div>
-           </div>
          </div>
       </div>
 
@@ -200,7 +228,6 @@
              </div>
              <h3 class="font-black text-slate-800 text-lg">新增保養紀錄</h3>
           </div>
-          
           <form id="maintenanceForm" class="p-8 space-y-8">
             <input type="hidden" name="個案編號" class="auto-fill-id">
             <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
@@ -224,7 +251,6 @@
                 </select>
               </div>
             </div>
-
             <div class="grid grid-cols-1 md:grid-cols-4 gap-6 p-6 bg-slate-50/50 rounded-[2rem] border border-slate-100">
               <div class="space-y-2">
                 <label class="text-xs font-bold text-slate-400 flex items-center gap-1.5 ml-1">血壓 (mmHg)</label>
@@ -243,12 +269,10 @@
                 <input type="text" name="體溫" placeholder="36.5" class="w-full px-5 py-3 bg-white border border-slate-200 rounded-2xl focus:border-orange-500 outline-none transition-all">
               </div>
             </div>
-
             <div class="space-y-2">
                <label class="text-sm font-bold text-slate-400 block ml-1">備註</label>
                <textarea name="備註" rows="4" class="w-full px-5 py-4 bg-white border border-slate-200 rounded-3xl focus:border-orange-500 outline-none transition-all resize-none" placeholder="請輸入保養相關備註..."></textarea>
             </div>
-
             <div class="flex justify-end items-center pt-4">
               <button type="button" onclick="submitForm('maintenance')" class="bg-gradient-to-r from-orange-400 to-orange-600 hover:from-orange-500 hover:to-orange-700 text-white px-10 py-4 rounded-2xl font-black shadow-lg shadow-orange-500/30 transition-all active:scale-95">
                 儲存紀錄
@@ -256,7 +280,6 @@
             </div>
           </form>
         </div>
-
         <div class="space-y-4 pt-4">
           <h4 class="font-black text-slate-800 flex items-center gap-2">
             <span class="w-1.5 h-5 bg-orange-500 rounded-full"></span> 歷史保養紀錄
@@ -277,7 +300,6 @@
              個管追蹤紀錄
           </h3>
         </div>
-
         <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
           <div class="lg:col-span-1 bg-white rounded-[2.5rem] p-8 shadow-sm border border-slate-100 h-fit no-print">
             <h3 class="text-lg font-bold text-violet-600 mb-6 border-b border-violet-50 pb-3">新增紀錄</h3>
@@ -359,12 +381,9 @@
         <div id="doctorHistoryList" class="space-y-6 mt-8"></div>
       </div>
 
-      <!-- 個案總覽 (修正處：移除大間距與水平捲軸) -->
+      <!-- 個案總覽 -->
       <div id="view-overview" class="hidden max-w-6xl mx-auto space-y-6">
-        
-        <!-- 頂部統計與篩選卡片 (Header) -->
         <div class="bg-white rounded-[2.5rem] shadow-sm border border-slate-100 p-8 no-print">
-           <!-- 標題與匯出按鈕群組 -->
            <div class="flex justify-between items-center mb-8 border-b border-slate-50 pb-6">
               <div>
                  <h3 class="text-2xl font-black text-slate-800 flex items-center gap-3">
@@ -373,8 +392,6 @@
                  </h3>
                  <p id="overviewStats" class="text-slate-400 text-sm mt-1 ml-1">共 0 筆紀錄</p>
               </div>
-              
-              <!-- 匯出按鈕群組 -->
               <div class="flex items-center gap-3">
                  <button onclick="exportOverviewToCSV()" class="flex items-center px-4 py-2 text-sm font-bold text-white bg-green-600 rounded-xl hover:bg-green-700 shadow-sm transition active:scale-95">
                     <span class="material-icons-outlined text-[18px] mr-1">file_download</span> 匯出 Excel
@@ -384,11 +401,7 @@
                  </button>
               </div>
            </div>
-  
-           <!-- 篩選器列 (優化結構：使用 wrap 與緊密排列) -->
            <div class="flex flex-col xl:flex-row justify-between items-start xl:items-center gap-4">
-              
-              <!-- 類別按鈕群 -->
               <div class="flex flex-wrap items-center gap-2 bg-slate-50 p-1 rounded-2xl border border-slate-100">
                  <button onclick="setOverviewCategory('all')" id="filter-btn-all" class="px-4 py-2 rounded-xl text-sm font-bold bg-white text-slate-800 shadow-sm ring-1 ring-slate-200 transition">全部</button>
                  <button onclick="setOverviewCategory('doctor')" id="filter-btn-doctor" class="px-4 py-2 rounded-xl text-sm font-bold text-slate-500 hover:bg-white hover:text-slate-700 hover:shadow-sm transition"><span class="material-icons-outlined text-[16px] align-middle mr-1">stethoscope</span>醫師看診</button>
@@ -396,8 +409,6 @@
                  <button onclick="setOverviewCategory('tracking')" id="filter-btn-tracking" class="px-4 py-2 rounded-xl text-sm font-bold text-slate-500 hover:bg-white hover:text-slate-700 hover:shadow-sm transition"><span class="material-icons-outlined text-[16px] align-middle mr-1">fact_check</span>個管追蹤</button>
                  <button onclick="setOverviewCategory('treatment')" id="filter-btn-treatment" class="px-4 py-2 rounded-xl text-sm font-bold text-slate-500 hover:bg-white hover:text-slate-700 hover:shadow-sm transition"><span class="material-icons-outlined text-[16px] align-middle mr-1">healing</span>治療紀錄</button>
               </div>
-  
-              <!-- 日期範圍 -->
               <div class="flex items-center gap-3 w-full xl:w-auto bg-slate-50 p-2 rounded-2xl border border-slate-100 flex-shrink-0">
                  <span class="text-xs font-bold text-slate-400 pl-2 hidden md:inline">日期</span>
                  <div class="relative flex-1 xl:w-40">
@@ -412,10 +423,7 @@
               </div>
            </div>
         </div>
-  
-        <!-- 資料列表容器 -->
         <div id="overviewListContainer" class="min-h-[300px] space-y-4">
-           <!-- 預設空狀態 -->
            <div class="flex flex-col items-center justify-center py-20 bg-white rounded-[2.5rem] border-2 border-dashed border-slate-100">
               <div class="w-16 h-16 bg-slate-50 rounded-full flex items-center justify-center mb-4">
                  <span class="material-icons-outlined text-3xl text-slate-300">manage_search</span>
@@ -423,9 +431,7 @@
               <h4 class="text-lg font-bold text-slate-400">請選擇篩選條件查看紀錄</h4>
            </div>
         </div>
-  
       </div>
-
     </div>
   </main>
 
@@ -458,572 +464,8 @@
         </form>
      </div>
   </div>
-
+  
+  <!-- ★★★ 關鍵修復：引入 JavaScript ★★★ -->
   <?!= include('JavaScript'); ?>
 </body>
 </html>
-
-
-<script>
-let currentClient = null;
-let allTreatmentLogs = [];
-let allOverviewRecords = []; 
-let currentOverviewCategory = 'all'; 
-let currentCalDate = new Date();
-
-window.onload = function() {
-  const today = new Date().toISOString().split('T')[0];
-  
-  // 1. 設定表單類日期欄位初始值為今日
-  document.querySelectorAll('#treatmentDate, #maintenanceDate, #doctorConsultDate, #trackDate').forEach(el => el.value = today);
-
-  // 2. 初始化一般日期選單 (Flatpickr)
-  flatpickr('input[type="date"], #trackDate', {
-    locale: "zh_tw",
-    dateFormat: "Y-m-d",
-    disableMobile: true, 
-    allowInput: true,
-    static: true, // ★ 強制靜態定位，防止漂浮
-    onOpen: function(selectedDates, dateStr, instance) {
-      if(instance.calendarContainer) instance.calendarContainer.style.width = "220px"; 
-    },
-    onChange: function(selectedDates, dateStr, instance) {
-      if (instance.element.id === 'filterDate') {
-        applyLogFilters();
-      }
-    }
-  });
-
-  // 3. 初始化個案總覽的日期範圍篩選 (★ 針對此問題的核心修正)
-  const overviewConfig = {
-    locale: "zh_tw",
-    dateFormat: "Y-m-d",
-    disableMobile: true,
-    allowInput: true,
-    static: true, // ★ 關鍵：強制將月曆結構插入輸入框後方，隨頁面捲動
-    onChange: function() {
-      renderOverviewList(); 
-    }
-  };
-  
-  // 分別初始化
-  flatpickr('#overviewStartDate', overviewConfig);
-  flatpickr('#overviewEndDate', overviewConfig);
-
-  loadSystemStaff();
-};
-
-/**
- * 載入系統下拉選單內容
- */
-function loadSystemStaff() {
-  google.script.run.withSuccessHandler(staff => {
-    const ds = document.getElementById('selectDoctor');
-    if(ds) {
-      ds.innerHTML = '<option value="" disabled selected>請選擇醫師</option>';
-      staff.doctors.forEach(n => ds.innerHTML += `<option value="${n}">${n}</option>`);
-    }
-    const ns = document.getElementById('selectNurse');
-    if(ns) {
-      ns.innerHTML = '<option value="" disabled selected>請選擇護理師</option>';
-      staff.nurses.forEach(n => ns.innerHTML += `<option value="${n}">${n}</option>`);
-    }
-    const ts = document.getElementById('inputTherapist');
-    const fts = document.getElementById('filterTherapist');
-    if(ts) {
-      ts.innerHTML = '<option value="" disabled selected>請選擇治療師</option>';
-      staff.therapists.forEach(n => ts.innerHTML += `<option value="${n}">${n}</option>`);
-    }
-    if(fts) {
-      fts.innerHTML = '<option value="">所有執行人員</option>';
-      staff.therapists.forEach(n => fts.innerHTML += `<option value="${n}">${n}</option>`);
-    }
-    const ms = document.getElementById('selectMaintStaff');
-    if(ms) {
-      ms.innerHTML = '<option value="" disabled selected>請選擇執行人員</option>';
-      staff.allStaff.forEach(n => ms.innerHTML += `<option value="${n}">${n}</option>`);
-    }
-    const mi = document.getElementById('selectMaintItem');
-    if(mi) {
-      mi.innerHTML = '<option value="" disabled selected>請選擇項目</option>';
-      staff.maintItems.forEach(n => mi.innerHTML += `<option value="${n}">${n}</option>`);
-    }
-    const tStaff = document.getElementById('trackStaff');
-    if(tStaff) {
-       tStaff.innerHTML = '<option value="" disabled selected>請選擇人員</option>';
-       staff.allStaff.forEach(n => tStaff.innerHTML += `<option value="${n}">${n}</option>`);
-    }
-    const tt = document.getElementById('trackType');
-    if(tt) {
-       tt.innerHTML = '<option value="" disabled selected>請選擇項目</option>';
-       if(staff.trackingTypes) {
-         staff.trackingTypes.forEach(t => tt.innerHTML += `<option value="${t}">${t}</option>`);
-       }
-    }
-  }).getSystemStaff();
-}
-
-/**
- * 視圖導覽切換
- */
-function navTo(viewName) {
-  if (!currentClient && viewName !== 'search') { alert("請先選取個案。"); return; }
-  
-  const views = ['search', 'basic', 'images', 'treatment', 'maintenance', 'doctor', 'tracking', 'overview'];
-  views.forEach(v => {
-    const el = document.getElementById('view-' + v);
-    if(el) el.classList.add('hidden');
-    const btn = document.getElementById('btn-' + v);
-    if(btn) btn.classList.remove('bg-slate-800', 'text-white', 'font-bold');
-  });
-
-  const target = document.getElementById('view-' + viewName);
-  if(target) target.classList.remove('hidden');
-  const targetBtn = document.getElementById('btn-' + viewName);
-  if(targetBtn) targetBtn.classList.add('bg-slate-800', 'text-white', 'font-bold');
-
-  const titles = { 
-    'search':'搜尋','basic':'基本資料','images':'影像總覽',
-    'treatment':'治療紀錄','maintenance':'保養項目','doctor':'醫師看診',
-    'tracking':'個管追蹤','overview':'個案總覽'
-  };
-  document.getElementById('pageTitle').textContent = titles[viewName] || '康飛運醫';
-
-  if(viewName === 'basic') renderBasicInfo();
-  if(viewName === 'doctor') loadDoctorHistory();
-  if(viewName === 'treatment') loadTreatmentHistory();
-  if(viewName === 'maintenance') loadMaintenanceHistory();
-  if(viewName === 'tracking') loadTrackingHistory();
-  if(viewName === 'overview') loadOverviewData(); 
-}
-
-/**
- * 處理個案搜尋
- */
-function handleSearch() {
-  const kw = document.getElementById('searchInput').value.trim();
-  if (!kw) return;
-  const container = document.getElementById('searchResults');
-  container.innerHTML = '<div class="text-center py-10 text-slate-400">搜尋中...</div>';
-  google.script.run.withSuccessHandler(data => {
-    container.innerHTML = '';
-    if(data.length === 0) { container.innerHTML = '<div class="text-center py-10">查無資料</div>'; return; }
-    data.forEach(c => {
-      const div = document.createElement('div');
-      div.className = "bg-white p-5 rounded-3xl shadow-sm border border-slate-100 hover:border-emerald-500 cursor-pointer transition flex justify-between items-center group";
-      div.onclick = () => selectClient(c);
-      div.innerHTML = `<div><div class="font-black text-slate-800">${c['姓名']} <span class="text-xs font-normal text-slate-400">${c['個案編號']}</span></div><div class="text-sm text-slate-400">${c['電話']}</div></div><div class="text-emerald-500 opacity-0 group-hover:opacity-100 transition">選取 →</div>`;
-      container.appendChild(div);
-    });
-  }).searchClient(kw);
-}
-
-function selectClient(c) {
-  currentClient = c;
-  document.getElementById('topBarClientInfo').classList.remove('hidden');
-  document.getElementById('headerClientName').textContent = c['姓名'];
-  document.getElementById('headerClientDob').textContent = c['生日'];
-  document.querySelectorAll('.auto-fill-id').forEach(el => el.value = c['個案編號']);
-  navTo('basic');
-}
-
-/**
- * 渲染基本資料
- */
-function renderBasicInfo() {
-  if (!currentClient) return;
-  const formatPhone = (phoneStr) => {
-    if (!phoneStr) return '--';
-    const clean = phoneStr.toString().replace(/\D/g, '');
-    return clean.length === 10 ? `${clean.substring(0, 4)}-${clean.substring(4, 7)}-${clean.substring(7)}` : phoneStr;
-  };
-  document.getElementById('display-client-id').textContent = currentClient['個案編號'] || '--';
-  document.getElementById('display-name').textContent = currentClient['姓名'] || '--';
-  document.getElementById('display-gender').textContent = currentClient['性別'] || '--';
-  document.getElementById('display-birthday').textContent = currentClient['生日'] || '--';
-  document.getElementById('display-id-number').textContent = currentClient['身分證字號'] || '--';
-  document.getElementById('display-phone').textContent = formatPhone(currentClient['電話']);
-  document.getElementById('display-emergency-name').textContent = currentClient['緊急聯絡人'] || '--';
-  document.getElementById('display-emergency-phone').textContent = formatPhone(currentClient['緊急聯絡人電話']);
-  const notesText = currentClient['慢性病或特殊疾病'];
-  document.getElementById('display-notes').textContent = (notesText && notesText.trim() !== "") ? notesText : '尚無備註紀錄。';
-}
-
-function autoDetectGender(input) {
-  const idNo = input.value.trim().toUpperCase();
-  const preview = document.getElementById('genderPreview');
-  if (idNo.length >= 2) {
-    const secondChar = idNo.charAt(1);
-    if (secondChar === '1') { preview.textContent = "男"; preview.style.color = "#047857"; }
-    else if (secondChar === '2') { preview.textContent = "女"; preview.style.color = "#db2777"; }
-    else { preview.textContent = "格式錯誤"; preview.style.color = "#ef4444"; }
-  } else {
-    preview.textContent = "請輸入身分證"; preview.style.color = "#059669";
-  }
-}
-
-function submitNewClient() {
-  const data = {
-    name: document.getElementById('addName').value.trim(),
-    dob: document.getElementById('addDob').value,
-    idNo: document.getElementById('addIdNo').value.trim().toUpperCase(),
-    phone: document.getElementById('addPhone').value.trim(),
-    emerName: document.getElementById('addEmerName').value.trim(),
-    emerPhone: document.getElementById('addEmerPhone').value.trim(),
-    chronic: document.getElementById('addChronic').value.trim(),
-    gender: document.getElementById('genderPreview').textContent
-  };
-  if (!data.name || !data.dob || !data.phone) { alert("請填寫姓名、生日與電話"); return; }
-  const btn = document.getElementById('btnSubmitClient');
-  const originalText = btn.innerText;
-  btn.disabled = true; btn.innerText = "處理中...";
-  google.script.run.withSuccessHandler(res => {
-    btn.disabled = false; btn.innerText = originalText;
-    if (res.success) {
-      alert("【新增完成】\n個案編號：" + res.clientId);
-      closeModal('addClientModal');
-      document.getElementById('addClientForm').reset();
-      selectClient(res.fullData); 
-    } else { alert("錯誤：" + res.message); }
-  }).createNewClient(data);
-}
-
-/**
- * 統一表單提交
- */
-function submitForm(type) {
-  if (!currentClient) { alert("請先選擇個案"); return; }
-  
-  const btn = type === 'tracking' ? document.querySelector('#trackingForm button[type="submit"]') : event.target;
-  const originalText = btn ? btn.innerText : "儲存";
-  if(btn) { btn.disabled = true; btn.innerText = "儲存中..."; }
-
-  if (type === 'doctor') {
-    const formData = { clientId: currentClient['個案編號'], date: document.getElementById('doctorConsultDate').value, doctor: document.getElementById('selectDoctor').value, nurse: document.getElementById('selectNurse').value, complaint: document.querySelector('#view-doctor textarea[name="主訴"]').value, objective: document.querySelector('#view-doctor textarea[name="客觀檢查"]').value, diagnosis: document.querySelector('#view-doctor textarea[name="診斷"]').value, plan: document.querySelector('#view-doctor textarea[name="治療計畫"]').value, remark: document.getElementById('doctorRemark').value };
-    if (!formData.date || !formData.doctor) { alert("請填寫日期與醫師"); if(btn){btn.disabled=false; btn.innerText=originalText;} return; }
-    google.script.run.withSuccessHandler(res => { if(btn){btn.disabled=false; btn.innerText=originalText;} if (res && res.message) { alert(res.message); if(res.success){ document.getElementById('doctorForm').reset(); loadDoctorHistory(); } } }).saveDoctorConsultation(formData);
-  } else if (type === 'treatment') {
-    const formData = { '個案編號': currentClient['個案編號'], '治療日期': document.getElementById('treatmentDate').value, '執行治療師': document.getElementById('inputTherapist').value, '當日主訴': document.getElementById('inputComplaint').value, '治療內容': document.getElementById('inputContent').value };
-    if (!formData['治療日期'] || !formData['執行治療師']) { alert("請填寫日期與治療師"); if(btn){btn.disabled=false; btn.innerText=originalText;} return; }
-    google.script.run.withSuccessHandler(res => { if(btn){btn.disabled=false; btn.innerText=originalText;} if (res && res.message) { alert(res.message); if(res.success){ document.getElementById('treatmentForm').reset(); loadTreatmentHistory(); } } }).saveData('Treatment_Logs', formData);
-  } else if (type === 'maintenance') {
-    const form = document.getElementById('maintenanceForm');
-    const formData = { clientId: currentClient['個案編號'], date: document.getElementById('maintenanceDate').value, staff: document.getElementById('selectMaintStaff').value, item: document.getElementById('selectMaintItem').value, bp: form.querySelector('input[name="血壓"]').value, spo2: form.querySelector('input[name="血氧"]').value, hr: form.querySelector('input[name="心律"]').value, temp: form.querySelector('input[name="體溫"]').value, remark: form.querySelector('textarea[name="備註"]').value };
-    if (!formData.date || !formData.staff || !formData.item) { alert("請完整填寫日期、人員與項目"); if(btn){btn.disabled=false; btn.innerText=originalText;} return; }
-    google.script.run.withSuccessHandler(res => { if(btn){btn.disabled=false; btn.innerText=originalText;} if (res && res.message) { alert(res.message); if(res.success){ form.reset(); document.getElementById('maintenanceDate').value = new Date().toISOString().split('T')[0]; loadMaintenanceHistory(); } } }).saveMaintenanceRecord(formData);
-  } else if (type === 'tracking') {
-    const formData = { 
-      clientId: currentClient['個案編號'], 
-      trackDate: document.getElementById('trackDate').value, 
-      trackStaff: document.getElementById('trackStaff').value, 
-      trackType: document.getElementById('trackType').value, 
-      content: document.getElementById('trackContent').value 
-    };
-    if (!formData.trackDate || !formData.trackStaff || !formData.trackType || !formData.content) { alert("請完整填寫日期、人員、項目與內容"); if(btn) { btn.disabled = false; btn.innerText = originalText; } return; }
-    google.script.run.withSuccessHandler(res => { 
-      if(btn) { btn.disabled = false; btn.innerText = originalText; } 
-      if (res.success) { 
-        alert(res.message); 
-        document.getElementById('trackContent').value = ""; 
-        loadTrackingHistory(); 
-      } else { 
-        alert("錯誤：" + res.message); 
-      } 
-    }).saveTrackingRecord(formData);
-  }
-}
-
-// 載入與渲染歷史紀錄函式
-function loadTrackingHistory() {
-  const container = document.getElementById('trackingHistoryList');
-  if(!container) return;
-  container.innerHTML = '<div class="text-center py-4 text-slate-400">讀取中...</div>';
-  google.script.run.withSuccessHandler(records => {
-    if (!records || records.length === 0) { container.innerHTML = `<div class="text-center text-slate-400 py-10 bg-white/50 border-2 border-dashed border-slate-100 rounded-[2.5rem]"><span class="material-icons-outlined text-4xl mb-2">history_edu</span><p>尚無任何追蹤紀錄</p></div>`; return; }
-    let html = '';
-    records.forEach(rec => {
-      html += `<div class="bg-white p-5 rounded-[2rem] border border-slate-100 shadow-sm hover:shadow-md transition-all relative overflow-hidden group mb-4"><div class="absolute left-0 top-0 bottom-0 w-1.5 bg-violet-400"></div><div class="ml-3"><div class="flex justify-between items-start mb-2"><div class="flex items-center gap-2 flex-wrap"><span class="bg-violet-100 text-violet-700 text-xs font-bold px-3 py-1 rounded-full border border-violet-100">${rec.type}</span><span class="text-slate-500 text-xs font-bold flex items-center bg-slate-50 px-2 py-0.5 rounded-lg border border-slate-100"><span class="material-icons-outlined text-[14px] mr-1">person</span>${rec.staff || '--'}</span><span class="text-slate-400 text-xs font-mono flex items-center ml-1">${rec.date}</span></div></div><div class="text-slate-700 text-sm leading-relaxed whitespace-pre-line pl-1 mt-2">${rec.content}</div></div></div>`;
-    });
-    container.innerHTML = html;
-  }).getTrackingHistory(currentClient['個案編號']);
-}
-
-function loadTreatmentHistory() {
-  const container = document.getElementById('historyListContainer');
-  container.innerHTML = '<div class="text-center py-10 text-slate-400">讀取中...</div>';
-  google.script.run.withSuccessHandler(logs => { allTreatmentLogs = logs || []; applyLogFilters(); renderTreatmentCalendar(); }).getClientHistory(currentClient['個案編號'], 'Treatment_Logs');
-}
-
-function loadMaintenanceHistory() {
-  const container = document.getElementById('maintenanceHistoryList');
-  if (!currentClient) return;
-  container.innerHTML = '<div class="text-center py-10 text-slate-400 italic">紀錄載入中...</div>';
-  google.script.run.withSuccessHandler(logs => { renderMaintenanceList(logs); }).getMaintenanceHistory(currentClient['個案編號']);
-}
-
-function loadDoctorHistory() {
-  const container = document.getElementById('doctorHistoryList');
-  container.innerHTML = '<div class="text-center py-10 text-slate-400">讀取中...</div>';
-  google.script.run.withSuccessHandler(logs => {
-    if(!logs || !logs.length) { container.innerHTML = '<div class="py-10 text-center text-slate-300">尚無紀錄</div>'; return; }
-    let html = '';
-    logs.forEach(log => {
-      html += `<div class="bg-white border border-slate-100 rounded-3xl p-8 shadow-sm mb-6"><div class="flex justify-between items-center mb-6"><span class="text-xs font-bold bg-emerald-50 text-emerald-600 px-4 py-1.5 rounded-full ring-1 ring-emerald-100">${log['看診日期'] || '--'}</span><span class="text-sm font-bold text-slate-500">醫師：<span class="text-slate-800 mr-3">${log['看診醫師'] || '--'}</span>護理：<span class="text-slate-800">${log['護理師'] || '--'}</span></span></div><div class="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs"><div class="bg-blue-50/50 p-4 rounded-2xl border border-blue-100"><p class="text-blue-600 mb-2 font-black">主訴 (S)</p><div class="text-slate-700 whitespace-pre-wrap">${log['S_主訴'] || '--'}</div></div><div class="bg-indigo-50/50 p-4 rounded-2xl border border-indigo-100"><p class="text-indigo-600 mb-2 font-black">檢查 (O)</p><div class="text-slate-700 whitespace-pre-wrap">${log['O_客觀檢查'] || '--'}</div></div><div class="bg-amber-50/50 p-4 rounded-2xl border border-amber-100"><p class="text-amber-600 mb-2 font-black">診斷 (A)</p><div class="text-slate-700 whitespace-pre-wrap">${log['A_診斷'] || '--'}</div></div><div class="bg-emerald-50/50 p-4 rounded-2xl border border-emerald-100"><p class="text-emerald-600 mb-2 font-black">計畫 (P)</p><div class="text-slate-700 whitespace-pre-wrap">${log['P_治療計劃'] || '--'}</div></div></div>${log['備註'] && log['備註'] !== '--' ? `<div class="mt-4 bg-slate-50 p-4 rounded-2xl border border-dashed border-slate-200 text-xs text-slate-600 whitespace-pre-wrap">備註：${log['備註']}</div>` : ''}</div>`;
-    });
-    container.innerHTML = html;
-  }).getClientHistory(currentClient['個案編號'], 'Doctor_Consultation');
-}
-
-// 輔助與渲染函式
-function renderMaintenanceList(logs) {
-  const container = document.getElementById('maintenanceHistoryList');
-  if (!logs || logs.length === 0) { container.innerHTML = '<div class="bg-white/50 border-2 border-dashed border-slate-200 rounded-[2.5rem] p-12 text-center text-slate-300">尚無歷史紀錄</div>'; return; }
-  let html = '';
-  logs.forEach(log => {
-    html += `<div class="bg-white p-6 rounded-[2rem] shadow-sm border border-slate-100 flex justify-between items-center group hover:border-orange-200 transition-all mb-4"><div class="flex items-center gap-6"><div class="text-center border-r border-slate-100 pr-6"><div class="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Date</div><div class="text-sm font-black text-slate-800">${log['保養日期'] || '--'}</div></div><div><div class="flex items-center gap-2 mb-1"><span class="px-2 py-0.5 bg-orange-50 text-orange-500 text-[10px] font-bold rounded-md">${log['保養項目'] || '一般'}</span><span class="text-xs font-bold text-slate-400">人員：${log['執行人員'] || '--'}</span></div><div class="text-xs text-slate-500 line-clamp-1">${log['備註'] || '無相關備註內容'}</div></div></div><div class="grid grid-cols-4 gap-2 text-center"><div class="px-3 border-r border-slate-50"><div class="text-[9px] font-bold text-slate-300">BP</div><div class="text-xs font-black text-slate-700">${log['血壓'] || '-'}</div></div><div class="px-3 border-r border-slate-50"><div class="text-[9px] font-bold text-slate-300">SpO2</div><div class="text-xs font-black text-slate-700">${log['血氧'] || '-'}</div></div><div class="px-3 border-r border-slate-50"><div class="text-[9px] font-bold text-slate-300">HR</div><div class="text-xs font-black text-slate-700">${log['心律'] || '-'}</div></div><div class="px-3"><div class="text-[9px] font-bold text-slate-300">Temp</div><div class="text-xs font-black text-slate-700">${log['體溫'] || '-'}</div></div></div></div>`;
-  });
-  container.innerHTML = html;
-}
-
-function applyLogFilters() {
-  const t = document.getElementById('filterTherapist').value;
-  const d = document.getElementById('filterDate').value;
-  const filtered = allTreatmentLogs.filter(log => {
-    let mt = t ? log['執行治療師'] === t : true;
-    let md = d ? (log['治療日期'] && log['治療日期'].includes(d)) : true;
-    return mt && md;
-  });
-  renderTreatmentList(filtered);
-}
-
-function renderTreatmentList(logs) {
-  const container = document.getElementById('historyListContainer');
-  if(!logs.length) { container.innerHTML = '<div class="text-center py-10 text-slate-300">無紀錄</div>'; return; }
-  let html = '';
-  logs.forEach(log => {
-    html += `<div class="bg-white p-5 rounded-2xl shadow-sm border border-slate-50 border-l-4 border-l-emerald-500 mb-4"><div class="flex justify-between items-center mb-2"><span class="text-xs font-bold text-slate-400">${log['治療日期']}</span><span class="text-sm font-bold text-emerald-600">${log['執行治療師']}</span></div><p class="text-xs text-slate-400 mb-2">主訴: ${log['當日主訴']||'--'}</p><p class="text-sm text-slate-700 whitespace-pre-wrap">${log['治療內容']}</p></div>`;
-  });
-  container.innerHTML = html;
-}
-
-// ==========================================
-// 個案總覽邏輯 (含匯出與列印)
-// ==========================================
-
-function loadOverviewData() {
-  const container = document.getElementById('overviewListContainer');
-  container.innerHTML = '<div class="text-center py-12 text-slate-400 flex flex-col items-center gap-2"><span class="material-icons-outlined animate-spin">sync</span><span>讀取個案歷程中...</span></div>';
-  
-  google.script.run.withSuccessHandler(data => {
-    allOverviewRecords = data || [];
-    renderOverviewList();
-  }).withFailureHandler(err => {
-    container.innerHTML = `<div class="text-red-500 text-center py-10">載入失敗: ${err.message}</div>`;
-  }).getCaseOverviewData(currentClient['個案編號']);
-}
-
-function setOverviewCategory(cat) {
-  currentOverviewCategory = cat;
-  
-  // 更新按鈕樣式
-  const btns = ['all', 'doctor', 'maintenance', 'tracking', 'treatment'];
-  btns.forEach(b => {
-    const btnEl = document.getElementById('filter-btn-' + b);
-    if(b === cat) {
-      // 激活樣式
-      btnEl.classList.remove('text-slate-500', 'hover:bg-white');
-      btnEl.classList.add('bg-white', 'text-slate-800', 'shadow-sm', 'ring-1', 'ring-slate-200');
-    } else {
-      // 非激活樣式
-      btnEl.classList.remove('bg-white', 'text-slate-800', 'shadow-sm', 'ring-1', 'ring-slate-200');
-      btnEl.classList.add('text-slate-500', 'hover:bg-white', 'hover:text-slate-700');
-    }
-  });
-  
-  renderOverviewList();
-}
-
-/**
- * 取得當前總覽頁面顯示的資料 (經過篩選後)
- * 用於渲染列表以及匯出 CSV
- */
-function getFilteredOverviewData() {
-  const startDate = document.getElementById('overviewStartDate').value;
-  const endDate = document.getElementById('overviewEndDate').value;
-  
-  return allOverviewRecords.filter(item => {
-    // 類別篩選
-    if (currentOverviewCategory !== 'all' && item.category !== currentOverviewCategory) return false;
-    // 日期篩選
-    if (startDate && item.date < startDate) return false;
-    if (endDate && item.date > endDate) return false;
-    return true;
-  });
-}
-
-function renderOverviewList() {
-  const container = document.getElementById('overviewListContainer');
-  const filtered = getFilteredOverviewData(); // 使用封裝好的篩選邏輯
-
-  // 更新統計文字
-  document.getElementById('overviewStats').textContent = `共 ${filtered.length} 筆紀錄`;
-
-  if (filtered.length === 0) {
-    container.innerHTML = `
-      <div class="flex flex-col items-center justify-center py-20 bg-white rounded-[2.5rem] border-2 border-dashed border-slate-100">
-         <div class="w-16 h-16 bg-slate-50 rounded-full flex items-center justify-center mb-4">
-            <span class="material-icons-outlined text-3xl text-slate-300">search_off</span>
-         </div>
-         <h4 class="text-lg font-bold text-slate-400">找不到符合條件的紀錄</h4>
-         <p class="text-sm text-slate-300 mt-1">請調整日期範圍或篩選類別</p>
-      </div>`;
-    return;
-  }
-
-  let html = '';
-  filtered.forEach(item => {
-    // 根據類別設定樣式
-    let icon, colorClass, bgClass;
-    switch(item.category) {
-      case 'doctor':
-        icon = 'stethoscope'; colorClass = 'text-blue-600'; bgClass = 'bg-blue-50';
-        break;
-      case 'maintenance':
-        icon = 'stars'; colorClass = 'text-orange-500'; bgClass = 'bg-orange-50';
-        break;
-      case 'tracking':
-        icon = 'fact_check'; colorClass = 'text-violet-600'; bgClass = 'bg-violet-50';
-        break;
-      case 'treatment':
-        icon = 'healing'; colorClass = 'text-emerald-600'; bgClass = 'bg-emerald-50';
-        break;
-      default:
-        icon = 'article'; colorClass = 'text-slate-600'; bgClass = 'bg-slate-50';
-    }
-
-    html += `
-      <div class="bg-white p-6 rounded-[2rem] border border-slate-100 shadow-sm hover:shadow-md transition-all group">
-        <div class="flex items-start gap-5">
-           <!-- 左側日期與圖示 -->
-           <div class="flex flex-col items-center gap-2">
-              <div class="w-12 h-12 rounded-2xl flex items-center justify-center ${bgClass} ${colorClass}">
-                 <span class="material-icons-outlined text-2xl">${icon}</span>
-              </div>
-              <div class="text-[10px] font-bold text-slate-400 bg-slate-50 px-2 py-1 rounded-lg">${item.categoryName}</div>
-           </div>
-           
-           <!-- 右側內容 -->
-           <div class="flex-1">
-              <div class="flex justify-between items-start mb-2">
-                 <div>
-                    <h4 class="text-lg font-black text-slate-800">${item.title}</h4>
-                    <div class="text-xs font-bold text-slate-400 mt-0.5">${item.subtitle}</div>
-                 </div>
-                 <div class="text-right">
-                    <div class="text-sm font-bold text-slate-700 font-mono">${item.date}</div>
-                    <div class="text-xs text-slate-400 mt-1 flex items-center justify-end gap-1">
-                       <span class="material-icons-outlined text-[12px]">person</span> ${item.staff || '--'}
-                    </div>
-                 </div>
-              </div>
-              
-              <!-- 詳細內容區 (若有) -->
-              ${item.detail ? `
-              <div class="mt-3 pt-3 border-t border-slate-50 text-sm text-slate-600 leading-relaxed whitespace-pre-wrap">
-                 ${item.detail}
-              </div>` : ''}
-           </div>
-        </div>
-      </div>
-    `;
-  });
-  
-  container.innerHTML = html;
-}
-
-/**
- * 匯出目前的總覽資料為 CSV
- */
-function exportOverviewToCSV() {
-  const filteredData = getFilteredOverviewData();
-  
-  if (filteredData.length === 0) {
-    alert("目前畫面中沒有資料可匯出");
-    return;
-  }
-
-  // CSV 標題
-  const headers = ["日期", "類別", "標題/摘要", "詳細內容", "執行人員"];
-  
-  // 構建 CSV 內容
-  const rows = filteredData.map(item => {
-    // 處理欄位內容，避免逗號或換行造成格式錯誤
-    const safeTitle = `"${(item.title + ' ' + item.subtitle).replace(/"/g, '""')}"`;
-    const safeDetail = item.detail ? `"${item.detail.replace(/"/g, '""')}"` : "";
-    
-    return [
-      item.date,
-      item.categoryName,
-      safeTitle,
-      safeDetail,
-      item.staff
-    ].join(",");
-  });
-
-  // 加入 BOM (\uFEFF) 讓 Excel 能識別 UTF-8
-  const csvContent = "\uFEFF" + headers.join(",") + "\n" + rows.join("\n");
-
-  // 建立 Blob 並下載
-  const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
-  const url = URL.createObjectURL(blob);
-  const link = document.createElement("a");
-  
-  // 檔名範例：王小明_歷程紀錄_2023-10-27.csv
-  const fileName = `${currentClient['姓名']}_歷程紀錄_${new Date().toISOString().slice(0,10)}.csv`;
-  
-  link.setAttribute("href", url);
-  link.setAttribute("download", fileName);
-  link.style.visibility = "hidden";
-  document.body.appendChild(link);
-  link.click();
-  document.body.removeChild(link);
-}
-
-/**
- * 列印總覽報表
- */
-function printOverviewReport() {
-  window.print();
-}
-
-// 治療月曆與工具函式
-function renderTreatmentCalendar() {
-  const container = document.getElementById('treatmentCalendar');
-  if(!container) return;
-  const year = currentCalDate.getFullYear();
-  const month = currentCalDate.getMonth();
-  const monthNames = ["1月", "2月", "3月", "4月", "5月", "6月", "7月", "8月", "9月", "10月", "11月", "12月"];
-  let html = `<div class="cal-header flex justify-between items-center mb-4"><button onclick="changeCalMonth(-1)" class="p-1 hover:bg-slate-100 rounded-lg text-slate-400 hover:text-emerald-500 transition"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M15 19l-7-7 7-7"></path></svg></button><div class="font-bold text-slate-700 text-sm">${year}年 ${monthNames[month]}</div><button onclick="changeCalMonth(1)" class="p-1 hover:bg-slate-100 rounded-lg text-slate-400 hover:text-emerald-500 transition"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M9 5l7 7-7 7"></path></svg></button></div><div class="grid grid-cols-7 gap-1 text-center"><div class="text-[10px] text-slate-400 font-bold py-1">日</div><div class="text-[10px] text-slate-400 font-bold py-1">一</div><div class="text-[10px] text-slate-400 font-bold py-1">二</div><div class="text-[10px] text-slate-400 font-bold py-1">三</div><div class="text-[10px] text-slate-400 font-bold py-1">四</div><div class="text-[10px] text-slate-400 font-bold py-1">五</div><div class="text-[10px] text-slate-400 font-bold py-1">六</div>`;
-  const firstDay = new Date(year, month, 1).getDay();
-  const daysInMonth = new Date(year, month + 1, 0).getDate();
-  const todayStr = new Date().toISOString().split('T')[0];
-  const recordedDates = new Set(allTreatmentLogs.map(log => log['治療日期']));
-  for (let i = 0; i < firstDay; i++) html += `<div class="h-8"></div>`;
-  for (let day = 1; day <= daysInMonth; day++) {
-    const dateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
-    const isToday = dateStr === todayStr ? 'bg-slate-800 text-white shadow-md' : 'text-slate-600 hover:bg-slate-50';
-    const hasRecord = recordedDates.has(dateStr) ? 'ring-1 ring-emerald-400 bg-emerald-50 text-emerald-700 font-bold' : '';
-    const finalClass = (dateStr === todayStr) ? 'bg-slate-800 text-white shadow-md' : hasRecord;
-    const dot = (recordedDates.has(dateStr) && dateStr === todayStr) ? '<span class="absolute bottom-0.5 w-1 h-1 bg-emerald-400 rounded-full"></span>' : '';
-    html += `<div onclick="selectDateFromCal('${dateStr}')" class="h-8 w-8 mx-auto flex flex-col items-center justify-center rounded-full cursor-pointer text-xs transition relative ${finalClass}">${day}${dot}</div>`;
-  }
-  html += `</div>`; container.innerHTML = html;
-}
-
-function changeCalMonth(offset) { currentCalDate.setMonth(currentCalDate.getMonth() + offset); renderTreatmentCalendar(); }
-function selectDateFromCal(date) { document.getElementById('filterDate').value = date; applyLogFilters(); }
-function openModal(id) { document.getElementById(id).classList.remove('hidden'); }
-function closeModal(id) { document.getElementById(id).classList.add('hidden'); }
-function resetSearch() { currentClient = null; document.getElementById('topBarClientInfo').classList.add('hidden'); navTo('search'); }
-function editClientInfo() { alert("編輯功能開發中..."); }
-</script>

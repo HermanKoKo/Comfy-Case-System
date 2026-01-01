@@ -1,7 +1,5 @@
 <style>
-  /* === 新增：列印專用樣式 (Print Styles) === */
   @media print {
-    /* 隱藏側邊欄、不需列印的按鈕、所有 Input 下拉選單與日曆 */
     #sidebar,
     .no-print,
     .flatpickr-calendar,
@@ -9,8 +7,6 @@
     input[type="date"]::-webkit-calendar-picker-indicator {
       display: none !important;
     }
-
-    /* 重設版面寬度與滾動設定，確保內容完整列印 */
     body,
     #main-content,
     #contentArea,
@@ -22,34 +18,25 @@
       padding: 0 !important;
       background-color: white !important;
     }
-
-    /* 隱藏滾動條 */
     ::-webkit-scrollbar {
       display: none;
     }
-
-    /* 強制列印背景顏色 (Chrome/Edge/Safari) */
     body {
       -webkit-print-color-adjust: exact;
       print-color-adjust: exact;
     }
-
-    /* 避免卡片內容被分頁切斷 */
     .group, 
     .bg-white {
       break-inside: avoid;
       page-break-inside: avoid;
-      box-shadow: none !important; /* 列印時移除陰影讓畫面更乾淨 */
-      border: 1px solid #e2e8f0 !important; /* 加深邊框確保列印清晰 */
+      box-shadow: none !important;
+      border: 1px solid #e2e8f0 !important;
     }
-    
-    /* 調整列印時的邊距 */
     #overviewListContainer {
       display: block !important;
     }
   }
 
-  /* === Flatpickr 進階美化與結構調整 (維持原有設定) === */
   .flatpickr-calendar {
     width: 220px !important; 
     background: #fff;
@@ -197,7 +184,6 @@
     -webkit-appearance: none;
   }
 
-  /* === 治療月曆自定義樣式 (用於治療紀錄分頁的左側小月曆) === */
   .cal-header {
     display: flex;
     justify-content: space-between;
@@ -245,14 +231,12 @@
     border-radius: 50%;
   }
 
-  /* === 基礎樣式 === */
   body {
     font-family: 'Noto Sans TC', sans-serif;
     overflow: hidden; 
     background-color: #f3f4f6;
   }
 
-  /* 自定義滾動條 */
   ::-webkit-scrollbar {
     width: 6px;
     height: 6px;
@@ -268,19 +252,15 @@
     background: #94a3b8;
   }
   
-  /* 隱藏捲軸工具類 */
   .no-scrollbar::-webkit-scrollbar {
     display: none;
   }
   .no-scrollbar {
-    -ms-overflow-style: none;  /* IE and Edge */
-    scrollbar-width: none;  /* Firefox */
+    -ms-overflow-style: none;
+    scrollbar-width: none;
   }
 
-  /* 導覽列 */
   .nav-btn { color: #94a3b8; }
   .nav-btn:hover { color: #fff; }
 </style>
-
-<!-- Google Fonts -->
 <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@300;400;500;700&display=swap" rel="stylesheet">

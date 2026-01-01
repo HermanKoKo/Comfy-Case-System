@@ -1,5 +1,41 @@
 /**
  * ==========================================
+ * 設定檔 (Config.gs)
+ * ==========================================
+ */
+const CONFIG = {
+  SPREADSHEET_ID: '1LMhlQGyXNXq9Teqm0_W0zU9NbQlVCHKLDL0mSOiDomc', 
+  PARENT_FOLDER_ID: '1NIsNHALeSSVm60Yfjc9k-u30A42CuZw8',
+  SHEETS: {
+    CLIENT: 'Client_Basic_Info',
+    TREATMENT: 'Treatment_Logs',
+    DOCTOR: 'Doctor_Consultation',
+    TRACKING: 'Case_Tracking',
+    SYSTEM: 'System',
+    MAINTENANCE: 'Health_Maintenance', // 補上代碼中用到的保養表單名稱
+    IMAGE: 'Image_Gallery'
+  }
+};
+
+/**
+ * ==========================================
+ * 網頁應用程式入口 (WebApp.gs)
+ * ==========================================
+ */
+function doGet() {
+  return HtmlService.createTemplateFromFile('Index')
+    .evaluate()
+    .setTitle('康飛運醫 | 個案管理系統')
+    .setXFrameOptionsMode(HtmlService.XFrameOptionsMode.ALLOWALL)
+    .addMetaTag('viewport', 'width=device-width, initial-scale=1');
+}
+
+function include(filename) {
+  return HtmlService.createHtmlOutputFromFile(filename).getContent();
+}
+
+/**
+ * ==========================================
  * 核心邏輯層 (Api.gs)
  * ==========================================
  */
@@ -106,7 +142,6 @@ function getSystemStaff() {
 
 /**
  * 儲存個管追蹤紀錄 (DB_Tracking)
- * 欄位更新：[追蹤ID, 個案編號, 追蹤日期, 追蹤人員, 追蹤項目, 追蹤內容, 建立時間]
  */
 function saveTrackingRecord(formObj) {
   try {
@@ -118,8 +153,6 @@ function saveTrackingRecord(formObj) {
     const dateStr = Utilities.formatDate(now, ss.getSpreadsheetTimeZone(), "yyyyMMdd");
     const uniqueId = "TR" + dateStr + Math.floor(Math.random() * 1000).toString().padStart(3, '0');
     
-    // 2. 準備寫入資料
-    // 注意：這裡加入了 formObj.trackStaff (追蹤人員)
     const newRow = [
       uniqueId,                
       "'" + formObj.clientId,  // 加 ' 防止科學記號
@@ -153,7 +186,7 @@ function getTrackingHistory(clientId) {
     const idxClientId = headers.indexOf("個案編號");
     const idxId = headers.indexOf("追蹤ID");
     const idxDate = headers.indexOf("追蹤日期");
-    const idxStaff = headers.indexOf("追蹤人員"); // 新增欄位索引
+    const idxStaff = headers.indexOf("追蹤人員");
     const idxType = headers.indexOf("追蹤項目");
     const idxContent = headers.indexOf("追蹤內容");
     
@@ -168,7 +201,7 @@ function getTrackingHistory(clientId) {
         return {
           id: row[idxId],
           date: dateDisplay,
-          staff: row[idxStaff], // 新增：回傳人員資料
+          staff: row[idxStaff],
           type: row[idxType],
           content: row[idxContent]
         };
@@ -370,14 +403,7 @@ function saveMaintenanceRecord(data) {
 }
 
 /**
- * ==========================================
- * 個案總覽專用邏輯 (新增)
- * ==========================================
- */
-
-/**
  * 取得個案所有歷程資料 (聚合 4 個工作表)
- * 用於「個案總覽」頁面
  */
 function getCaseOverviewData(clientId) {
   try {
@@ -385,7 +411,6 @@ function getCaseOverviewData(clientId) {
     const result = [];
     
     // 1. 取得醫師看診紀錄 (Doctor_Consultation)
-    // 欄位: [A:ID, B:CaseID, C:Date, D:Doctor, E:Nurse, F:S, G:O, H:A, I:P, J:Remark]
     const docSheet = ss.getSheetByName(CONFIG.SHEETS.DOCTOR);
     if (docSheet) {
       const data = docSheet.getDataRange().getValues();
@@ -406,7 +431,6 @@ function getCaseOverviewData(clientId) {
     }
 
     // 2. 取得保養項目紀錄 (Health_Maintenance)
-    // 欄位: [A:ID, B:CaseID, C:Date, D:Staff, E:Item, F:BP, G:SpO2, H:HR, I:Temp, J:Remark]
     const maintSheet = ss.getSheetByName(CONFIG.SHEETS.MAINTENANCE);
     if (maintSheet) {
       const data = maintSheet.getDataRange().getValues();
@@ -431,7 +455,6 @@ function getCaseOverviewData(clientId) {
     }
 
     // 3. 取得個管追蹤紀錄 (DB_Tracking)
-    // 欄位: [A:ID, B:CaseID, C:Date, D:Staff, E:Type, F:Content]
     const trackSheet = ss.getSheetByName(CONFIG.SHEETS.TRACKING);
     if (trackSheet) {
       const data = trackSheet.getDataRange().getValues();
@@ -452,7 +475,6 @@ function getCaseOverviewData(clientId) {
     }
 
     // 4. 取得治療紀錄 (Treatment_Logs)
-    // 欄位: [A:CaseID, B:Date, C:Therapist, D:Complaint, E:Content] (假設順序，需對照 getClientHistory)
     const treatSheet = ss.getSheetByName(CONFIG.SHEETS.TREATMENT);
     if (treatSheet) {
       const data = treatSheet.getDataRange().getValues();
