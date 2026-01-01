@@ -1,28 +1,78 @@
-<!-- Tailwind CSS -->
-<script src="https://cdn.tailwindcss.com"></script>
-
-<!-- Google Fonts -->
-<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@300;400;500;700&display=swap" rel="stylesheet">
-
-<!-- Flatpickr 日曆核心樣式 -->
-<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
-
 <style>
-  /* === Flatpickr 進階美化與結構調整 (修正裁切、對齊與放大版本) === */
-  
-  /* 1. 整體外框：寬度維持 220px (約 15% 放大) */
+  /* === 新增：列印專用樣式 (Print Styles) === */
+  @media print {
+    /* 隱藏側邊欄、不需列印的按鈕、所有 Input 下拉選單與日曆 */
+    #sidebar,
+    .no-print,
+    .flatpickr-calendar,
+    button,
+    input[type="date"]::-webkit-calendar-picker-indicator {
+      display: none !important;
+    }
+
+    /* 重設版面寬度與滾動設定，確保內容完整列印 */
+    body,
+    #main-content,
+    #contentArea,
+    #view-overview {
+      height: auto !important;
+      width: 100% !important;
+      overflow: visible !important;
+      margin: 0 !important;
+      padding: 0 !important;
+      background-color: white !important;
+    }
+
+    /* 隱藏滾動條 */
+    ::-webkit-scrollbar {
+      display: none;
+    }
+
+    /* 強制列印背景顏色 (Chrome/Edge/Safari) */
+    body {
+      -webkit-print-color-adjust: exact;
+      print-color-adjust: exact;
+    }
+
+    /* 避免卡片內容被分頁切斷 */
+    .group, 
+    .bg-white {
+      break-inside: avoid;
+      page-break-inside: avoid;
+      box-shadow: none !important; /* 列印時移除陰影讓畫面更乾淨 */
+      border: 1px solid #e2e8f0 !important; /* 加深邊框確保列印清晰 */
+    }
+    
+    /* 調整列印時的邊距 */
+    #overviewListContainer {
+      display: block !important;
+    }
+  }
+
+  /* === Flatpickr 進階美化與結構調整 (維持原有設定) === */
   .flatpickr-calendar {
     width: 220px !important; 
     background: #fff;
     border-radius: 1.15rem !important;
-    box-shadow: 0 10px 20px -5px rgb(0 0 0 / 0.1) !important;
+    box-shadow: 0 10px 25px -5px rgb(0 0 0 / 0.1), 0 8px 10px -6px rgb(0 0 0 / 0.1) !important;
     border: 1px solid #e2e8f0 !important;
     font-family: 'Noto Sans TC', sans-serif !important;
     padding: 8px !important;
     box-sizing: border-box !important;
   }
 
-  /* 2. 修正內層容器寬度，解決週五週六被裁切的問題 */
+  .flatpickr-calendar.static {
+    position: absolute !important;
+    top: calc(100% + 5px) !important; 
+    left: 0 !important;
+    z-index: 999 !important;
+    display: none; 
+  }
+  
+  .flatpickr-calendar.static.open {
+    display: block !important;
+  }
+
   .flatpickr-innerContainer,
   .flatpickr-rContainer,
   .flatpickr-days,
@@ -32,7 +82,6 @@
     max-width: 100% !important;
   }
 
-  /* 3. 調整月份與年份區域 (深灰色文字) */
   .flatpickr-current-month {
     display: flex !important;
     align-items: center !important;
@@ -40,7 +89,7 @@
     font-size: 16px !important;
     font-weight: 700 !important;
     padding: 4px 0 !important;
-    color: #374151 !important; /* 深灰色 */
+    color: #374151 !important;
   }
 
   .flatpickr-monthDropdown-months {
@@ -66,7 +115,6 @@
     background: #ffffff !important;
   }
 
-  /* 4. 修正對齊問題：星期標題區 (100% / 7 = 14.2857%) */
   .flatpickr-weekdays {
     height: 30px !important;
     background: #ffffff !important;
@@ -86,7 +134,6 @@
     align-items: center !important;
   }
 
-  /* 5. 修正對齊問題：日期格子 (與星期精確對齊) */
   .flatpickr-day {
     flex: 0 0 14.2857% !important;
     max-width: 14.2857% !important; 
@@ -102,7 +149,6 @@
     border: 1px solid transparent !important;
   }
 
-  /* 6. 保持翡翠綠配色樣式 */
   .flatpickr-day.selected, .flatpickr-day.selected:hover, .flatpickr-day.selected:focus {
     background: #10b981 !important; 
     border-color: #10b981 !important;
@@ -120,12 +166,10 @@
     color: #10b981 !important;
   }
 
-  /* 非本月日期 */
   .flatpickr-day.prevMonthDay, .flatpickr-day.nextMonthDay {
     color: #e5e7eb !important;
   }
 
-  /* 箭頭樣式 */
   .flatpickr-prev-month, .flatpickr-next-month {
     padding: 4px !important;
     margin: 2px !important;
@@ -136,13 +180,13 @@
   .flatpickr-prev-month svg, .flatpickr-next-month svg {
     width: 12px !important;
     height: 12px !important;
+    fill: #94a3b8;
   }
   
   .flatpickr-prev-month:hover svg, .flatpickr-next-month:hover svg {
     fill: #10b981 !important;
   }
 
-  /* 解決滾動位移與圖標隱藏 */
   .flatpickr-wrapper {
     display: block !important;
     width: 100% !important;
@@ -153,7 +197,55 @@
     -webkit-appearance: none;
   }
 
-  /* === 頁面基礎樣式 (保持現有配色) === */
+  /* === 治療月曆自定義樣式 (用於治療紀錄分頁的左側小月曆) === */
+  .cal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1rem;
+  }
+  .cal-grid {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    gap: 2px;
+  }
+  .cal-weekday {
+    text-align: center;
+    font-size: 10px;
+    font-weight: 700;
+    color: #94a3b8;
+    padding-bottom: 8px;
+  }
+  .cal-weekday.sunday { color: #f87171; }
+
+  .cal-day {
+    aspect-ratio: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    font-size: 12px;
+    color: #475569;
+    border-radius: 10px;
+    cursor: pointer;
+    position: relative;
+    transition: all 0.2s;
+  }
+  .cal-day:hover { background-color: #f1f5f9; }
+  .cal-day.today { background-color: #f8fafc; border: 1px solid #e2e8f0; font-weight: 700; color: #10b981; }
+  .cal-day.other-month { opacity: 0.2; pointer-events: none; }
+  
+  .cal-day.has-record::after {
+    content: '';
+    position: absolute;
+    bottom: 4px;
+    width: 4px;
+    height: 4px;
+    background-color: #10b981; 
+    border-radius: 50%;
+  }
+
+  /* === 基礎樣式 === */
   body {
     font-family: 'Noto Sans TC', sans-serif;
     overflow: hidden; 
@@ -175,39 +267,20 @@
   ::-webkit-scrollbar-thumb:hover {
     background: #94a3b8;
   }
-
-  /* 導覽列激活狀態 (Emerald-500) */
-  .nav-item.active {
-    background-color: #10b981;
-    color: white;
-    font-weight: 500;
-  }
   
-  .nav-item {
-    color: #9ca3af;
-    transition: all 0.2s;
+  /* 隱藏捲軸工具類 */
+  .no-scrollbar::-webkit-scrollbar {
+    display: none;
   }
-  
-  .nav-item:hover:not(.active) {
-    background-color: #1f2937;
-    color: white;
+  .no-scrollbar {
+    -ms-overflow-style: none;  /* IE and Edge */
+    scrollbar-width: none;  /* Firefox */
   }
 
-  /* Loading Spinner */
-  .loader {
-    border: 3px solid #f3f3f3;
-    border-radius: 50%;
-    border-top: 3px solid #10b981;
-    width: 24px;
-    height: 24px;
-    animation: spin 1s linear infinite;
-  }
-  @keyframes spin {
-    0% { transform: rotate(0deg); }
-    100% { transform: rotate(360deg); }
-  }
+  /* 導覽列 */
+  .nav-btn { color: #94a3b8; }
+  .nav-btn:hover { color: #fff; }
 </style>
 
-<!-- 引入 Flatpickr 主程式與語系 -->
-<script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
-<script src="https://cdn.jsdelivr.net/npm/flatpickr/dist/l10n/zh-tw.js"></script>
+<!-- Google Fonts -->
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@300;400;500;700&display=swap" rel="stylesheet">

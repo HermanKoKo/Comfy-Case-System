@@ -4,9 +4,10 @@ const CONFIG = {
   SHEETS: {
     CLIENT: 'Client_Basic_Info',
     TREATMENT: 'Treatment_Logs',
-    DOCTOR: 'Doctor_Consultation',   // 注意：拿掉 s，與 Api.gs 保持一致
-    TRACKING: 'Case_Tracking',
+    DOCTOR: 'Doctor_Consultation',
+    TRACKING: 'DB_Tracking', 
     SYSTEM: 'System',
+    MAINTENANCE: 'Health_Maintenance',
     IMAGE: 'Image_Gallery'
   }
 };
