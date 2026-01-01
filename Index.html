@@ -84,7 +84,6 @@
         </div>
 
         <div class="bg-white rounded-[2rem] shadow-sm border border-slate-100 overflow-hidden">
-          <!-- 調整：p-8 -> p-6, mb-2 -> mb-1 -->
           <div class="grid grid-cols-1 md:grid-cols-3">
             <div class="p-6 border-b md:border-b-0 md:border-r border-slate-50">
               <label class="block text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">個案編號</label>
@@ -177,7 +176,6 @@
                       <span class="material-icons-outlined text-lg text-emerald-500">filter_alt</span> 快速篩選
                     </h4>
                   </div>
-                  <!-- 調整：space-y-2 -> space-y-1, py-2.5 -->
                   <div class="space-y-1">
                     <label class="text-[10px] font-bold text-slate-400 ml-1">執行人員</label>
                     <div class="relative">
@@ -220,7 +218,6 @@
                     <!-- 治療日期 -->
                     <div class="flex items-center gap-3">
                       <label class="text-xs font-bold text-slate-400 shrink-0">治療日期</label>
-                      <!-- 調整：py-3 -> py-2.5 -->
                       <input type="date" id="treatmentDate" required class="w-full px-5 py-2.5 bg-slate-50 border border-slate-100 rounded-2xl outline-none focus:border-emerald-500 transition-all cursor-pointer font-bold text-slate-700">
                     </div>
                     
@@ -228,7 +225,6 @@
                     <div class="flex items-center gap-3">
                       <label class="text-xs font-bold text-slate-400 shrink-0">治療師</label>
                       <div class="relative w-full">
-                        <!-- 調整：py-3 -> py-2.5 -->
                         <select id="inputTherapist" required class="w-full px-5 py-2.5 bg-slate-50 border border-slate-100 rounded-2xl outline-none focus:border-emerald-500 transition-all cursor-pointer appearance-none font-bold text-slate-700">
                            <option value="" disabled selected>請選擇治療師</option>
                         </select>
@@ -505,34 +501,66 @@
     </div>
   </main>
 
-  <!-- Modal: 新增個案 -->
+  <!-- Modal: 新增個案 (優化版) -->
   <div id="addClientModal" class="hidden fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 no-print">
      <div class="bg-white w-full max-w-2xl rounded-[2.5rem] overflow-hidden shadow-2xl">
-        <div class="p-6 border-b border-slate-100 flex justify-between items-center">
-           <h3 class="text-2xl font-black text-slate-800">新增個案資料</h3>
-           <button onclick="closeModal('addClientModal')" class="text-slate-300 hover:text-slate-500 transition text-2xl">✕</button>
+        
+        <!-- Header -->
+        <div class="px-8 py-6 border-b border-slate-100 flex justify-between items-center bg-white sticky top-0 z-10">
+           <h3 class="text-2xl font-black text-slate-800 tracking-tight">新增個案資料</h3>
+           <button onclick="closeModal('addClientModal')" class="text-slate-300 hover:text-slate-500 transition text-3xl leading-none">&times;</button>
         </div>
-        <!-- 調整：p-8 -> p-6, space-y-5 -> space-y-4 -->
-        <form id="addClientForm" class="p-6 space-y-4 max-h-[80vh] overflow-y-auto custom-scrollbar">
-           <div class="grid grid-cols-2 gap-4">
-              <!-- 調整：space-y-2 -> space-y-1, py-3 -> py-2.5, px-5 -> px-4 -->
-              <div class="space-y-1"><label class="text-xs font-bold text-slate-400 ml-1">姓名</label><input type="text" id="addName" required class="w-full px-4 py-2.5 bg-slate-50 border border-slate-100 rounded-2xl outline-none focus:border-emerald-500 transition-all"></div>
-              <div class="space-y-1"><label class="text-xs font-bold text-slate-400 ml-1">生日</label><input type="date" id="addDob" required class="w-full px-4 py-2.5 bg-white border border-slate-200 rounded-2xl outline-none transition-all cursor-pointer"></div>
+
+        <!-- Form Body -->
+        <form id="addClientForm" class="p-8 space-y-6 max-h-[80vh] overflow-y-auto custom-scrollbar">
+           
+           <div class="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-6">
+              
+              <!-- 第一列 -->
+              <div class="flex items-center gap-3">
+                 <label class="w-28 shrink-0 text-sm font-bold text-slate-500 text-right">姓名 <span class="text-red-400">*</span></label>
+                 <input type="text" id="addName" required class="flex-1 px-4 py-2.5 bg-slate-50 border border-slate-100 rounded-xl outline-none focus:bg-white focus:border-emerald-500 transition-all">
+              </div>
+              <div class="flex items-center gap-3">
+                 <label class="w-28 shrink-0 text-sm font-bold text-slate-500 text-right">生日 <span class="text-red-400">*</span></label>
+                 <input type="date" id="addDob" required class="flex-1 px-4 py-2.5 bg-slate-50 border border-slate-100 rounded-xl outline-none focus:bg-white focus:border-emerald-500 transition-all cursor-pointer">
+              </div>
+
+              <!-- 第二列 -->
+              <div class="flex items-center gap-3">
+                 <label class="w-28 shrink-0 text-sm font-bold text-slate-500 text-right">身分證字號</label>
+                 <input type="text" id="addIdNo" oninput="autoDetectGender(this)" class="flex-1 px-4 py-2.5 bg-slate-50 border border-slate-100 rounded-xl outline-none focus:bg-white focus:border-emerald-500 transition-all">
+              </div>
+              <div class="flex items-center gap-3">
+                 <label class="w-28 shrink-0 text-sm font-bold text-slate-500 text-right">聯絡電話 <span class="text-red-400">*</span></label>
+                 <input type="text" id="addPhone" required class="flex-1 px-4 py-2.5 bg-slate-50 border border-slate-100 rounded-xl outline-none focus:bg-white focus:border-emerald-500 transition-all">
+              </div>
+
+              <!-- 第三列 -->
+              <div class="flex items-center gap-3">
+                 <label class="w-28 shrink-0 text-sm font-bold text-slate-500 text-right">緊急聯絡人</label>
+                 <input type="text" id="addEmerName" class="flex-1 px-4 py-2.5 bg-slate-50 border border-slate-100 rounded-xl outline-none focus:bg-white focus:border-emerald-500 transition-all">
+              </div>
+              <div class="flex items-center gap-3">
+                 <label class="w-28 shrink-0 text-sm font-bold text-slate-500 text-right">緊急聯絡電話</label>
+                 <input type="text" id="addEmerPhone" class="flex-1 px-4 py-2.5 bg-slate-50 border border-slate-100 rounded-xl outline-none focus:bg-white focus:border-emerald-500 transition-all">
+              </div>
+
+              <!-- 第四列 (全寬) -->
+              <div class="col-span-1 md:col-span-2 space-y-2">
+                 <label class="text-xs font-bold text-slate-400 ml-1 block">慢性病或特殊疾病</label>
+                 <textarea id="addChronic" rows="3" class="w-full px-4 py-3 bg-slate-50 border border-slate-100 rounded-xl outline-none focus:bg-white focus:border-emerald-500 transition-all resize-none"></textarea>
+              </div>
+
            </div>
-           <div class="grid grid-cols-2 gap-4">
-              <div class="space-y-1"><label class="text-xs font-bold text-slate-400 ml-1">身分證字號</label><input type="text" id="addIdNo" oninput="autoDetectGender(this)" placeholder="A123456789" class="w-full px-4 py-2.5 bg-slate-50 border border-slate-100 rounded-2xl outline-none focus:border-emerald-500 transition-all"></div>
-              <div class="space-y-1"><label class="text-xs font-bold text-slate-400 ml-1">聯絡電話</label><input type="text" id="addPhone" required class="w-full px-4 py-2.5 bg-slate-50 border border-slate-100 rounded-2xl outline-none focus:border-emerald-500 transition-all"></div>
+
+           <!-- 底部按鈕區 -->
+           <div class="pt-4 sticky bottom-0 bg-white pb-2">
+              <button type="button" id="btnSubmitClient" onclick="submitNewClient()" class="w-full bg-emerald-500 hover:bg-emerald-600 text-white font-bold py-4 rounded-xl shadow-lg shadow-emerald-500/20 transition-all active:scale-[0.98] tracking-wide text-lg">
+                 建立個案資料
+              </button>
            </div>
-           <div class="grid grid-cols-2 gap-4">
-              <div class="space-y-1"><label class="text-xs font-bold text-slate-400 ml-1">緊急聯絡人</label><input type="text" id="addEmerName" class="w-full px-4 py-2.5 bg-slate-50 border border-slate-100 rounded-2xl outline-none focus:border-emerald-500 transition-all"></div>
-              <div class="space-y-1"><label class="text-xs font-bold text-slate-400 ml-1">緊急聯絡電話</label><input type="text" id="addEmerPhone" class="w-full px-4 py-2.5 bg-slate-50 border border-slate-100 rounded-2xl outline-none focus:border-emerald-500 transition-all"></div>
-           </div>
-           <div class="space-y-1"><label class="text-xs font-bold text-slate-400 ml-1">慢性病或特殊疾病</label><textarea id="addChronic" rows="2" class="w-full px-4 py-2.5 bg-slate-50 border border-slate-100 rounded-2xl outline-none focus:border-emerald-500 transition-all resize-none"></textarea></div>
-           <div class="flex items-center gap-2 p-3 bg-emerald-50 rounded-2xl border border-emerald-100">
-             <span class="text-xs font-bold text-emerald-600 ml-2">系統辨識性別：</span>
-             <span id="genderPreview" class="font-black text-emerald-700">請輸入身分證</span>
-           </div>
-           <button type="button" id="btnSubmitClient" onclick="submitNewClient()" class="w-full bg-emerald-500 text-white font-black py-3.5 rounded-2xl shadow-xl transition-all">建立個案資料</button>
+
         </form>
      </div>
   </div>
