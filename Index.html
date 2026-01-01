@@ -84,49 +84,50 @@
         </div>
 
         <div class="bg-white rounded-[2rem] shadow-sm border border-slate-100 overflow-hidden">
+          <!-- 調整：p-8 -> p-6, mb-2 -> mb-1 -->
           <div class="grid grid-cols-1 md:grid-cols-3">
-            <div class="p-8 border-b md:border-b-0 md:border-r border-slate-50">
-              <label class="block text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-2">個案編號</label>
+            <div class="p-6 border-b md:border-b-0 md:border-r border-slate-50">
+              <label class="block text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">個案編號</label>
               <div id="display-client-id" class="text-xl font-black text-slate-800">--</div>
             </div>
-            <div class="p-8 border-b md:border-b-0 md:border-r border-slate-50">
-              <label class="block text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-2">姓名</label>
+            <div class="p-6 border-b md:border-b-0 md:border-r border-slate-50">
+              <label class="block text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">姓名</label>
               <div id="display-name" class="text-xl font-black text-emerald-600">--</div>
             </div>
-            <div class="p-8">
-              <label class="block text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-2">性別</label>
+            <div class="p-6">
+              <label class="block text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">性別</label>
               <div id="display-gender" class="text-xl font-black text-slate-800">--</div>
             </div>
           </div>
           
           <div class="grid grid-cols-1 md:grid-cols-3 border-t border-slate-50">
-            <div class="p-8 border-b md:border-b-0 md:border-r border-slate-50">
-              <label class="block text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-2">出生日期</label>
+            <div class="p-6 border-b md:border-b-0 md:border-r border-slate-50">
+              <label class="block text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">出生日期</label>
               <div id="display-birthday" class="text-lg font-bold text-slate-700">--</div>
             </div>
-            <div class="p-8 border-b md:border-b-0 md:border-r border-slate-50">
-              <label class="block text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-2">身分證字號</label>
+            <div class="p-6 border-b md:border-b-0 md:border-r border-slate-50">
+              <label class="block text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">身分證字號</label>
               <div id="display-id-number" class="text-lg font-bold text-slate-700">--</div>
             </div>
-            <div class="p-8">
-              <label class="block text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-2">聯絡電話</label>
+            <div class="p-6">
+              <label class="block text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">聯絡電話</label>
               <div id="display-phone" class="text-lg font-bold text-emerald-600">--</div>
             </div>
           </div>
 
           <div class="grid grid-cols-1 md:grid-cols-2 border-t border-slate-50">
-            <div class="p-8 border-b md:border-b-0 md:border-r border-slate-50">
-              <label class="block text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-2">緊急聯絡人</label>
+            <div class="p-6 border-b md:border-b-0 md:border-r border-slate-50">
+              <label class="block text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">緊急聯絡人</label>
               <div id="display-emergency-name" class="text-lg font-bold text-slate-700">--</div>
             </div>
-            <div class="p-8">
-              <label class="block text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-2">緊急聯絡人電話</label>
+            <div class="p-6">
+              <label class="block text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">緊急聯絡人電話</label>
               <div id="display-emergency-phone" class="text-lg font-bold text-slate-700">--</div>
             </div>
           </div>
 
-          <div class="p-8 border-t border-slate-50 bg-slate-50/30">
-            <label class="block text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-3">個案備註 / 病史說明</label>
+          <div class="p-6 border-t border-slate-50 bg-slate-50/30">
+            <label class="block text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-2">個案備註 / 病史說明</label>
             <div id="display-notes" class="text-slate-600 leading-relaxed min-h-[100px]">尚無備註紀錄。</div>
           </div>
         </div>
@@ -159,7 +160,7 @@
         </div>
       </div>
 
-      <!-- 治療紀錄視圖 (修改區域) -->
+      <!-- 治療紀錄視圖 -->
       <div id="view-treatment" class="hidden max-w-6xl mx-auto space-y-8">
          <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 no-print">
             <!-- 左側：月曆與篩選 -->
@@ -176,7 +177,8 @@
                       <span class="material-icons-outlined text-lg text-emerald-500">filter_alt</span> 快速篩選
                     </h4>
                   </div>
-                  <div class="space-y-2">
+                  <!-- 調整：space-y-2 -> space-y-1, py-2.5 -->
+                  <div class="space-y-1">
                     <label class="text-[10px] font-bold text-slate-400 ml-1">執行人員</label>
                     <div class="relative">
                       <select id="filterTherapist" onchange="applyLogFilters()" class="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:border-emerald-500 transition-all cursor-pointer appearance-none text-sm text-slate-700 font-bold">
@@ -184,7 +186,7 @@
                       <span class="material-icons-outlined absolute right-3 top-2.5 text-slate-400 pointer-events-none text-sm">expand_more</span>
                     </div>
                   </div>
-                  <div class="space-y-2">
+                  <div class="space-y-1">
                     <label class="text-[10px] font-bold text-slate-400 ml-1">日期查詢</label>
                     <div class="flex gap-2">
                        <input type="date" id="filterDate" placeholder="選擇日期" class="flex-1 px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl outline-none transition-all cursor-pointer hover:border-emerald-400 focus:border-emerald-500 text-sm font-bold text-slate-700">
@@ -196,7 +198,7 @@
                </div>
             </div>
             
-            <!-- 右側：新增表單 (主要修改處) -->
+            <!-- 右側：新增表單 -->
             <div class="lg:col-span-2">
                <form id="treatmentForm" class="bg-white p-6 rounded-[2.5rem] shadow-sm border-t-4 border-emerald-500 border-x border-b border-slate-100 space-y-4 h-full">
                  
@@ -213,42 +215,44 @@
                  
                  <input type="hidden" name="個案編號" class="auto-fill-id">
                  
-                 <!-- 第一行：日期與治療師 (水平排列 + 文字修改) -->
+                 <!-- 第一行：日期與治療師 (水平排列) -->
                  <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <!-- 治療日期 -->
                     <div class="flex items-center gap-3">
                       <label class="text-xs font-bold text-slate-400 shrink-0">治療日期</label>
-                      <input type="date" id="treatmentDate" required class="w-full px-5 py-3 bg-slate-50 border border-slate-100 rounded-2xl outline-none focus:border-emerald-500 transition-all cursor-pointer font-bold text-slate-700">
+                      <!-- 調整：py-3 -> py-2.5 -->
+                      <input type="date" id="treatmentDate" required class="w-full px-5 py-2.5 bg-slate-50 border border-slate-100 rounded-2xl outline-none focus:border-emerald-500 transition-all cursor-pointer font-bold text-slate-700">
                     </div>
                     
-                    <!-- 治療師 (修改文字與對齊方式) -->
+                    <!-- 治療師 -->
                     <div class="flex items-center gap-3">
                       <label class="text-xs font-bold text-slate-400 shrink-0">治療師</label>
                       <div class="relative w-full">
-                        <select id="inputTherapist" required class="w-full px-5 py-3 bg-slate-50 border border-slate-100 rounded-2xl outline-none focus:border-emerald-500 transition-all cursor-pointer appearance-none font-bold text-slate-700">
+                        <!-- 調整：py-3 -> py-2.5 -->
+                        <select id="inputTherapist" required class="w-full px-5 py-2.5 bg-slate-50 border border-slate-100 rounded-2xl outline-none focus:border-emerald-500 transition-all cursor-pointer appearance-none font-bold text-slate-700">
                            <option value="" disabled selected>請選擇治療師</option>
                         </select>
-                        <span class="material-icons-outlined absolute right-4 top-3.5 text-slate-400 pointer-events-none">expand_more</span>
+                        <span class="material-icons-outlined absolute right-4 top-3 text-slate-400 pointer-events-none">expand_more</span>
                       </div>
                     </div>
                  </div>
 
-                 <!-- 當日主訴 -->
-                 <div class="space-y-1.5">
+                 <!-- 當日主訴 (調整：space-y-1, py-3 -> py-2.5) -->
+                 <div class="space-y-1">
                    <label class="text-xs font-bold text-slate-400 ml-1">當日主訴</label>
-                   <textarea id="inputComplaint" placeholder="描述個案今日狀況..." class="w-full px-5 py-4 bg-slate-50 border border-slate-100 rounded-2xl outline-none focus:border-emerald-500 transition-all h-20 resize-none"></textarea>
+                   <textarea id="inputComplaint" placeholder="描述個案今日狀況..." class="w-full px-5 py-2.5 bg-slate-50 border border-slate-100 rounded-2xl outline-none focus:border-emerald-500 transition-all h-20 resize-none"></textarea>
                  </div>
 
-                 <!-- 治療內容 -->
-                 <div class="space-y-1.5">
+                 <!-- 治療內容 (調整：space-y-1, py-3 -> py-2.5) -->
+                 <div class="space-y-1">
                    <label class="text-xs font-bold text-slate-400 ml-1">治療內容</label>
-                   <textarea id="inputContent" required placeholder="請詳述治療細節..." class="w-full px-5 py-4 bg-slate-50 border border-slate-100 rounded-2xl outline-none focus:border-emerald-500 transition-all h-32 resize-none"></textarea>
+                   <textarea id="inputContent" required placeholder="請詳述治療細節..." class="w-full px-5 py-2.5 bg-slate-50 border border-slate-100 rounded-2xl outline-none focus:border-emerald-500 transition-all h-32 resize-none"></textarea>
                  </div>
                  
-                 <!-- 備註 / 下次治療 -->
-                 <div class="space-y-1.5">
+                 <!-- 備註 / 下次治療 (調整：space-y-1, py-3 -> py-2.5) -->
+                 <div class="space-y-1">
                    <label class="text-xs font-bold text-slate-400 ml-1">備註 / 下次治療</label>
-                   <textarea id="inputNextPlan" placeholder="請輸入備註或下次治療重點..." class="w-full px-5 py-4 bg-slate-50 border border-slate-100 rounded-2xl outline-none focus:border-emerald-500 transition-all h-20 resize-none"></textarea>
+                   <textarea id="inputNextPlan" placeholder="請輸入備註或下次治療重點..." class="w-full px-5 py-2.5 bg-slate-50 border border-slate-100 rounded-2xl outline-none focus:border-emerald-500 transition-all h-20 resize-none"></textarea>
                  </div>
                  
                  <button type="button" onclick="submitForm('treatment')" class="w-full bg-emerald-500 hover:bg-emerald-600 text-white font-black py-3.5 rounded-2xl shadow-lg shadow-emerald-500/20 transition-all active:scale-[0.98] mt-2">
@@ -280,53 +284,56 @@
              </div>
              <h3 class="font-black text-slate-800 text-lg">新增保養紀錄</h3>
           </div>
-          <form id="maintenanceForm" class="p-8 space-y-8">
+          <!-- 調整：p-8 -> p-6, space-y-8 -> space-y-5 -->
+          <form id="maintenanceForm" class="p-6 space-y-5">
             <input type="hidden" name="個案編號" class="auto-fill-id">
             <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
-              <div class="space-y-2">
+              <!-- 調整：space-y-2 -> space-y-1, py-3 -> py-2.5 -->
+              <div class="space-y-1">
                 <label class="text-sm font-bold text-slate-400 block ml-1">日期</label>
                 <input type="date" id="maintenanceDate" name="日期" required 
-                  class="w-full px-5 py-3 bg-white border border-slate-200 rounded-2xl outline-none focus:border-orange-500 transition-all cursor-pointer">
+                  class="w-full px-5 py-2.5 bg-white border border-slate-200 rounded-2xl outline-none focus:border-orange-500 transition-all cursor-pointer">
               </div>
-              <div class="space-y-2">
+              <div class="space-y-1">
                 <label class="text-sm font-bold text-slate-400 block ml-1">執行人員</label>
                 <select id="selectMaintStaff" name="執行人員" required 
-                  class="w-full px-5 py-3 bg-white border border-slate-200 rounded-2xl focus:border-orange-500 outline-none transition-all cursor-pointer">
+                  class="w-full px-5 py-2.5 bg-white border border-slate-200 rounded-2xl focus:border-orange-500 outline-none transition-all cursor-pointer">
                   <option value="" disabled selected>載入中...</option>
                 </select>
               </div>
-              <div class="space-y-2">
+              <div class="space-y-1">
                 <label class="text-sm font-bold text-slate-400 block ml-1">保養項目</label>
                 <select id="selectMaintItem" name="保養項目" required 
-                  class="w-full px-5 py-3 bg-white border border-slate-200 rounded-2xl focus:border-orange-500 outline-none transition-all cursor-pointer">
+                  class="w-full px-5 py-2.5 bg-white border border-slate-200 rounded-2xl focus:border-orange-500 outline-none transition-all cursor-pointer">
                   <option value="" disabled selected>載入中...</option>
                 </select>
               </div>
             </div>
-            <div class="grid grid-cols-1 md:grid-cols-4 gap-6 p-6 bg-slate-50/50 rounded-[2rem] border border-slate-100">
-              <div class="space-y-2">
+            <!-- 調整：p-6 -> p-4 -->
+            <div class="grid grid-cols-1 md:grid-cols-4 gap-6 p-4 bg-slate-50/50 rounded-[2rem] border border-slate-100">
+              <div class="space-y-1">
                 <label class="text-xs font-bold text-slate-400 flex items-center gap-1.5 ml-1">血壓 (mmHg)</label>
-                <input type="text" name="血壓" placeholder="120/80" class="w-full px-5 py-3 bg-white border border-slate-200 rounded-2xl focus:border-orange-500 outline-none transition-all">
+                <input type="text" name="血壓" placeholder="120/80" class="w-full px-5 py-2.5 bg-white border border-slate-200 rounded-2xl focus:border-orange-500 outline-none transition-all">
               </div>
-              <div class="space-y-2">
+              <div class="space-y-1">
                 <label class="text-xs font-bold text-slate-400 flex items-center gap-1.5 ml-1">血氧 (%)</label>
-                <input type="text" name="血氧" placeholder="98" class="w-full px-5 py-3 bg-white border border-slate-200 rounded-2xl focus:border-orange-500 outline-none transition-all">
+                <input type="text" name="血氧" placeholder="98" class="w-full px-5 py-2.5 bg-white border border-slate-200 rounded-2xl focus:border-orange-500 outline-none transition-all">
               </div>
-              <div class="space-y-2">
+              <div class="space-y-1">
                 <label class="text-xs font-bold text-slate-400 flex items-center gap-1.5 ml-1">心律 (bpm)</label>
-                <input type="text" name="心律" placeholder="72" class="w-full px-5 py-3 bg-white border border-slate-200 rounded-2xl focus:border-orange-500 outline-none transition-all">
+                <input type="text" name="心律" placeholder="72" class="w-full px-5 py-2.5 bg-white border border-slate-200 rounded-2xl focus:border-orange-500 outline-none transition-all">
               </div>
-              <div class="space-y-2">
+              <div class="space-y-1">
                 <label class="text-xs font-bold text-slate-400 flex items-center gap-1.5 ml-1">體溫 (°C)</label>
-                <input type="text" name="體溫" placeholder="36.5" class="w-full px-5 py-3 bg-white border border-slate-200 rounded-2xl focus:border-orange-500 outline-none transition-all">
+                <input type="text" name="體溫" placeholder="36.5" class="w-full px-5 py-2.5 bg-white border border-slate-200 rounded-2xl focus:border-orange-500 outline-none transition-all">
               </div>
             </div>
-            <div class="space-y-2">
+            <div class="space-y-1">
                <label class="text-sm font-bold text-slate-400 block ml-1">備註</label>
-               <textarea name="備註" rows="4" class="w-full px-5 py-4 bg-white border border-slate-200 rounded-3xl focus:border-orange-500 outline-none transition-all resize-none" placeholder="請輸入保養相關備註..."></textarea>
+               <textarea name="備註" rows="4" class="w-full px-5 py-2.5 bg-white border border-slate-200 rounded-3xl focus:border-orange-500 outline-none transition-all resize-none" placeholder="請輸入保養相關備註..."></textarea>
             </div>
-            <div class="flex justify-end items-center pt-4">
-              <button type="button" onclick="submitForm('maintenance')" class="bg-gradient-to-r from-orange-400 to-orange-600 hover:from-orange-500 hover:to-orange-700 text-white px-10 py-4 rounded-2xl font-black shadow-lg shadow-orange-500/30 transition-all active:scale-95">
+            <div class="flex justify-end items-center pt-2">
+              <button type="button" onclick="submitForm('maintenance')" class="bg-gradient-to-r from-orange-400 to-orange-600 hover:from-orange-500 hover:to-orange-700 text-white px-10 py-3.5 rounded-2xl font-black shadow-lg shadow-orange-500/30 transition-all active:scale-95">
                 儲存紀錄
               </button>
             </div>
@@ -353,36 +360,38 @@
           </h3>
         </div>
         <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          <div class="lg:col-span-1 bg-white rounded-[2.5rem] p-8 shadow-sm border border-slate-100 h-fit no-print">
-            <h3 class="text-lg font-bold text-violet-600 mb-6 border-b border-violet-50 pb-3">新增紀錄</h3>
+          <!-- 調整：p-8 -> p-6 -->
+          <div class="lg:col-span-1 bg-white rounded-[2.5rem] p-6 shadow-sm border border-slate-100 h-fit no-print">
+            <h3 class="text-lg font-bold text-violet-600 mb-4 border-b border-violet-50 pb-3">新增紀錄</h3>
             <form id="trackingForm" onsubmit="event.preventDefault(); submitForm('tracking');">
               <input type="hidden" name="個案編號" class="auto-fill-id">
-              <div class="mb-5 space-y-2">
+              <!-- 調整：mb-5 -> mb-3, space-y-2 -> space-y-1, py-3 -> py-2.5 -->
+              <div class="mb-3 space-y-1">
                 <label class="block text-sm font-bold text-slate-400 ml-1">追蹤日期</label>
                 <input type="text" id="trackDate" name="trackDate" required
-                       class="w-full px-5 py-3 bg-slate-50 border border-slate-200 rounded-2xl outline-none focus:border-violet-500 transition-all cursor-pointer">
+                       class="w-full px-5 py-2.5 bg-slate-50 border border-slate-200 rounded-2xl outline-none focus:border-violet-500 transition-all cursor-pointer">
               </div>
-              <div class="mb-5 space-y-2">
+              <div class="mb-3 space-y-1">
                 <label class="block text-sm font-bold text-slate-400 ml-1">追蹤人員</label>
                 <select id="trackStaff" name="trackStaff" required
-                        class="w-full px-5 py-3 bg-slate-50 border border-slate-200 rounded-2xl outline-none focus:border-violet-500 transition-all cursor-pointer">
+                        class="w-full px-5 py-2.5 bg-slate-50 border border-slate-200 rounded-2xl outline-none focus:border-violet-500 transition-all cursor-pointer">
                   <option value="" disabled selected>載入中...</option>
                 </select>
               </div>
-              <div class="mb-5 space-y-2">
+              <div class="mb-3 space-y-1">
                 <label class="block text-sm font-bold text-slate-400 ml-1">追蹤項目</label>
                 <select id="trackType" name="trackType" required
-                        class="w-full px-5 py-3 bg-slate-50 border border-slate-200 rounded-2xl outline-none focus:border-violet-500 transition-all cursor-pointer">
+                        class="w-full px-5 py-2.5 bg-slate-50 border border-slate-200 rounded-2xl outline-none focus:border-violet-500 transition-all cursor-pointer">
                   <option value="" disabled selected>載入中...</option>
                 </select>
               </div>
-              <div class="mb-6 space-y-2">
+              <div class="mb-4 space-y-1">
                 <label class="block text-sm font-bold text-slate-400 ml-1">追蹤內容</label>
                 <textarea id="trackContent" name="content" rows="6" required placeholder="請輸入追蹤情形、個案回饋或備註..."
-                          class="w-full px-5 py-4 bg-slate-50 border border-slate-200 rounded-2xl outline-none focus:border-violet-500 transition-all resize-none"></textarea>
+                          class="w-full px-5 py-2.5 bg-slate-50 border border-slate-200 rounded-2xl outline-none focus:border-violet-500 transition-all resize-none"></textarea>
               </div>
               <button type="submit" 
-                      class="w-full text-white bg-violet-600 hover:bg-violet-700 font-bold rounded-2xl px-5 py-4 text-center transition-all shadow-lg shadow-violet-500/20 active:scale-95">
+                      class="w-full text-white bg-violet-600 hover:bg-violet-700 font-bold rounded-2xl px-5 py-3.5 text-center transition-all shadow-lg shadow-violet-500/20 active:scale-95">
                 儲存追蹤紀錄
               </button>
             </form>
@@ -414,25 +423,28 @@
                 上傳檔案
              </button>
           </div>
-          <form id="doctorForm" class="p-8 space-y-8">
+          <!-- 調整：p-8 -> p-6, space-y-8 -> space-y-5 -->
+          <form id="doctorForm" class="p-6 space-y-5">
             <input type="hidden" name="個案編號" class="auto-fill-id">
             <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+              <!-- 調整：mb-2 -> mb-1, py-3 -> py-2.5 -->
               <div>
-                <label class="text-sm font-bold text-slate-400 block mb-2">日期</label>
-                <input type="date" id="doctorConsultDate" class="w-full px-5 py-3 bg-slate-50 border border-slate-100 rounded-2xl focus:border-emerald-500 outline-none transition-all">
+                <label class="text-sm font-bold text-slate-400 block mb-1">日期</label>
+                <input type="date" id="doctorConsultDate" class="w-full px-5 py-2.5 bg-slate-50 border border-slate-100 rounded-2xl focus:border-emerald-500 outline-none transition-all">
               </div>
-              <div><label class="text-sm font-bold text-slate-400 block mb-2">看診醫師</label><select id="selectDoctor" class="w-full px-5 py-3 bg-slate-50 border border-slate-100 rounded-2xl focus:border-emerald-500 outline-none transition-all"></select></div>
-              <div><label class="text-sm font-bold text-slate-400 block mb-2">護理師</label><select id="selectNurse" class="w-full px-5 py-3 bg-slate-50 border border-slate-100 rounded-2xl focus:border-emerald-500 outline-none transition-all"></select></div>
+              <div><label class="text-sm font-bold text-slate-400 block mb-1">看診醫師</label><select id="selectDoctor" class="w-full px-5 py-2.5 bg-slate-50 border border-slate-100 rounded-2xl focus:border-emerald-500 outline-none transition-all"></select></div>
+              <div><label class="text-sm font-bold text-slate-400 block mb-1">護理師</label><select id="selectNurse" class="w-full px-5 py-2.5 bg-slate-50 border border-slate-100 rounded-2xl focus:border-emerald-500 outline-none transition-all"></select></div>
             </div>
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
-              <div class="space-y-2"><div class="flex items-center gap-2"><span class="bg-blue-100 text-blue-600 text-[10px] font-bold px-2 py-0.5 rounded">S</span><label class="text-sm font-bold">主訴</label></div><textarea name="主訴" rows="4" class="w-full px-5 py-4 bg-slate-50 border border-slate-100 rounded-2xl focus:border-emerald-500 outline-none transition-all resize-none"></textarea></div>
-              <div class="space-y-2"><div class="flex items-center gap-2"><span class="bg-indigo-100 text-indigo-600 text-[10px] font-bold px-2 py-0.5 rounded">O</span><label class="text-sm font-bold">客觀檢查</label></div><textarea name="客觀檢查" rows="4" class="w-full px-5 py-4 bg-slate-50 border border-slate-100 rounded-2xl focus:border-emerald-500 outline-none transition-all resize-none"></textarea></div>
-              <div class="space-y-2"><div class="flex items-center gap-2"><span class="bg-amber-100 text-amber-600 text-[10px] font-bold px-2 py-0.5 rounded">A</span><label class="text-sm font-bold">診斷</label></div><textarea name="診斷" rows="4" class="w-full px-5 py-4 bg-slate-50 border border-slate-100 rounded-2xl focus:border-emerald-500 outline-none transition-all resize-none"></textarea></div>
-              <div class="space-y-2"><div class="flex items-center gap-2"><span class="bg-emerald-100 text-emerald-600 text-[10px] font-bold px-2 py-0.5 rounded">P</span><label class="text-sm font-bold">治療計畫</label></div><textarea name="治療計畫" rows="4" class="w-full px-5 py-4 bg-slate-50 border border-slate-100 rounded-2xl focus:border-emerald-500 outline-none transition-all resize-none"></textarea></div>
-              <div class="md:col-span-2 space-y-2"><div class="flex items-center gap-2"><span class="bg-slate-100 text-slate-600 text-[10px] font-bold px-2 py-0.5 rounded">Note</span><label class="text-sm font-bold">備註</label></div><textarea id="doctorRemark" rows="2" class="w-full px-5 py-4 bg-slate-50 border border-slate-100 rounded-2xl focus:border-emerald-500 outline-none transition-all resize-none"></textarea></div>
+            <!-- 調整：gap-8 -> gap-5, space-y-2 -> space-y-1, py-4 -> py-2.5 -->
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
+              <div class="space-y-1"><div class="flex items-center gap-2"><span class="bg-blue-100 text-blue-600 text-[10px] font-bold px-2 py-0.5 rounded">S</span><label class="text-sm font-bold">主訴</label></div><textarea name="主訴" rows="4" class="w-full px-5 py-2.5 bg-slate-50 border border-slate-100 rounded-2xl focus:border-emerald-500 outline-none transition-all resize-none"></textarea></div>
+              <div class="space-y-1"><div class="flex items-center gap-2"><span class="bg-indigo-100 text-indigo-600 text-[10px] font-bold px-2 py-0.5 rounded">O</span><label class="text-sm font-bold">客觀檢查</label></div><textarea name="客觀檢查" rows="4" class="w-full px-5 py-2.5 bg-slate-50 border border-slate-100 rounded-2xl focus:border-emerald-500 outline-none transition-all resize-none"></textarea></div>
+              <div class="space-y-1"><div class="flex items-center gap-2"><span class="bg-amber-100 text-amber-600 text-[10px] font-bold px-2 py-0.5 rounded">A</span><label class="text-sm font-bold">診斷</label></div><textarea name="診斷" rows="4" class="w-full px-5 py-2.5 bg-slate-50 border border-slate-100 rounded-2xl focus:border-emerald-500 outline-none transition-all resize-none"></textarea></div>
+              <div class="space-y-1"><div class="flex items-center gap-2"><span class="bg-emerald-100 text-emerald-600 text-[10px] font-bold px-2 py-0.5 rounded">P</span><label class="text-sm font-bold">治療計畫</label></div><textarea name="治療計畫" rows="4" class="w-full px-5 py-2.5 bg-slate-50 border border-slate-100 rounded-2xl focus:border-emerald-500 outline-none transition-all resize-none"></textarea></div>
+              <div class="md:col-span-2 space-y-1"><div class="flex items-center gap-2"><span class="bg-slate-100 text-slate-600 text-[10px] font-bold px-2 py-0.5 rounded">Note</span><label class="text-sm font-bold">備註</label></div><textarea id="doctorRemark" rows="2" class="w-full px-5 py-2.5 bg-slate-50 border border-slate-100 rounded-2xl focus:border-emerald-500 outline-none transition-all resize-none"></textarea></div>
             </div>
-            <div class="flex justify-end pt-6 border-t border-slate-50">
-               <button type="button" onclick="submitForm('doctor')" class="bg-emerald-500 hover:bg-emerald-600 text-white px-10 py-4 rounded-2xl font-black shadow-lg transition-all active:scale-95">儲存看診紀錄</button>
+            <div class="flex justify-end pt-4 border-t border-slate-50">
+               <button type="button" onclick="submitForm('doctor')" class="bg-emerald-500 hover:bg-emerald-600 text-white px-10 py-3.5 rounded-2xl font-black shadow-lg transition-all active:scale-95">儲存看診紀錄</button>
             </div>
           </form>
         </div>
@@ -496,29 +508,31 @@
   <!-- Modal: 新增個案 -->
   <div id="addClientModal" class="hidden fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 no-print">
      <div class="bg-white w-full max-w-2xl rounded-[2.5rem] overflow-hidden shadow-2xl">
-        <div class="p-8 border-b border-slate-100 flex justify-between items-center">
+        <div class="p-6 border-b border-slate-100 flex justify-between items-center">
            <h3 class="text-2xl font-black text-slate-800">新增個案資料</h3>
            <button onclick="closeModal('addClientModal')" class="text-slate-300 hover:text-slate-500 transition text-2xl">✕</button>
         </div>
-        <form id="addClientForm" class="p-8 space-y-5 max-h-[80vh] overflow-y-auto custom-scrollbar">
+        <!-- 調整：p-8 -> p-6, space-y-5 -> space-y-4 -->
+        <form id="addClientForm" class="p-6 space-y-4 max-h-[80vh] overflow-y-auto custom-scrollbar">
            <div class="grid grid-cols-2 gap-4">
-              <div class="space-y-2"><label class="text-xs font-bold text-slate-400 ml-1">姓名</label><input type="text" id="addName" required class="w-full px-5 py-3 bg-slate-50 border border-slate-100 rounded-2xl outline-none focus:border-emerald-500 transition-all"></div>
-              <div class="space-y-2"><label class="text-xs font-bold text-slate-400 ml-1">生日</label><input type="date" id="addDob" required class="w-full px-5 py-3 bg-white border border-slate-200 rounded-2xl outline-none transition-all cursor-pointer"></div>
+              <!-- 調整：space-y-2 -> space-y-1, py-3 -> py-2.5, px-5 -> px-4 -->
+              <div class="space-y-1"><label class="text-xs font-bold text-slate-400 ml-1">姓名</label><input type="text" id="addName" required class="w-full px-4 py-2.5 bg-slate-50 border border-slate-100 rounded-2xl outline-none focus:border-emerald-500 transition-all"></div>
+              <div class="space-y-1"><label class="text-xs font-bold text-slate-400 ml-1">生日</label><input type="date" id="addDob" required class="w-full px-4 py-2.5 bg-white border border-slate-200 rounded-2xl outline-none transition-all cursor-pointer"></div>
            </div>
            <div class="grid grid-cols-2 gap-4">
-              <div class="space-y-2"><label class="text-xs font-bold text-slate-400 ml-1">身分證字號</label><input type="text" id="addIdNo" oninput="autoDetectGender(this)" placeholder="A123456789" class="w-full px-5 py-3 bg-slate-50 border border-slate-100 rounded-2xl outline-none focus:border-emerald-500 transition-all"></div>
-              <div class="space-y-2"><label class="text-xs font-bold text-slate-400 ml-1">聯絡電話</label><input type="text" id="addPhone" required class="w-full px-5 py-3 bg-slate-50 border border-slate-100 rounded-2xl outline-none focus:border-emerald-500 transition-all"></div>
+              <div class="space-y-1"><label class="text-xs font-bold text-slate-400 ml-1">身分證字號</label><input type="text" id="addIdNo" oninput="autoDetectGender(this)" placeholder="A123456789" class="w-full px-4 py-2.5 bg-slate-50 border border-slate-100 rounded-2xl outline-none focus:border-emerald-500 transition-all"></div>
+              <div class="space-y-1"><label class="text-xs font-bold text-slate-400 ml-1">聯絡電話</label><input type="text" id="addPhone" required class="w-full px-4 py-2.5 bg-slate-50 border border-slate-100 rounded-2xl outline-none focus:border-emerald-500 transition-all"></div>
            </div>
            <div class="grid grid-cols-2 gap-4">
-              <div class="space-y-2"><label class="text-xs font-bold text-slate-400 ml-1">緊急聯絡人</label><input type="text" id="addEmerName" class="w-full px-5 py-3 bg-slate-50 border border-slate-100 rounded-2xl outline-none focus:border-emerald-500 transition-all"></div>
-              <div class="space-y-2"><label class="text-xs font-bold text-slate-400 ml-1">緊急聯絡電話</label><input type="text" id="addEmerPhone" class="w-full px-5 py-3 bg-slate-50 border border-slate-100 rounded-2xl outline-none focus:border-emerald-500 transition-all"></div>
+              <div class="space-y-1"><label class="text-xs font-bold text-slate-400 ml-1">緊急聯絡人</label><input type="text" id="addEmerName" class="w-full px-4 py-2.5 bg-slate-50 border border-slate-100 rounded-2xl outline-none focus:border-emerald-500 transition-all"></div>
+              <div class="space-y-1"><label class="text-xs font-bold text-slate-400 ml-1">緊急聯絡電話</label><input type="text" id="addEmerPhone" class="w-full px-4 py-2.5 bg-slate-50 border border-slate-100 rounded-2xl outline-none focus:border-emerald-500 transition-all"></div>
            </div>
-           <div class="space-y-2"><label class="text-xs font-bold text-slate-400 ml-1">慢性病或特殊疾病</label><textarea id="addChronic" rows="2" class="w-full px-5 py-3 bg-slate-50 border border-slate-100 rounded-2xl outline-none focus:border-emerald-500 transition-all resize-none"></textarea></div>
+           <div class="space-y-1"><label class="text-xs font-bold text-slate-400 ml-1">慢性病或特殊疾病</label><textarea id="addChronic" rows="2" class="w-full px-4 py-2.5 bg-slate-50 border border-slate-100 rounded-2xl outline-none focus:border-emerald-500 transition-all resize-none"></textarea></div>
            <div class="flex items-center gap-2 p-3 bg-emerald-50 rounded-2xl border border-emerald-100">
              <span class="text-xs font-bold text-emerald-600 ml-2">系統辨識性別：</span>
              <span id="genderPreview" class="font-black text-emerald-700">請輸入身分證</span>
            </div>
-           <button type="button" id="btnSubmitClient" onclick="submitNewClient()" class="w-full bg-emerald-500 text-white font-black py-4 rounded-2xl shadow-xl transition-all">建立個案資料</button>
+           <button type="button" id="btnSubmitClient" onclick="submitNewClient()" class="w-full bg-emerald-500 text-white font-black py-3.5 rounded-2xl shadow-xl transition-all">建立個案資料</button>
         </form>
      </div>
   </div>
