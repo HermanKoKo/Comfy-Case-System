@@ -11,13 +11,20 @@ window.onload = function() {
   // 1. 設定表單類日期欄位初始值為今日
   document.querySelectorAll('#treatmentDate, #maintenanceDate, #doctorConsultDate, #trackDate').forEach(el => el.value = today);
 
+  // ★★★ 修復按鈕 Icon 問題 ★★★
+  // 強制將介面上的「醫師看診」按鈕圖示改為支援度較高的 'medical_services'
+  const doctorBtnIcon = document.querySelector('#filter-btn-doctor span.material-icons-outlined');
+  if(doctorBtnIcon) {
+    doctorBtnIcon.textContent = 'medical_services';
+  }
+
   // 2. 初始化一般日期選單 (Flatpickr)
   flatpickr('input[type="date"], #trackDate', {
     locale: "zh_tw",
     dateFormat: "Y-m-d",
     disableMobile: true, 
     allowInput: true,
-    static: true, // ★ 強制靜態定位，防止漂浮
+    static: true, 
     onOpen: function(selectedDates, dateStr, instance) {
       if(instance.calendarContainer) instance.calendarContainer.style.width = "220px"; 
     },
@@ -28,19 +35,18 @@ window.onload = function() {
     }
   });
 
-  // 3. 初始化個案總覽的日期範圍篩選 (★ 針對此問題的核心修正)
+  // 3. 初始化個案總覽的日期範圍篩選
   const overviewConfig = {
     locale: "zh_tw",
     dateFormat: "Y-m-d",
     disableMobile: true,
     allowInput: true,
-    static: true, // ★ 關鍵：強制將月曆結構插入輸入框後方，隨頁面捲動
+    static: true,
     onChange: function() {
       renderOverviewList(); 
     }
   };
   
-  // 分別初始化
   flatpickr('#overviewStartDate', overviewConfig);
   flatpickr('#overviewEndDate', overviewConfig);
 
@@ -280,9 +286,7 @@ function loadTrackingHistory() {
     });
     container.innerHTML = html;
   }).getTrackingHistory(currentClient['個案編號']);
-}
-
-function loadTreatmentHistory() {
+}function loadTreatmentHistory() {
   const container = document.getElementById('historyListContainer');
   container.innerHTML = '<div class="text-center py-10 text-slate-400">讀取中...</div>';
   google.script.run.withSuccessHandler(logs => { allTreatmentLogs = logs || []; applyLogFilters(); renderTreatmentCalendar(); }).getClientHistory(currentClient['個案編號'], 'Treatment_Logs');
@@ -360,17 +364,20 @@ function setOverviewCategory(cat) {
   currentOverviewCategory = cat;
   
   // 更新按鈕樣式 (配合 Index.html 中的 Tailwind classes 修改)
+  // 這裡確保不會誤加 w-full 造成跑版
   const btns = ['all', 'doctor', 'maintenance', 'tracking', 'treatment'];
   btns.forEach(b => {
     const btnEl = document.getElementById('filter-btn-' + b);
-    if(b === cat) {
-      // 激活樣式: 白底、深色字、有陰影、有框線
-      btnEl.classList.remove('text-slate-500', 'hover:bg-white', 'hover:text-slate-700', 'hover:shadow-sm');
-      btnEl.classList.add('bg-white', 'text-slate-800', 'shadow-sm', 'ring-1', 'ring-slate-200');
-    } else {
-      // 非激活樣式: 灰字、無背景 (Hover 時才顯示背景)
-      btnEl.classList.remove('bg-white', 'text-slate-800', 'shadow-sm', 'ring-1', 'ring-slate-200');
-      btnEl.classList.add('text-slate-500', 'hover:bg-white', 'hover:text-slate-700', 'hover:shadow-sm');
+    if(btnEl) {
+      if(b === cat) {
+        // 激活樣式: 白底、深色字、有陰影、有框線
+        btnEl.classList.remove('text-slate-500', 'hover:bg-white', 'hover:text-slate-700', 'hover:shadow-sm');
+        btnEl.classList.add('bg-white', 'text-slate-800', 'shadow-sm', 'ring-1', 'ring-slate-200');
+      } else {
+        // 非激活樣式: 灰字、無背景 (Hover 時才顯示背景)
+        btnEl.classList.remove('bg-white', 'text-slate-800', 'shadow-sm', 'ring-1', 'ring-slate-200');
+        btnEl.classList.add('text-slate-500', 'hover:bg-white', 'hover:text-slate-700', 'hover:shadow-sm');
+      }
     }
   });
   
@@ -416,11 +423,12 @@ function renderOverviewList() {
 
   let html = '';
   filtered.forEach(item => {
-    // 根據類別設定樣式
+    // 根據類別設定樣式，★這裡已修正 Icon 為 medical_services ★
     let icon, colorClass, bgClass;
     switch(item.category) {
       case 'doctor':
-        icon = 'stethoscope'; colorClass = 'text-blue-600'; bgClass = 'bg-blue-50';
+        icon = 'medical_services'; // 從 'stethoscope' 改為 'medical_services'
+        colorClass = 'text-blue-600'; bgClass = 'bg-blue-50';
         break;
       case 'maintenance':
         icon = 'stars'; colorClass = 'text-orange-500'; bgClass = 'bg-orange-50';
