@@ -4,7 +4,7 @@ let allTreatmentLogs = [];
 let allOverviewRecords = []; 
 let currentOverviewCategory = 'all'; 
 let currentCalDate = new Date();
-let isMonthPickerMode = false; // ★ 新增：控制是否顯示年月選單
+let isMonthPickerMode = false;
 
 window.onload = function() {
   const today = new Date().toISOString().split('T')[0];
@@ -538,7 +538,7 @@ function printOverviewReport() {
   window.print();
 }
 
-// ★★★ 核心修改：渲染治療月曆 (支援兩種模式：日曆 / 年月選單) ★★★
+// ★★★ 核心修改：渲染治療月曆 (支援日曆模式 / 年月選單模式) ★★★
 function renderTreatmentCalendar() {
   const container = document.getElementById('treatmentCalendar');
   if(!container) return;
@@ -551,6 +551,20 @@ function renderTreatmentCalendar() {
 
   // --- 模式 A: 年月選擇模式 (顯示 12 個月份格子) ---
   if (isMonthPickerMode) {
+    // 1. 計算該年份中，哪些月份有治療紀錄
+    const monthsWithRecords = new Set();
+    allTreatmentLogs.forEach(log => {
+      if (!log['治療日期']) return;
+      const parts = log['治療日期'].trim().split('-'); // 假設格式 yyyy-MM-dd
+      if (parts.length >= 2) {
+        const logYear = parseInt(parts[0], 10);
+        const logMonth = parseInt(parts[1], 10) - 1; // 0-indexed
+        if (logYear === year) {
+          monthsWithRecords.add(logMonth);
+        }
+      }
+    });
+
     // Header: 只能切換年份
     html += `
       <div class="cal-header">
@@ -573,9 +587,13 @@ function renderTreatmentCalendar() {
 
     // 產生 12 個月份按鈕
     for (let m = 0; m < 12; m++) {
-      // 標示出當前選中的月份
-      const isCurrent = (m === month) ? 'is-current' : '';
-      html += `<div onclick="selectMonthFromPicker(${m})" class="cal-month-item ${isCurrent}">${m + 1}月</div>`;
+      let classList = "cal-month-item";
+      // 標示當前選中的月份
+      if (m === month) classList += " is-current";
+      // ★ 標示有紀錄的月份 (綠點)
+      if (monthsWithRecords.has(m)) classList += " has-record";
+
+      html += `<div onclick="selectMonthFromPicker(${m})" class="${classList}">${m + 1}月</div>`;
     }
     html += `</div>`;
 

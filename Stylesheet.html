@@ -106,17 +106,16 @@
   .flatpickr-wrapper { display: block !important; width: 100% !important; }
   input[type="date"]::-webkit-calendar-picker-indicator { display: none !important; -webkit-appearance: none; }
 
-  /* === 治療月曆自定義樣式 (核心修改區) === */
+  /* === 治療月曆自定義樣式 === */
   .cal-header {
     display: flex;
     justify-content: space-between;
     align-items: center;
     margin-bottom: 1rem;
     position: relative;
-    height: 32px; /* 固定高度防止跳動 */
+    height: 32px;
   }
   
-  /* 標題按鈕樣式 */
   .cal-title-btn {
     font-weight: 700;
     color: #334155;
@@ -135,14 +134,12 @@
     color: #10b981;
   }
 
-  /* 一般日曆網格 */
   .cal-grid {
     display: grid;
     grid-template-columns: repeat(7, 1fr);
     gap: 4px;
   }
   
-  /* 星期標題 */
   .cal-weekday {
     text-align: center;
     font-size: 10px;
@@ -152,7 +149,6 @@
   }
   .cal-weekday.sunday { color: #f87171; }
 
-  /* 日期格子 */
   .cal-day {
     aspect-ratio: 1;
     display: flex;
@@ -171,7 +167,6 @@
   }
   .cal-day:hover { background-color: #f1f5f9; }
   
-  /* 狀態：被選取的日期 (黑色圓圈) */
   .cal-day.is-selected { 
     background-color: #1e293b !important; 
     color: #ffffff !important; 
@@ -181,7 +176,7 @@
   
   .cal-day.other-month { opacity: 0; pointer-events: none; }
   
-  /* 狀態：有治療紀錄的日期 (綠色小點) */
+  /* 每日綠點 */
   .cal-day.has-record::after {
     content: '';
     position: absolute;
@@ -198,10 +193,10 @@
     border: 1px solid #1e293b;
   }
 
-  /* ★★★ 新增：月份選擇器專用樣式 ★★★ */
+  /* === 月份選擇器專用樣式 === */
   .cal-month-grid {
     display: grid;
-    grid-template-columns: repeat(3, 1fr); /* 3欄 x 4列 */
+    grid-template-columns: repeat(3, 1fr);
     gap: 12px;
     padding: 8px 0;
     animation: fadeIn 0.2s ease-in-out;
@@ -220,19 +215,37 @@
     transition: all 0.2s;
     background-color: #ffffff;
     border: 1px solid transparent;
+    position: relative; /* 為了定位綠點 */
   }
 
   .cal-month-item:hover {
-    background-color: #f0fdf9; /* 淺綠背景 */
-    color: #059669; /* 深綠文字 */
+    background-color: #f0fdf9;
+    color: #059669;
     border-color: #d1fae5;
   }
 
-  /* 當前選中的月份 */
   .cal-month-item.is-current {
-    background-color: #10b981; /* 康飛綠 */
+    background-color: #10b981;
     color: #ffffff;
     box-shadow: 0 4px 6px -1px rgba(16, 185, 129, 0.2);
+  }
+
+  /* ★★★ 新增：每月綠點樣式 ★★★ */
+  .cal-month-item.has-record::after {
+    content: '';
+    position: absolute;
+    bottom: 6px; /* 稍微靠下一點 */
+    width: 5px; /* 比日期的點稍微大一點 */
+    height: 5px;
+    background-color: #10b981; 
+    border-radius: 50%;
+    z-index: 10;
+  }
+  /* 當月份被選中時，綠點變成淺綠色/白色以利辨識 */
+  .cal-month-item.is-current.has-record::after {
+    background-color: #ffffff;
+    bottom: 5px;
+    opacity: 0.8;
   }
 
   @keyframes fadeIn {
@@ -240,7 +253,6 @@
     to { opacity: 1; transform: translateY(0); }
   }
 
-  /* === 基礎樣式 === */
   body {
     font-family: 'Noto Sans TC', sans-serif;
     overflow: hidden; 
