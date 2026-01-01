@@ -10,31 +10,56 @@
   <script src="https://cdn.jsdelivr.net/npm/flatpickr/dist/l10n/zh-tw.js"></script>
   <link href="https://fonts.googleapis.com/icon?family=Material+Icons+Outlined" rel="stylesheet">
   <?!= include('Stylesheet'); ?>
+  
+  <!-- 新增：強制縮小治療月曆樣式的 CSS -->
+  <style>
+    /* 讓月曆更緊湊，減少垂直高度 */
+    #treatmentCalendar .cal-day {
+        height: 2rem !important;
+        line-height: 2rem !important;
+        font-size: 0.85rem !important;
+        margin-bottom: 2px !important;
+    }
+    #treatmentCalendar .cal-header {
+        margin-bottom: 0.5rem !important;
+        padding-top: 0 !important;
+    }
+    #treatmentCalendar .cal-weekday {
+        font-size: 0.75rem !important;
+        padding-bottom: 0.25rem !important;
+    }
+    #treatmentCalendar .cal-month-grid {
+        gap: 4px !important;
+    }
+    #treatmentCalendar .cal-month-item {
+        padding: 0.5rem 0 !important;
+    }
+  </style>
 </head>
 <body class="bg-[#f8fafc] font-sans text-slate-900 antialiased h-screen overflow-hidden flex">
 
   <!-- Sidebar (列印時隱藏) -->
   <aside id="sidebar" class="w-64 bg-[#1e293b] text-white flex flex-col flex-shrink-0 z-20 shadow-xl no-print">
-    <div class="p-6">
+    <div class="p-5">
       <h1 class="text-xl font-bold tracking-tight flex items-center gap-2">
         <span class="bg-emerald-500 w-2 h-6 rounded-full"></span> 康飛運醫
       </h1>
     </div>
-    <nav class="flex-1 px-4 space-y-1 overflow-y-auto custom-scrollbar">
-      <div class="pb-2 px-4 text-[10px] font-bold text-slate-500 uppercase tracking-widest">MENU</div>
-      <button id="btn-basic" onclick="navTo('basic')" class="nav-btn w-full flex items-center gap-3 px-4 py-3 rounded-xl transition hover:bg-slate-800 text-left">基本資料</button>
-      <button id="btn-images" onclick="navTo('images')" class="nav-btn w-full flex items-center gap-3 px-4 py-3 rounded-xl transition hover:bg-slate-800 text-left">影像總覽</button>
-      <button id="btn-treatment" onclick="navTo('treatment')" class="nav-btn w-full flex items-center gap-3 px-4 py-3 rounded-xl transition hover:bg-slate-800 text-left">治療紀錄</button>
-      <button id="btn-maintenance" onclick="navTo('maintenance')" class="nav-btn w-full flex items-center gap-3 px-4 py-3 rounded-xl transition hover:bg-slate-800 text-left">保養項目</button>
-      <button id="btn-doctor" onclick="navTo('doctor')" class="nav-btn w-full flex items-center gap-3 px-4 py-3 rounded-xl transition hover:bg-slate-800 text-left">醫師看診</button>
-      <button id="btn-tracking" onclick="navTo('tracking')" class="nav-btn w-full flex items-center gap-3 px-4 py-3 rounded-xl transition hover:bg-slate-800 text-left">個管追蹤</button>
-      <button id="btn-overview" onclick="navTo('overview')" class="nav-btn w-full flex items-center gap-3 px-4 py-3 rounded-xl transition hover:bg-slate-800 text-left">個案總覽</button>
+    <nav class="flex-1 px-3 space-y-1 overflow-y-auto custom-scrollbar">
+      <div class="pb-2 px-3 text-[10px] font-bold text-slate-500 uppercase tracking-widest">MENU</div>
+      <button id="btn-basic" onclick="navTo('basic')" class="nav-btn w-full flex items-center gap-3 px-4 py-2.5 rounded-xl transition hover:bg-slate-800 text-left">基本資料</button>
+      <button id="btn-images" onclick="navTo('images')" class="nav-btn w-full flex items-center gap-3 px-4 py-2.5 rounded-xl transition hover:bg-slate-800 text-left">影像總覽</button>
+      <button id="btn-treatment" onclick="navTo('treatment')" class="nav-btn w-full flex items-center gap-3 px-4 py-2.5 rounded-xl transition hover:bg-slate-800 text-left">治療紀錄</button>
+      <button id="btn-maintenance" onclick="navTo('maintenance')" class="nav-btn w-full flex items-center gap-3 px-4 py-2.5 rounded-xl transition hover:bg-slate-800 text-left">保養項目</button>
+      <button id="btn-doctor" onclick="navTo('doctor')" class="nav-btn w-full flex items-center gap-3 px-4 py-2.5 rounded-xl transition hover:bg-slate-800 text-left">醫師看診</button>
+      <button id="btn-tracking" onclick="navTo('tracking')" class="nav-btn w-full flex items-center gap-3 px-4 py-2.5 rounded-xl transition hover:bg-slate-800 text-left">個管追蹤</button>
+      <button id="btn-overview" onclick="navTo('overview')" class="nav-btn w-full flex items-center gap-3 px-4 py-2.5 rounded-xl transition hover:bg-slate-800 text-left">個案總覽</button>
     </nav>
     <div class="p-4 border-t border-slate-800 space-y-2">
       <button onclick="resetSearch()" class="w-full flex items-center justify-center gap-2 px-4 py-2 text-sm text-slate-400 hover:text-white transition">
         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg> 重新搜尋個案
       </button>
-      <button onclick="openModal('addClientModal')" class="w-full bg-emerald-500 hover:bg-emerald-600 text-white font-bold py-3 rounded-xl transition flex items-center justify-center gap-2">
+      <button onclick="openModal('addClientModal')" class="w-full bg-emerald-500 hover:bg-emerald-600 text-white font-bold py-2.5 rounded-xl transition flex items-center justify-center gap-2">
         <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M12 4v16m8-8H4"></path></svg> 新增個案
       </button>
     </div>
@@ -42,33 +67,33 @@
 
   <!-- Main -->
   <main id="main-content" class="flex-1 flex flex-col h-screen overflow-hidden">
-    <header class="bg-white border-b border-slate-200 px-8 py-4 flex justify-between items-center flex-shrink-0 shadow-sm z-10 no-print">
+    <header class="bg-white border-b border-slate-200 px-6 py-3 flex justify-between items-center flex-shrink-0 shadow-sm z-10 no-print">
       <h2 id="pageTitle" class="text-lg font-bold text-slate-800">首頁</h2>
-      <div id="topBarClientInfo" class="hidden flex items-center gap-4 bg-slate-50 px-4 py-2 rounded-full border border-slate-100">
+      <div id="topBarClientInfo" class="hidden flex items-center gap-4 bg-slate-50 px-4 py-1.5 rounded-full border border-slate-100">
         <span id="headerClientName" class="font-bold text-emerald-600">--</span>
         <span id="headerClientDob" class="text-xs text-slate-400 font-mono bg-white px-2 py-1 rounded border border-slate-100">--</span>
       </div>
     </header>
 
-    <div id="contentArea" class="flex-1 overflow-y-auto p-8 custom-scrollbar">
+    <div id="contentArea" class="flex-1 overflow-y-auto p-5 custom-scrollbar">
       
       <!-- 搜尋頁面 -->
-      <div id="view-search" class="max-w-md mx-auto flex flex-col items-center justify-center min-h-[70vh] space-y-8">
-        <div class="text-center space-y-4">
+      <div id="view-search" class="max-w-md mx-auto flex flex-col items-center justify-center min-h-[70vh] space-y-6">
+        <div class="text-center space-y-3">
           <h3 class="text-3xl font-black text-slate-800 tracking-tight">歡迎使用<br>康飛個案系統</h3>
           <p class="text-slate-500">請先搜尋個案以開始作業，或點擊左下角新增個案。</p>
         </div>
         <div class="w-full relative group">
-          <input type="text" id="searchInput" onkeyup="if(event.key==='Enter')handleSearch()" placeholder="輸入姓名或電話..." class="w-full px-6 py-4 bg-white border-2 border-slate-100 rounded-3xl shadow-xl focus:border-emerald-500 outline-none transition text-lg">
-          <button onclick="handleSearch()" class="absolute right-3 top-1/2 -translate-y-1/2 bg-emerald-500 text-white p-3 rounded-2xl shadow-lg hover:bg-emerald-600 transition">
-            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
+          <input type="text" id="searchInput" onkeyup="if(event.key==='Enter')handleSearch()" placeholder="輸入姓名或電話..." class="w-full px-6 py-3 bg-white border-2 border-slate-100 rounded-3xl shadow-xl focus:border-emerald-500 outline-none transition text-lg">
+          <button onclick="handleSearch()" class="absolute right-3 top-1/2 -translate-y-1/2 bg-emerald-500 text-white p-2.5 rounded-2xl shadow-lg hover:bg-emerald-600 transition">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
           </button>
         </div>
         <div id="searchResults" class="w-full space-y-3"></div>
       </div>
 
       <!-- 基本資料 -->
-      <div id="view-basic" class="hidden max-w-4xl mx-auto space-y-6">
+      <div id="view-basic" class="hidden max-w-4xl mx-auto space-y-4">
         <div class="flex justify-between items-end no-print">
           <div>
             <h3 class="text-2xl font-black text-slate-800 flex items-center gap-3">
@@ -85,58 +110,58 @@
 
         <div class="bg-white rounded-[2rem] shadow-sm border border-slate-100 overflow-hidden">
           <div class="grid grid-cols-1 md:grid-cols-3">
-            <div class="p-6 border-b md:border-b-0 md:border-r border-slate-50">
+            <div class="p-5 border-b md:border-b-0 md:border-r border-slate-50">
               <label class="block text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">個案編號</label>
               <div id="display-client-id" class="text-xl font-black text-slate-800">--</div>
             </div>
-            <div class="p-6 border-b md:border-b-0 md:border-r border-slate-50">
+            <div class="p-5 border-b md:border-b-0 md:border-r border-slate-50">
               <label class="block text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">姓名</label>
               <div id="display-name" class="text-xl font-black text-emerald-600">--</div>
             </div>
-            <div class="p-6">
+            <div class="p-5">
               <label class="block text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">性別</label>
               <div id="display-gender" class="text-xl font-black text-slate-800">--</div>
             </div>
           </div>
           
           <div class="grid grid-cols-1 md:grid-cols-3 border-t border-slate-50">
-            <div class="p-6 border-b md:border-b-0 md:border-r border-slate-50">
+            <div class="p-5 border-b md:border-b-0 md:border-r border-slate-50">
               <label class="block text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">出生日期</label>
               <div id="display-birthday" class="text-lg font-bold text-slate-700">--</div>
             </div>
-            <div class="p-6 border-b md:border-b-0 md:border-r border-slate-50">
+            <div class="p-5 border-b md:border-b-0 md:border-r border-slate-50">
               <label class="block text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">身分證字號</label>
               <div id="display-id-number" class="text-lg font-bold text-slate-700">--</div>
             </div>
-            <div class="p-6">
+            <div class="p-5">
               <label class="block text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">聯絡電話</label>
               <div id="display-phone" class="text-lg font-bold text-emerald-600">--</div>
             </div>
           </div>
 
           <div class="grid grid-cols-1 md:grid-cols-2 border-t border-slate-50">
-            <div class="p-6 border-b md:border-b-0 md:border-r border-slate-50">
+            <div class="p-5 border-b md:border-b-0 md:border-r border-slate-50">
               <label class="block text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">緊急聯絡人</label>
               <div id="display-emergency-name" class="text-lg font-bold text-slate-700">--</div>
             </div>
-            <div class="p-6">
+            <div class="p-5">
               <label class="block text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">緊急聯絡人電話</label>
               <div id="display-emergency-phone" class="text-lg font-bold text-slate-700">--</div>
             </div>
           </div>
 
-          <div class="p-6 border-t border-slate-50 bg-slate-50/30">
+          <div class="p-5 border-t border-slate-50 bg-slate-50/30">
             <label class="block text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-2">個案備註 / 病史說明</label>
-            <div id="display-notes" class="text-slate-600 leading-relaxed min-h-[100px]">尚無備註紀錄。</div>
+            <div id="display-notes" class="text-slate-600 leading-relaxed min-h-[80px]">尚無備註紀錄。</div>
           </div>
         </div>
       </div>
 
       <!-- 影像總覽視圖 -->
-      <div id="view-images" class="hidden max-w-7xl mx-auto space-y-6">
-        <div class="bg-white rounded-[2rem] p-6 shadow-sm border border-slate-100 flex justify-between items-center no-print">
+      <div id="view-images" class="hidden max-w-7xl mx-auto space-y-4">
+        <div class="bg-white rounded-[2rem] p-4 shadow-sm border border-slate-100 flex justify-between items-center no-print">
            <div class="flex items-center gap-4">
-              <div class="p-3 bg-indigo-50 rounded-2xl text-indigo-600">
+              <div class="p-2.5 bg-indigo-50 rounded-2xl text-indigo-600">
                  <span class="material-icons-outlined">image</span>
               </div>
               <div>
@@ -145,13 +170,13 @@
               </div>
            </div>
            
-           <button onclick="openUploadModal()" class="flex items-center gap-2 bg-white border border-slate-200 hover:border-emerald-500 hover:text-emerald-600 text-slate-600 px-5 py-3 rounded-xl font-bold transition shadow-sm active:scale-95">
+           <button onclick="openUploadModal()" class="flex items-center gap-2 bg-white border border-slate-200 hover:border-emerald-500 hover:text-emerald-600 text-slate-600 px-4 py-2 rounded-xl font-bold transition shadow-sm active:scale-95 text-sm">
               <span class="material-icons-outlined text-lg">cloud_upload</span>
               上傳檔案
            </button>
         </div>
 
-        <div id="imageGalleryContainer" class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6 min-h-[400px]">
+        <div id="imageGalleryContainer" class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 min-h-[400px]">
            <div class="col-span-full flex flex-col items-center justify-center py-20 text-slate-300">
               <span class="material-icons-outlined text-4xl animate-spin mb-3">sync</span>
               <p>讀取影像中...</p>
@@ -159,18 +184,20 @@
         </div>
       </div>
 
-      <!-- 治療紀錄視圖 -->
-      <div id="view-treatment" class="hidden max-w-6xl mx-auto space-y-8">
-         <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 no-print">
-            <!-- 左側：月曆與篩選 -->
-            <div class="space-y-6">
-               <div class="bg-white p-6 rounded-[2rem] shadow-sm border border-slate-100 flex flex-col h-fit">
-                   <h4 class="text-xs font-bold text-slate-400 uppercase tracking-widest flex items-center gap-2 mb-4">
+      <!-- 治療紀錄視圖 (修改區域) -->
+      <div id="view-treatment" class="hidden max-w-6xl mx-auto space-y-6">
+         <div class="grid grid-cols-1 lg:grid-cols-3 gap-4 no-print">
+            <!-- 左側：月曆與篩選 (修改點：縮小間距與內距) -->
+            <div class="space-y-3">
+               <!-- 調整：p-4 -> p-3 (讓月曆區域更緊湊) -->
+               <div class="bg-white p-3 rounded-[2rem] shadow-sm border border-slate-100 flex flex-col h-fit">
+                   <h4 class="text-xs font-bold text-slate-400 uppercase tracking-widest flex items-center gap-2 mb-2">
                       <span class="material-icons-outlined text-lg text-emerald-500">calendar_month</span> 治療月曆
                    </h4>
                    <div id="treatmentCalendar"></div>
                </div>
-               <div class="bg-white p-6 rounded-[2rem] shadow-sm border border-slate-100 space-y-4 h-fit">
+               <!-- 調整：p-4 -> p-3 -->
+               <div class="bg-white p-3 rounded-[2rem] shadow-sm border border-slate-100 space-y-2 h-fit">
                   <div class="flex justify-between items-center">
                     <h4 class="text-xs font-bold text-slate-400 uppercase tracking-widest flex items-center gap-2">
                       <span class="material-icons-outlined text-lg text-emerald-500">filter_alt</span> 快速篩選
@@ -179,33 +206,33 @@
                   <div class="space-y-1">
                     <label class="text-[10px] font-bold text-slate-400 ml-1">執行人員</label>
                     <div class="relative">
-                      <select id="filterTherapist" onchange="applyLogFilters()" class="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:border-emerald-500 transition-all cursor-pointer appearance-none text-sm text-slate-700 font-bold">
+                      <select id="filterTherapist" onchange="applyLogFilters()" class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:border-emerald-500 transition-all cursor-pointer appearance-none text-sm text-slate-700 font-bold">
                       </select>
-                      <span class="material-icons-outlined absolute right-3 top-2.5 text-slate-400 pointer-events-none text-sm">expand_more</span>
+                      <span class="material-icons-outlined absolute right-3 top-2 text-slate-400 pointer-events-none text-sm">expand_more</span>
                     </div>
                   </div>
                   <div class="space-y-1">
                     <label class="text-[10px] font-bold text-slate-400 ml-1">日期查詢</label>
                     <div class="flex gap-2">
-                       <input type="date" id="filterDate" placeholder="選擇日期" class="flex-1 px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl outline-none transition-all cursor-pointer hover:border-emerald-400 focus:border-emerald-500 text-sm font-bold text-slate-700">
-                       <button onclick="resetTreatmentFilter()" title="清除篩選條件" class="flex items-center justify-center p-2.5 bg-white border border-slate-200 text-slate-400 rounded-xl hover:bg-red-50 hover:text-red-500 hover:border-red-200 transition shadow-sm group">
-                         <span class="material-icons-outlined text-xl group-active:scale-90 transition">delete_outline</span>
+                       <input type="date" id="filterDate" placeholder="選擇日期" class="flex-1 px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl outline-none transition-all cursor-pointer hover:border-emerald-400 focus:border-emerald-500 text-sm font-bold text-slate-700">
+                       <button onclick="resetTreatmentFilter()" title="清除篩選條件" class="flex items-center justify-center p-2 bg-white border border-slate-200 text-slate-400 rounded-xl hover:bg-red-50 hover:text-red-500 hover:border-red-200 transition shadow-sm group">
+                         <span class="material-icons-outlined text-lg group-active:scale-90 transition">delete_outline</span>
                        </button>
                     </div>
                   </div>
                </div>
             </div>
             
-            <!-- 右側：新增表單 -->
+            <!-- 右側：新增表單 (修改點：縮小 p-5 -> p-4, 移除 placeholder) -->
             <div class="lg:col-span-2">
-               <form id="treatmentForm" class="bg-white p-6 rounded-[2.5rem] shadow-sm border-t-4 border-emerald-500 border-x border-b border-slate-100 space-y-4 h-full">
+               <form id="treatmentForm" class="bg-white p-4 rounded-[2.5rem] shadow-sm border-t-4 border-emerald-500 border-x border-b border-slate-100 space-y-2 h-full">
                  
                  <!-- 表單標題 -->
                  <div class="flex items-center justify-between mb-2">
                    <h3 class="font-black text-slate-800 text-lg flex items-center gap-2">
                      <span class="material-icons-outlined text-2xl text-emerald-500">add_circle</span> 新增治療紀錄
                    </h3>
-                   <button type="button" onclick="openUploadModal()" class="flex items-center gap-2 bg-white border border-slate-200 hover:border-emerald-500 hover:text-emerald-600 text-slate-600 px-3 py-1.5 rounded-xl font-bold transition shadow-sm active:scale-95 text-sm">
+                   <button type="button" onclick="openUploadModal()" class="flex items-center gap-2 bg-white border border-slate-200 hover:border-emerald-500 hover:text-emerald-600 text-slate-600 px-3 py-1.5 rounded-xl font-bold transition shadow-sm active:scale-95 text-xs">
                       <span class="material-icons-outlined text-base">cloud_upload</span>
                       上傳檔案
                    </button>
@@ -218,14 +245,14 @@
                     <!-- 治療日期 -->
                     <div class="flex items-center gap-3">
                       <label class="text-xs font-bold text-slate-400 shrink-0">治療日期</label>
-                      <input type="date" id="treatmentDate" required class="w-full px-5 py-2.5 bg-slate-50 border border-slate-100 rounded-2xl outline-none focus:border-emerald-500 transition-all cursor-pointer font-bold text-slate-700">
+                      <input type="date" id="treatmentDate" required class="w-full px-5 py-2 bg-slate-50 border border-slate-100 rounded-2xl outline-none focus:border-emerald-500 transition-all cursor-pointer font-bold text-slate-700">
                     </div>
                     
                     <!-- 治療師 -->
                     <div class="flex items-center gap-3">
                       <label class="text-xs font-bold text-slate-400 shrink-0">治療師</label>
                       <div class="relative w-full">
-                        <select id="inputTherapist" required class="w-full px-5 py-2.5 bg-slate-50 border border-slate-100 rounded-2xl outline-none focus:border-emerald-500 transition-all cursor-pointer appearance-none font-bold text-slate-700">
+                        <select id="inputTherapist" required class="w-full px-5 py-2 bg-slate-50 border border-slate-100 rounded-2xl outline-none focus:border-emerald-500 transition-all cursor-pointer appearance-none font-bold text-slate-700">
                            <option value="" disabled selected>請選擇治療師</option>
                         </select>
                         <span class="material-icons-outlined absolute right-4 top-3 text-slate-400 pointer-events-none">expand_more</span>
@@ -233,46 +260,47 @@
                     </div>
                  </div>
 
-                 <!-- 當日主訴 (調整：space-y-1, py-3 -> py-2.5) -->
+                 <!-- 當日主訴 (移除 placeholder, 縮小高度) -->
                  <div class="space-y-1">
                    <label class="text-xs font-bold text-slate-400 ml-1">當日主訴</label>
-                   <textarea id="inputComplaint" placeholder="描述個案今日狀況..." class="w-full px-5 py-2.5 bg-slate-50 border border-slate-100 rounded-2xl outline-none focus:border-emerald-500 transition-all h-20 resize-none"></textarea>
+                   <textarea id="inputComplaint" class="w-full px-5 py-2.5 bg-slate-50 border border-slate-100 rounded-2xl outline-none focus:border-emerald-500 transition-all h-14 resize-none"></textarea>
                  </div>
 
-                 <!-- 治療內容 (調整：space-y-1, py-3 -> py-2.5) -->
+                 <!-- 治療內容 (移除 placeholder, 縮小高度) -->
                  <div class="space-y-1">
                    <label class="text-xs font-bold text-slate-400 ml-1">治療內容</label>
-                   <textarea id="inputContent" required placeholder="請詳述治療細節..." class="w-full px-5 py-2.5 bg-slate-50 border border-slate-100 rounded-2xl outline-none focus:border-emerald-500 transition-all h-32 resize-none"></textarea>
+                   <textarea id="inputContent" required class="w-full px-5 py-2.5 bg-slate-50 border border-slate-100 rounded-2xl outline-none focus:border-emerald-500 transition-all h-20 resize-none"></textarea>
                  </div>
                  
-                 <!-- 備註 / 下次治療 (調整：space-y-1, py-3 -> py-2.5) -->
+                 <!-- 備註 / 下次治療 (移除 placeholder, 縮小高度) -->
                  <div class="space-y-1">
                    <label class="text-xs font-bold text-slate-400 ml-1">備註 / 下次治療</label>
-                   <textarea id="inputNextPlan" placeholder="請輸入備註或下次治療重點..." class="w-full px-5 py-2.5 bg-slate-50 border border-slate-100 rounded-2xl outline-none focus:border-emerald-500 transition-all h-20 resize-none"></textarea>
+                   <textarea id="inputNextPlan" class="w-full px-5 py-2.5 bg-slate-50 border border-slate-100 rounded-2xl outline-none focus:border-emerald-500 transition-all h-14 resize-none"></textarea>
                  </div>
                  
-                 <button type="button" onclick="submitForm('treatment')" class="w-full bg-emerald-500 hover:bg-emerald-600 text-white font-black py-3.5 rounded-2xl shadow-lg shadow-emerald-500/20 transition-all active:scale-[0.98] mt-2">
+                 <button type="button" onclick="submitForm('treatment')" class="w-full bg-emerald-500 hover:bg-emerald-600 text-white font-black py-3 rounded-2xl shadow-lg shadow-emerald-500/20 transition-all active:scale-[0.98] mt-1">
                    儲存治療紀錄
                  </button>
                </form>
             </div>
          </div>
          <div class="pt-2 border-t border-slate-100">
-             <div class="flex items-center gap-3 mb-6">
+             <div class="flex items-center gap-3 mb-4">
                <div class="flex items-center gap-2">
                   <span class="w-1.5 h-6 bg-emerald-500 rounded-full"></span>
                   <h4 class="font-black text-slate-800 text-lg">歷史治療清單</h4>
                </div>
-               <span class="text-[10px] font-bold bg-slate-100 text-slate-400 px-2 py-1 rounded-lg uppercase tracking-widest">History</span>
+               <!-- 修改點：顯示次數 -->
+               <span id="treatmentHistoryCount" class="text-xs font-bold bg-emerald-100 text-emerald-600 px-2 py-1 rounded-lg">共 0 次</span>
              </div>
-             <div id="historyListContainer" class="space-y-4 min-h-[200px]"></div>
+             <div id="historyListContainer" class="space-y-3 min-h-[200px]"></div>
          </div>
       </div>
 
       <!-- 保養項目視圖 -->
-      <div id="view-maintenance" class="hidden max-w-5xl mx-auto space-y-6">
+      <div id="view-maintenance" class="hidden max-w-5xl mx-auto space-y-4">
         <div class="bg-white rounded-[2.5rem] shadow-sm border border-slate-100 overflow-hidden no-print">
-          <div class="px-8 py-6 border-b border-slate-50 flex items-center gap-3">
+          <div class="px-6 py-4 border-b border-slate-50 flex items-center gap-3">
              <div class="p-2.5 bg-orange-50 rounded-2xl text-orange-500">
                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path>
@@ -280,66 +308,63 @@
              </div>
              <h3 class="font-black text-slate-800 text-lg">新增保養紀錄</h3>
           </div>
-          <!-- 調整：p-8 -> p-6, space-y-8 -> space-y-5 -->
-          <form id="maintenanceForm" class="p-6 space-y-5">
+          <form id="maintenanceForm" class="p-5 space-y-3">
             <input type="hidden" name="個案編號" class="auto-fill-id">
-            <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
-              <!-- 調整：space-y-2 -> space-y-1, py-3 -> py-2.5 -->
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
               <div class="space-y-1">
                 <label class="text-sm font-bold text-slate-400 block ml-1">日期</label>
                 <input type="date" id="maintenanceDate" name="日期" required 
-                  class="w-full px-5 py-2.5 bg-white border border-slate-200 rounded-2xl outline-none focus:border-orange-500 transition-all cursor-pointer">
+                  class="w-full px-4 py-2 bg-white border border-slate-200 rounded-2xl outline-none focus:border-orange-500 transition-all cursor-pointer">
               </div>
               <div class="space-y-1">
                 <label class="text-sm font-bold text-slate-400 block ml-1">執行人員</label>
                 <select id="selectMaintStaff" name="執行人員" required 
-                  class="w-full px-5 py-2.5 bg-white border border-slate-200 rounded-2xl focus:border-orange-500 outline-none transition-all cursor-pointer">
+                  class="w-full px-4 py-2 bg-white border border-slate-200 rounded-2xl focus:border-orange-500 outline-none transition-all cursor-pointer">
                   <option value="" disabled selected>載入中...</option>
                 </select>
               </div>
               <div class="space-y-1">
                 <label class="text-sm font-bold text-slate-400 block ml-1">保養項目</label>
                 <select id="selectMaintItem" name="保養項目" required 
-                  class="w-full px-5 py-2.5 bg-white border border-slate-200 rounded-2xl focus:border-orange-500 outline-none transition-all cursor-pointer">
+                  class="w-full px-4 py-2 bg-white border border-slate-200 rounded-2xl focus:border-orange-500 outline-none transition-all cursor-pointer">
                   <option value="" disabled selected>載入中...</option>
                 </select>
               </div>
             </div>
-            <!-- 調整：p-6 -> p-4 -->
-            <div class="grid grid-cols-1 md:grid-cols-4 gap-6 p-4 bg-slate-50/50 rounded-[2rem] border border-slate-100">
+            <div class="grid grid-cols-1 md:grid-cols-4 gap-4 p-3 bg-slate-50/50 rounded-[2rem] border border-slate-100">
               <div class="space-y-1">
                 <label class="text-xs font-bold text-slate-400 flex items-center gap-1.5 ml-1">血壓 (mmHg)</label>
-                <input type="text" name="血壓" placeholder="120/80" class="w-full px-5 py-2.5 bg-white border border-slate-200 rounded-2xl focus:border-orange-500 outline-none transition-all">
+                <input type="text" name="血壓" placeholder="120/80" class="w-full px-4 py-2 bg-white border border-slate-200 rounded-2xl focus:border-orange-500 outline-none transition-all">
               </div>
               <div class="space-y-1">
                 <label class="text-xs font-bold text-slate-400 flex items-center gap-1.5 ml-1">血氧 (%)</label>
-                <input type="text" name="血氧" placeholder="98" class="w-full px-5 py-2.5 bg-white border border-slate-200 rounded-2xl focus:border-orange-500 outline-none transition-all">
+                <input type="text" name="血氧" placeholder="98" class="w-full px-4 py-2 bg-white border border-slate-200 rounded-2xl focus:border-orange-500 outline-none transition-all">
               </div>
               <div class="space-y-1">
                 <label class="text-xs font-bold text-slate-400 flex items-center gap-1.5 ml-1">心律 (bpm)</label>
-                <input type="text" name="心律" placeholder="72" class="w-full px-5 py-2.5 bg-white border border-slate-200 rounded-2xl focus:border-orange-500 outline-none transition-all">
+                <input type="text" name="心律" placeholder="72" class="w-full px-4 py-2 bg-white border border-slate-200 rounded-2xl focus:border-orange-500 outline-none transition-all">
               </div>
               <div class="space-y-1">
                 <label class="text-xs font-bold text-slate-400 flex items-center gap-1.5 ml-1">體溫 (°C)</label>
-                <input type="text" name="體溫" placeholder="36.5" class="w-full px-5 py-2.5 bg-white border border-slate-200 rounded-2xl focus:border-orange-500 outline-none transition-all">
+                <input type="text" name="體溫" placeholder="36.5" class="w-full px-4 py-2 bg-white border border-slate-200 rounded-2xl focus:border-orange-500 outline-none transition-all">
               </div>
             </div>
             <div class="space-y-1">
                <label class="text-sm font-bold text-slate-400 block ml-1">備註</label>
-               <textarea name="備註" rows="4" class="w-full px-5 py-2.5 bg-white border border-slate-200 rounded-3xl focus:border-orange-500 outline-none transition-all resize-none" placeholder="請輸入保養相關備註..."></textarea>
+               <textarea name="備註" rows="3" class="w-full px-4 py-2 bg-white border border-slate-200 rounded-3xl focus:border-orange-500 outline-none transition-all resize-none" placeholder="請輸入保養相關備註..."></textarea>
             </div>
             <div class="flex justify-end items-center pt-2">
-              <button type="button" onclick="submitForm('maintenance')" class="bg-gradient-to-r from-orange-400 to-orange-600 hover:from-orange-500 hover:to-orange-700 text-white px-10 py-3.5 rounded-2xl font-black shadow-lg shadow-orange-500/30 transition-all active:scale-95">
+              <button type="button" onclick="submitForm('maintenance')" class="bg-gradient-to-r from-orange-400 to-orange-600 hover:from-orange-500 hover:to-orange-700 text-white px-8 py-3 rounded-2xl font-black shadow-lg shadow-orange-500/30 transition-all active:scale-95">
                 儲存紀錄
               </button>
             </div>
           </form>
         </div>
-        <div class="space-y-4 pt-4">
+        <div class="space-y-3 pt-2">
           <h4 class="font-black text-slate-800 flex items-center gap-2">
             <span class="w-1.5 h-5 bg-orange-500 rounded-full"></span> 歷史保養紀錄
           </h4>
-          <div id="maintenanceHistoryList" class="space-y-4 min-h-[100px]">
+          <div id="maintenanceHistoryList" class="space-y-3 min-h-[100px]">
             <div class="bg-white/50 border-2 border-dashed border-slate-200 rounded-[2.5rem] p-12 text-center text-slate-300">
               尚無歷史紀錄
             </div>
@@ -348,55 +373,53 @@
       </div>
 
       <!-- 個管追蹤視圖 -->
-      <div id="view-tracking" class="hidden max-w-6xl mx-auto space-y-6">
+      <div id="view-tracking" class="hidden max-w-6xl mx-auto space-y-4">
         <div class="flex justify-between items-center mb-2 no-print">
           <h3 class="text-2xl font-bold text-violet-700 flex items-center gap-3">
              <span class="material-icons-outlined text-3xl">fact_check</span>
              個管追蹤紀錄
           </h3>
         </div>
-        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          <!-- 調整：p-8 -> p-6 -->
-          <div class="lg:col-span-1 bg-white rounded-[2.5rem] p-6 shadow-sm border border-slate-100 h-fit no-print">
-            <h3 class="text-lg font-bold text-violet-600 mb-4 border-b border-violet-50 pb-3">新增紀錄</h3>
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-4">
+          <div class="lg:col-span-1 bg-white rounded-[2.5rem] p-5 shadow-sm border border-slate-100 h-fit no-print">
+            <h3 class="text-lg font-bold text-violet-600 mb-3 border-b border-violet-50 pb-2">新增紀錄</h3>
             <form id="trackingForm" onsubmit="event.preventDefault(); submitForm('tracking');">
               <input type="hidden" name="個案編號" class="auto-fill-id">
-              <!-- 調整：mb-5 -> mb-3, space-y-2 -> space-y-1, py-3 -> py-2.5 -->
-              <div class="mb-3 space-y-1">
+              <div class="mb-2 space-y-1">
                 <label class="block text-sm font-bold text-slate-400 ml-1">追蹤日期</label>
                 <input type="text" id="trackDate" name="trackDate" required
-                       class="w-full px-5 py-2.5 bg-slate-50 border border-slate-200 rounded-2xl outline-none focus:border-violet-500 transition-all cursor-pointer">
+                       class="w-full px-4 py-2 bg-slate-50 border border-slate-200 rounded-2xl outline-none focus:border-violet-500 transition-all cursor-pointer">
               </div>
-              <div class="mb-3 space-y-1">
+              <div class="mb-2 space-y-1">
                 <label class="block text-sm font-bold text-slate-400 ml-1">追蹤人員</label>
                 <select id="trackStaff" name="trackStaff" required
-                        class="w-full px-5 py-2.5 bg-slate-50 border border-slate-200 rounded-2xl outline-none focus:border-violet-500 transition-all cursor-pointer">
+                        class="w-full px-4 py-2 bg-slate-50 border border-slate-200 rounded-2xl outline-none focus:border-violet-500 transition-all cursor-pointer">
+                  <option value="" disabled selected>載入中...</option>
+                </select>
+              </div>
+              <div class="mb-2 space-y-1">
+                <label class="block text-sm font-bold text-slate-400 ml-1">追蹤項目</label>
+                <select id="trackType" name="trackType" required
+                        class="w-full px-4 py-2 bg-slate-50 border border-slate-200 rounded-2xl outline-none focus:border-violet-500 transition-all cursor-pointer">
                   <option value="" disabled selected>載入中...</option>
                 </select>
               </div>
               <div class="mb-3 space-y-1">
-                <label class="block text-sm font-bold text-slate-400 ml-1">追蹤項目</label>
-                <select id="trackType" name="trackType" required
-                        class="w-full px-5 py-2.5 bg-slate-50 border border-slate-200 rounded-2xl outline-none focus:border-violet-500 transition-all cursor-pointer">
-                  <option value="" disabled selected>載入中...</option>
-                </select>
-              </div>
-              <div class="mb-4 space-y-1">
                 <label class="block text-sm font-bold text-slate-400 ml-1">追蹤內容</label>
-                <textarea id="trackContent" name="content" rows="6" required placeholder="請輸入追蹤情形、個案回饋或備註..."
-                          class="w-full px-5 py-2.5 bg-slate-50 border border-slate-200 rounded-2xl outline-none focus:border-violet-500 transition-all resize-none"></textarea>
+                <textarea id="trackContent" name="content" rows="5" required placeholder="請輸入追蹤情形、個案回饋或備註..."
+                          class="w-full px-4 py-2 bg-slate-50 border border-slate-200 rounded-2xl outline-none focus:border-violet-500 transition-all resize-none"></textarea>
               </div>
               <button type="submit" 
-                      class="w-full text-white bg-violet-600 hover:bg-violet-700 font-bold rounded-2xl px-5 py-3.5 text-center transition-all shadow-lg shadow-violet-500/20 active:scale-95">
+                      class="w-full text-white bg-violet-600 hover:bg-violet-700 font-bold rounded-2xl px-5 py-3 text-center transition-all shadow-lg shadow-violet-500/20 active:scale-95">
                 儲存追蹤紀錄
               </button>
             </form>
           </div>
           <div class="lg:col-span-2">
-            <h3 class="text-lg font-bold text-slate-700 mb-4 ml-2 flex items-center gap-2">
+            <h3 class="text-lg font-bold text-slate-700 mb-3 ml-2 flex items-center gap-2">
               <span class="w-1.5 h-5 bg-violet-500 rounded-full"></span> 歷史紀錄
             </h3>
-            <div id="trackingHistoryList" class="space-y-4 max-h-[700px] overflow-y-auto pr-2 custom-scrollbar">
+            <div id="trackingHistoryList" class="space-y-3 max-h-[700px] overflow-y-auto pr-2 custom-scrollbar">
               <div class="text-center text-slate-400 py-10 bg-white/50 border-2 border-dashed border-slate-100 rounded-[2.5rem]">
                 <span class="material-icons-outlined text-4xl mb-2">history</span>
                 <p>尚無追蹤紀錄</p>
@@ -407,50 +430,47 @@
       </div>
 
       <!-- 醫師看診視圖 -->
-      <div id="view-doctor" class="hidden max-w-5xl mx-auto space-y-6">
+      <div id="view-doctor" class="hidden max-w-5xl mx-auto space-y-4">
         <div class="bg-white rounded-[2.5rem] shadow-sm border border-slate-100 overflow-hidden no-print">
-          <div class="px-8 py-5 bg-slate-50 border-b border-slate-100 flex justify-between items-center">
+          <div class="px-6 py-3 bg-slate-50 border-b border-slate-100 flex justify-between items-center">
              <div class="flex items-center gap-3">
                <span class="w-2 h-6 bg-emerald-500 rounded-full"></span>
                <h3 class="font-bold text-slate-800 text-lg">新增醫師看診單</h3>
              </div>
-             <button type="button" onclick="openUploadModal()" class="flex items-center gap-2 bg-white border border-slate-200 hover:border-emerald-500 hover:text-emerald-600 text-slate-600 px-4 py-2 rounded-xl font-bold transition shadow-sm active:scale-95 text-sm">
+             <button type="button" onclick="openUploadModal()" class="flex items-center gap-2 bg-white border border-slate-200 hover:border-emerald-500 hover:text-emerald-600 text-slate-600 px-3 py-1.5 rounded-xl font-bold transition shadow-sm active:scale-95 text-xs">
                 <span class="material-icons-outlined text-base">cloud_upload</span>
                 上傳檔案
              </button>
           </div>
-          <!-- 調整：p-8 -> p-6, space-y-8 -> space-y-5 -->
-          <form id="doctorForm" class="p-6 space-y-5">
+          <form id="doctorForm" class="p-5 space-y-3">
             <input type="hidden" name="個案編號" class="auto-fill-id">
-            <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
-              <!-- 調整：mb-2 -> mb-1, py-3 -> py-2.5 -->
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
               <div>
                 <label class="text-sm font-bold text-slate-400 block mb-1">日期</label>
-                <input type="date" id="doctorConsultDate" class="w-full px-5 py-2.5 bg-slate-50 border border-slate-100 rounded-2xl focus:border-emerald-500 outline-none transition-all">
+                <input type="date" id="doctorConsultDate" class="w-full px-4 py-2 bg-slate-50 border border-slate-100 rounded-2xl focus:border-emerald-500 outline-none transition-all">
               </div>
-              <div><label class="text-sm font-bold text-slate-400 block mb-1">看診醫師</label><select id="selectDoctor" class="w-full px-5 py-2.5 bg-slate-50 border border-slate-100 rounded-2xl focus:border-emerald-500 outline-none transition-all"></select></div>
-              <div><label class="text-sm font-bold text-slate-400 block mb-1">護理師</label><select id="selectNurse" class="w-full px-5 py-2.5 bg-slate-50 border border-slate-100 rounded-2xl focus:border-emerald-500 outline-none transition-all"></select></div>
+              <div><label class="text-sm font-bold text-slate-400 block mb-1">看診醫師</label><select id="selectDoctor" class="w-full px-4 py-2 bg-slate-50 border border-slate-100 rounded-2xl focus:border-emerald-500 outline-none transition-all"></select></div>
+              <div><label class="text-sm font-bold text-slate-400 block mb-1">護理師</label><select id="selectNurse" class="w-full px-4 py-2 bg-slate-50 border border-slate-100 rounded-2xl focus:border-emerald-500 outline-none transition-all"></select></div>
             </div>
-            <!-- 調整：gap-8 -> gap-5, space-y-2 -> space-y-1, py-4 -> py-2.5 -->
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
-              <div class="space-y-1"><div class="flex items-center gap-2"><span class="bg-blue-100 text-blue-600 text-[10px] font-bold px-2 py-0.5 rounded">S</span><label class="text-sm font-bold">主訴</label></div><textarea name="主訴" rows="4" class="w-full px-5 py-2.5 bg-slate-50 border border-slate-100 rounded-2xl focus:border-emerald-500 outline-none transition-all resize-none"></textarea></div>
-              <div class="space-y-1"><div class="flex items-center gap-2"><span class="bg-indigo-100 text-indigo-600 text-[10px] font-bold px-2 py-0.5 rounded">O</span><label class="text-sm font-bold">客觀檢查</label></div><textarea name="客觀檢查" rows="4" class="w-full px-5 py-2.5 bg-slate-50 border border-slate-100 rounded-2xl focus:border-emerald-500 outline-none transition-all resize-none"></textarea></div>
-              <div class="space-y-1"><div class="flex items-center gap-2"><span class="bg-amber-100 text-amber-600 text-[10px] font-bold px-2 py-0.5 rounded">A</span><label class="text-sm font-bold">診斷</label></div><textarea name="診斷" rows="4" class="w-full px-5 py-2.5 bg-slate-50 border border-slate-100 rounded-2xl focus:border-emerald-500 outline-none transition-all resize-none"></textarea></div>
-              <div class="space-y-1"><div class="flex items-center gap-2"><span class="bg-emerald-100 text-emerald-600 text-[10px] font-bold px-2 py-0.5 rounded">P</span><label class="text-sm font-bold">治療計畫</label></div><textarea name="治療計畫" rows="4" class="w-full px-5 py-2.5 bg-slate-50 border border-slate-100 rounded-2xl focus:border-emerald-500 outline-none transition-all resize-none"></textarea></div>
-              <div class="md:col-span-2 space-y-1"><div class="flex items-center gap-2"><span class="bg-slate-100 text-slate-600 text-[10px] font-bold px-2 py-0.5 rounded">Note</span><label class="text-sm font-bold">備註</label></div><textarea id="doctorRemark" rows="2" class="w-full px-5 py-2.5 bg-slate-50 border border-slate-100 rounded-2xl focus:border-emerald-500 outline-none transition-all resize-none"></textarea></div>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+              <div class="space-y-1"><div class="flex items-center gap-2"><span class="bg-blue-100 text-blue-600 text-[10px] font-bold px-2 py-0.5 rounded">S</span><label class="text-sm font-bold">主訴</label></div><textarea name="主訴" rows="3" class="w-full px-4 py-2 bg-slate-50 border border-slate-100 rounded-2xl focus:border-emerald-500 outline-none transition-all resize-none"></textarea></div>
+              <div class="space-y-1"><div class="flex items-center gap-2"><span class="bg-indigo-100 text-indigo-600 text-[10px] font-bold px-2 py-0.5 rounded">O</span><label class="text-sm font-bold">客觀檢查</label></div><textarea name="客觀檢查" rows="3" class="w-full px-4 py-2 bg-slate-50 border border-slate-100 rounded-2xl focus:border-emerald-500 outline-none transition-all resize-none"></textarea></div>
+              <div class="space-y-1"><div class="flex items-center gap-2"><span class="bg-amber-100 text-amber-600 text-[10px] font-bold px-2 py-0.5 rounded">A</span><label class="text-sm font-bold">診斷</label></div><textarea name="診斷" rows="3" class="w-full px-4 py-2 bg-slate-50 border border-slate-100 rounded-2xl focus:border-emerald-500 outline-none transition-all resize-none"></textarea></div>
+              <div class="space-y-1"><div class="flex items-center gap-2"><span class="bg-emerald-100 text-emerald-600 text-[10px] font-bold px-2 py-0.5 rounded">P</span><label class="text-sm font-bold">治療計畫</label></div><textarea name="治療計畫" rows="3" class="w-full px-4 py-2 bg-slate-50 border border-slate-100 rounded-2xl focus:border-emerald-500 outline-none transition-all resize-none"></textarea></div>
+              <div class="md:col-span-2 space-y-1"><div class="flex items-center gap-2"><span class="bg-slate-100 text-slate-600 text-[10px] font-bold px-2 py-0.5 rounded">Note</span><label class="text-sm font-bold">備註</label></div><textarea id="doctorRemark" rows="2" class="w-full px-4 py-2 bg-slate-50 border border-slate-100 rounded-2xl focus:border-emerald-500 outline-none transition-all resize-none"></textarea></div>
             </div>
-            <div class="flex justify-end pt-4 border-t border-slate-50">
-               <button type="button" onclick="submitForm('doctor')" class="bg-emerald-500 hover:bg-emerald-600 text-white px-10 py-3.5 rounded-2xl font-black shadow-lg transition-all active:scale-95">儲存看診紀錄</button>
+            <div class="flex justify-end pt-3 border-t border-slate-50">
+               <button type="button" onclick="submitForm('doctor')" class="bg-emerald-500 hover:bg-emerald-600 text-white px-8 py-3 rounded-2xl font-black shadow-lg transition-all active:scale-95">儲存看診紀錄</button>
             </div>
           </form>
         </div>
-        <div id="doctorHistoryList" class="space-y-6 mt-8"></div>
+        <div id="doctorHistoryList" class="space-y-4 mt-6"></div>
       </div>
 
       <!-- 個案總覽 -->
-      <div id="view-overview" class="hidden max-w-6xl mx-auto space-y-6">
-        <div class="bg-white rounded-[2.5rem] shadow-sm border border-slate-100 p-8 no-print">
-           <div class="flex justify-between items-center mb-8 border-b border-slate-50 pb-6">
+      <div id="view-overview" class="hidden max-w-6xl mx-auto space-y-4">
+        <div class="bg-white rounded-[2.5rem] shadow-sm border border-slate-100 p-5 no-print">
+           <div class="flex justify-between items-center mb-4 border-b border-slate-50 pb-3">
               <div>
                  <h3 class="text-2xl font-black text-slate-800 flex items-center gap-3">
                    <span class="material-icons-outlined text-emerald-500 text-3xl">analytics</span>
@@ -501,69 +521,49 @@
     </div>
   </main>
 
-  <!-- Modal: 新增個案 (優化版 - 修正裁切問題與必填標示) -->
+  <!-- Modal: 新增個案 -->
   <div id="addClientModal" class="hidden fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 no-print">
-     <!-- 修正點 1: 寬度從 max-w-2xl 改為 max-w-3xl，避免右側裁切 -->
      <div class="bg-white w-full max-w-3xl rounded-[2.5rem] overflow-hidden shadow-2xl">
-        
-        <!-- Header -->
-        <div class="px-8 py-6 border-b border-slate-100 flex justify-between items-center bg-white sticky top-0 z-10">
+        <div class="px-6 py-4 border-b border-slate-100 flex justify-between items-center bg-white sticky top-0 z-10">
            <h3 class="text-2xl font-black text-slate-800 tracking-tight">新增個案資料</h3>
            <button onclick="closeModal('addClientModal')" class="text-slate-300 hover:text-slate-500 transition text-3xl leading-none">&times;</button>
         </div>
-
-        <!-- Form Body -->
-        <form id="addClientForm" class="p-8 space-y-6 max-h-[80vh] overflow-y-auto custom-scrollbar">
-           
-           <div class="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-6">
-              
-              <!-- 第一列 -->
+        <form id="addClientForm" class="p-6 space-y-4 max-h-[80vh] overflow-y-auto custom-scrollbar">
+           <div class="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-4">
               <div class="flex items-center gap-3">
                  <label class="w-28 shrink-0 text-sm font-bold text-slate-500 text-right">姓名 <span class="text-red-400">*</span></label>
-                 <input type="text" id="addName" required class="flex-1 px-4 py-2.5 bg-slate-50 border border-slate-100 rounded-xl outline-none focus:bg-white focus:border-emerald-500 transition-all">
+                 <input type="text" id="addName" required class="flex-1 px-4 py-2 bg-slate-50 border border-slate-100 rounded-xl outline-none focus:bg-white focus:border-emerald-500 transition-all">
               </div>
               <div class="flex items-center gap-3">
                  <label class="w-28 shrink-0 text-sm font-bold text-slate-500 text-right">生日 <span class="text-red-400">*</span></label>
-                 <input type="text" id="addDob" required maxlength="8" placeholder="西元出生年月日8碼" oninput="this.value = this.value.replace(/[^0-9]/g, '')" class="flex-1 px-4 py-2.5 bg-slate-50 border border-slate-100 rounded-xl outline-none focus:bg-white focus:border-emerald-500 transition-all">
+                 <input type="text" id="addDob" required maxlength="8" placeholder="西元出生年月日8碼" oninput="this.value = this.value.replace(/[^0-9]/g, '')" class="flex-1 px-4 py-2 bg-slate-50 border border-slate-100 rounded-xl outline-none focus:bg-white focus:border-emerald-500 transition-all">
               </div>
-
-              <!-- 第二列 -->
               <div class="flex items-center gap-3">
-                 <!-- 修正點 2: 加入紅色星號標示必填 -->
                  <label class="w-28 shrink-0 text-sm font-bold text-slate-500 text-right">身分證字號 <span class="text-red-400">*</span></label>
-                 <!-- 修正點 2: 加入 required 屬性 -->
-                 <input type="text" id="addIdNo" required oninput="autoDetectGender(this)" class="flex-1 px-4 py-2.5 bg-slate-50 border border-slate-100 rounded-xl outline-none focus:bg-white focus:border-emerald-500 transition-all">
+                 <input type="text" id="addIdNo" required oninput="autoDetectGender(this)" class="flex-1 px-4 py-2 bg-slate-50 border border-slate-100 rounded-xl outline-none focus:bg-white focus:border-emerald-500 transition-all">
               </div>
               <div class="flex items-center gap-3">
                  <label class="w-28 shrink-0 text-sm font-bold text-slate-500 text-right">聯絡電話 <span class="text-red-400">*</span></label>
-                 <input type="text" id="addPhone" required class="flex-1 px-4 py-2.5 bg-slate-50 border border-slate-100 rounded-xl outline-none focus:bg-white focus:border-emerald-500 transition-all">
+                 <input type="text" id="addPhone" required class="flex-1 px-4 py-2 bg-slate-50 border border-slate-100 rounded-xl outline-none focus:bg-white focus:border-emerald-500 transition-all">
               </div>
-
-              <!-- 第三列 -->
               <div class="flex items-center gap-3">
                  <label class="w-28 shrink-0 text-sm font-bold text-slate-500 text-right">緊急聯絡人</label>
-                 <input type="text" id="addEmerName" class="flex-1 px-4 py-2.5 bg-slate-50 border border-slate-100 rounded-xl outline-none focus:bg-white focus:border-emerald-500 transition-all">
+                 <input type="text" id="addEmerName" class="flex-1 px-4 py-2 bg-slate-50 border border-slate-100 rounded-xl outline-none focus:bg-white focus:border-emerald-500 transition-all">
               </div>
               <div class="flex items-center gap-3">
                  <label class="w-28 shrink-0 text-sm font-bold text-slate-500 text-right">緊急聯絡電話</label>
-                 <input type="text" id="addEmerPhone" class="flex-1 px-4 py-2.5 bg-slate-50 border border-slate-100 rounded-xl outline-none focus:bg-white focus:border-emerald-500 transition-all">
+                 <input type="text" id="addEmerPhone" class="flex-1 px-4 py-2 bg-slate-50 border border-slate-100 rounded-xl outline-none focus:bg-white focus:border-emerald-500 transition-all">
               </div>
-
-              <!-- 第四列 (全寬) -->
-              <div class="col-span-1 md:col-span-2 space-y-2">
+              <div class="col-span-1 md:col-span-2 space-y-1">
                  <label class="text-xs font-bold text-slate-400 ml-1 block">慢性病或特殊疾病</label>
-                 <textarea id="addChronic" rows="3" class="w-full px-4 py-3 bg-slate-50 border border-slate-100 rounded-xl outline-none focus:bg-white focus:border-emerald-500 transition-all resize-none"></textarea>
+                 <textarea id="addChronic" rows="3" class="w-full px-4 py-2 bg-slate-50 border border-slate-100 rounded-xl outline-none focus:bg-white focus:border-emerald-500 transition-all resize-none"></textarea>
               </div>
-
            </div>
-
-           <!-- 底部按鈕區 -->
-           <div class="pt-4 sticky bottom-0 bg-white pb-2">
-              <button type="button" id="btnSubmitClient" onclick="submitNewClient()" class="w-full bg-emerald-500 hover:bg-emerald-600 text-white font-bold py-4 rounded-xl shadow-lg shadow-emerald-500/20 transition-all active:scale-[0.98] tracking-wide text-lg">
+           <div class="pt-2 sticky bottom-0 bg-white pb-1">
+              <button type="button" id="btnSubmitClient" onclick="submitNewClient()" class="w-full bg-emerald-500 hover:bg-emerald-600 text-white font-bold py-3.5 rounded-xl shadow-lg shadow-emerald-500/20 transition-all active:scale-[0.98] tracking-wide text-lg">
                  建立個案資料
               </button>
            </div>
-
         </form>
      </div>
   </div>
@@ -571,15 +571,15 @@
   <!-- Modal: 上傳影像 -->
   <div id="uploadImageModal" class="hidden fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[60] flex items-center justify-center p-4 no-print">
      <div class="bg-white w-full max-w-lg rounded-[2.5rem] overflow-hidden shadow-2xl relative">
-        <div class="p-8 border-b border-slate-100 flex justify-between items-center">
+        <div class="p-6 border-b border-slate-100 flex justify-between items-center">
            <h3 class="text-xl font-black text-slate-800">上傳影像</h3>
            <button onclick="closeModal('uploadImageModal')" class="text-slate-300 hover:text-slate-500 transition text-2xl">✕</button>
         </div>
         
-        <div class="p-8 space-y-6">
-           <div onclick="document.getElementById('uploadInput').click()" class="relative w-full h-48 rounded-3xl border-2 border-dashed border-slate-200 bg-slate-50 hover:bg-slate-100 transition flex flex-col items-center justify-center group cursor-pointer">
+        <div class="p-6 space-y-4">
+           <div onclick="document.getElementById('uploadInput').click()" class="relative w-full h-40 rounded-3xl border-2 border-dashed border-slate-200 bg-slate-50 hover:bg-slate-100 transition flex flex-col items-center justify-center group cursor-pointer">
               <input type="file" id="uploadInput" accept="image/*" multiple class="hidden" onchange="previewFiles(this)">
-              <div class="p-4 bg-white rounded-full shadow-sm mb-3 group-hover:scale-110 transition text-emerald-500">
+              <div class="p-4 bg-white rounded-full shadow-sm mb-2 group-hover:scale-110 transition text-emerald-500">
                  <span class="material-icons-outlined text-2xl">add_photo_alternate</span>
               </div>
               <p class="text-slate-500 font-bold text-sm">點擊或拖曳圖片至此</p>
@@ -591,7 +591,7 @@
               <div id="previewList" class="max-h-32 overflow-y-auto custom-scrollbar space-y-2"></div>
            </div>
 
-           <button onclick="startUpload()" id="btnStartUpload" class="w-full bg-emerald-500 hover:bg-emerald-600 text-white font-black py-4 rounded-2xl shadow-lg shadow-emerald-500/20 transition active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed">
+           <button onclick="startUpload()" id="btnStartUpload" class="w-full bg-emerald-500 hover:bg-emerald-600 text-white font-black py-3.5 rounded-2xl shadow-lg shadow-emerald-500/20 transition active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed">
               開始上傳
            </button>
         </div>
@@ -625,5 +625,61 @@
   </div>
 
   <?!= include('JavaScript'); ?>
+  
+  <!-- Script Override to fulfill Requirements 3 & 4 (Full content display & Count update) -->
+  <script>
+    function renderTreatmentList(logs) {
+      const c = document.getElementById('historyListContainer');
+      const countBadge = document.getElementById('treatmentHistoryCount');
+      
+      // Update count badge
+      if(countBadge) {
+         countBadge.textContent = `共 ${logs ? logs.length : 0} 次`;
+      }
+
+      if(!logs || !logs.length) { 
+        c.innerHTML = '<div class="text-center py-10 text-slate-300 bg-slate-50 rounded-2xl">無相關紀錄</div>'; 
+        return; 
+      }
+      
+      // Full content display with whitespace-pre-wrap
+      c.innerHTML = logs.map(l => `
+        <div class="bg-white p-5 rounded-[2rem] shadow-sm border border-slate-100 card-hover relative overflow-hidden group">
+            <div class="absolute top-0 left-0 w-1.5 h-full bg-emerald-500"></div>
+            <div class="pl-2">
+                <div class="flex justify-between items-center mb-3">
+                    <span class="text-xs font-bold text-slate-500 font-mono bg-slate-100 px-2 py-1 rounded-lg">${l['治療日期']}</span>
+                    <div class="flex items-center gap-1 text-sm font-bold text-emerald-600">
+                        <span class="material-icons-outlined text-sm">face</span>
+                        ${l['執行治療師']}
+                    </div>
+                </div>
+                
+                <div class="space-y-3">
+                    ${l['當日主訴'] ? `
+                    <div>
+                        <div class="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">當日主訴</div>
+                        <!-- 修改重點：移除背景底框，改為 px-1 -->
+                        <div class="text-sm text-slate-700 whitespace-pre-wrap leading-relaxed px-1">${l['當日主訴']}</div>
+                    </div>` : ''}
+                    
+                    ${l['治療內容'] ? `
+                    <div>
+                        <div class="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">治療內容</div>
+                        <div class="text-sm text-slate-700 whitespace-pre-wrap leading-relaxed px-1">${l['治療內容']}</div>
+                    </div>` : ''}
+                    
+                    ${l['備註/下次治療'] ? `
+                    <div class="bg-amber-50 p-3 rounded-xl border border-amber-100 mt-2">
+                        <div class="text-[10px] font-bold text-amber-500 uppercase tracking-wider mb-1 flex items-center gap-1">
+                            <span class="material-icons-outlined text-[10px]">flag</span> 備註 / 下次治療
+                        </div>
+                        <div class="text-sm text-slate-600 whitespace-pre-wrap leading-relaxed">${l['備註/下次治療']}</div>
+                    </div>` : ''}
+                </div>
+            </div>
+        </div>`).join('');
+    }
+  </script>
 </body>
 </html>
