@@ -511,7 +511,7 @@
      </div>
   </div>
 
-  <!-- Modal: 上傳影像 -->
+  <!-- Modal: 上傳影像 (修正處) -->
   <div id="uploadImageModal" class="hidden fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[60] flex items-center justify-center p-4 no-print">
      <div class="bg-white w-full max-w-lg rounded-[2.5rem] overflow-hidden shadow-2xl relative">
         <div class="p-8 border-b border-slate-100 flex justify-between items-center">
@@ -520,8 +520,10 @@
         </div>
         
         <div class="p-8 space-y-6">
-           <div class="relative w-full h-48 rounded-3xl border-2 border-dashed border-slate-200 bg-slate-50 hover:bg-slate-100 transition flex flex-col items-center justify-center group cursor-pointer">
-              <input type="file" id="uploadInput" accept="image/*" multiple class="absolute inset-0 w-full h-full opacity-0 cursor-pointer" onchange="previewFiles(this)">
+           <!-- 修改：使用 onclick 觸發 hidden input，解決無法點擊問題 -->
+           <div onclick="document.getElementById('uploadInput').click()" class="relative w-full h-48 rounded-3xl border-2 border-dashed border-slate-200 bg-slate-50 hover:bg-slate-100 transition flex flex-col items-center justify-center group cursor-pointer">
+              <!-- 修改：class 加入 hidden -->
+              <input type="file" id="uploadInput" accept="image/*" multiple class="hidden" onchange="previewFiles(this)">
               <div class="p-4 bg-white rounded-full shadow-sm mb-3 group-hover:scale-110 transition text-emerald-500">
                  <span class="material-icons-outlined text-2xl">add_photo_alternate</span>
               </div>

@@ -4,663 +4,438 @@ let allTreatmentLogs = [];
 let allOverviewRecords = []; 
 let currentOverviewCategory = 'all'; 
 let currentCalDate = new Date();
-let isMonthPickerMode = false; // 側邊欄月曆用
+let isMonthPickerMode = false; 
 
-/**
- * ★★★ 核心：Flatpickr 增強版初始化函數 ★★★
- * 讓所有彈出式月曆都具備自定義 Header、月份網格切換、以及資料綠點
- */
+// === Flatpickr 初始化 (保持原 UI 設計) ===
 function setupEnhancedFlatpickr(selector, options = {}) {
   const defaults = {
-    locale: "zh_tw",
-    dateFormat: "Y-m-d",
-    disableMobile: true,
-    allowInput: true,
-    static: true,
-    
-    // 初始化時注入 DOM
+    locale: "zh_tw", dateFormat: "Y-m-d", disableMobile: true, allowInput: true, static: true,
     onReady: function(selectedDates, dateStr, instance) {
-      // 1. 構建自定義 Header
       const customHeader = document.createElement("div");
       customHeader.className = "custom-fp-header";
-      customHeader.innerHTML = `
-        <div class="custom-fp-nav-btn prev-btn"><span class="material-icons-outlined text-sm">chevron_left</span></div>
-        <div class="custom-fp-title">
-          <span class="curr-year-month">--</span>
-          <span class="material-icons-outlined text-xs text-slate-300">expand_more</span>
-        </div>
-        <div class="custom-fp-nav-btn next-btn"><span class="material-icons-outlined text-sm">chevron_right</span></div>
-      `;
-      
-      // 插入到 Calendar 最上方
+      customHeader.innerHTML = `<div class="custom-fp-nav-btn prev-btn"><span class="material-icons-outlined text-sm">chevron_left</span></div><div class="custom-fp-title"><span class="curr-year-month">--</span><span class="material-icons-outlined text-xs text-slate-300">expand_more</span></div><div class="custom-fp-nav-btn next-btn"><span class="material-icons-outlined text-sm">chevron_right</span></div>`;
       instance.calendarContainer.insertBefore(customHeader, instance.calendarContainer.firstChild);
-      
-      // 2. 構建月份選擇網格 (預設隱藏)
       const monthGrid = document.createElement("div");
       monthGrid.className = "custom-fp-month-grid";
       monthGrid.style.display = "none"; 
-      
-      // 產生 12 個月份按鈕
       const monthNames = ["1月", "2月", "3月", "4月", "5月", "6月", "7月", "8月", "9月", "10月", "11月", "12月"];
       monthNames.forEach((mName, idx) => {
         const item = document.createElement("div");
         item.className = "custom-fp-month-item";
         item.textContent = mName;
-        item.onclick = (e) => {
-          e.stopPropagation();
-          instance.changeMonth(idx, false); // 切換月份
-          monthGrid.style.display = "none"; // 關閉網格
-          instance.innerContainer.style.display = "block"; // 顯示日期
-          updateHeader(instance, customHeader, monthGrid);
-        };
+        item.onclick = (e) => { e.stopPropagation(); instance.changeMonth(idx, false); monthGrid.style.display = "none"; instance.innerContainer.style.display = "block"; updateHeader(instance, customHeader, monthGrid); };
         monthGrid.appendChild(item);
       });
       instance.calendarContainer.appendChild(monthGrid);
-
-      // 3. 綁定 Header 事件
       const titleBtn = customHeader.querySelector('.custom-fp-title');
       const prevBtn = customHeader.querySelector('.prev-btn');
       const nextBtn = customHeader.querySelector('.next-btn');
-
-      // 點擊標題：切換日曆/年月選單
-      titleBtn.onclick = (e) => {
-        e.stopPropagation();
-        const isGridVisible = monthGrid.style.display !== "none";
-        if(isGridVisible) {
-          monthGrid.style.display = "none";
-          instance.innerContainer.style.display = "block";
-        } else {
-          monthGrid.style.display = "grid";
-          instance.innerContainer.style.display = "none";
-          renderMonthGridDots(instance, monthGrid); // 渲染月份綠點
-        }
-        updateHeader(instance, customHeader, monthGrid);
-      };
-
-      // 點擊左右：根據模式切換 月份 或 年份
-      prevBtn.onclick = (e) => {
-        e.stopPropagation();
-        const isGridVisible = monthGrid.style.display !== "none";
-        if(isGridVisible) {
-          instance.changeYear(instance.currentYear - 1);
-          renderMonthGridDots(instance, monthGrid);
-        } else {
-          instance.changeMonth(-1);
-        }
-        updateHeader(instance, customHeader, monthGrid);
-      };
-
-      nextBtn.onclick = (e) => {
-        e.stopPropagation();
-        const isGridVisible = monthGrid.style.display !== "none";
-        if(isGridVisible) {
-          instance.changeYear(instance.currentYear + 1);
-          renderMonthGridDots(instance, monthGrid);
-        } else {
-          instance.changeMonth(1);
-        }
-        updateHeader(instance, customHeader, monthGrid);
-      };
-
-      // 初始更新文字
+      titleBtn.onclick = (e) => { e.stopPropagation(); const isGridVisible = monthGrid.style.display !== "none"; if(isGridVisible) { monthGrid.style.display = "none"; instance.innerContainer.style.display = "block"; } else { monthGrid.style.display = "grid"; instance.innerContainer.style.display = "none"; renderMonthGridDots(instance, monthGrid); } updateHeader(instance, customHeader, monthGrid); };
+      prevBtn.onclick = (e) => { e.stopPropagation(); if(monthGrid.style.display !== "none") { instance.changeYear(instance.currentYear - 1); renderMonthGridDots(instance, monthGrid); } else { instance.changeMonth(-1); } updateHeader(instance, customHeader, monthGrid); };
+      nextBtn.onclick = (e) => { e.stopPropagation(); if(monthGrid.style.display !== "none") { instance.changeYear(instance.currentYear + 1); renderMonthGridDots(instance, monthGrid); } else { instance.changeMonth(1); } updateHeader(instance, customHeader, monthGrid); };
       updateHeader(instance, customHeader, monthGrid);
     },
-
-    // 當月份改變時更新 Header
-    onMonthChange: function(selectedDates, dateStr, instance) {
-      const header = instance.calendarContainer.querySelector(".custom-fp-header");
-      const grid = instance.calendarContainer.querySelector(".custom-fp-month-grid");
-      if(header) updateHeader(instance, header, grid);
-    },
-
-    // 當年份改變時更新 Header 與月份綠點
-    onYearChange: function(selectedDates, dateStr, instance) {
-      const header = instance.calendarContainer.querySelector(".custom-fp-header");
-      const grid = instance.calendarContainer.querySelector(".custom-fp-month-grid");
-      if(header) updateHeader(instance, header, grid);
-      if(grid && grid.style.display !== "none") renderMonthGridDots(instance, grid);
-    },
-
-    // 渲染日期時，檢查是否有資料並加上綠點 class
+    onMonthChange: function(sd, ds, instance) { updateHeader(instance, instance.calendarContainer.querySelector(".custom-fp-header"), instance.calendarContainer.querySelector(".custom-fp-month-grid")); },
+    onYearChange: function(sd, ds, instance) { const grid = instance.calendarContainer.querySelector(".custom-fp-month-grid"); updateHeader(instance, instance.calendarContainer.querySelector(".custom-fp-header"), grid); if(grid && grid.style.display !== "none") renderMonthGridDots(instance, grid); },
     onDayCreate: function(dObj, dStr, fp, dayElem) {
       const dateKey = dayElem.dateObj.toISOString().split('T')[0];
-      const hasRecord = allTreatmentLogs.some(log => log['治療日期'] && log['治療日期'].trim() === dateKey);
-      
-      if(hasRecord) {
-        dayElem.classList.add('has-record');
-      }
+      if(allTreatmentLogs.some(log => log['治療日期'] && log['治療日期'].trim() === dateKey)) dayElem.classList.add('has-record');
     }
   };
-
   return flatpickr(selector, { ...defaults, ...options });
 }
-
-// 輔助：更新 Flatpickr 自定義 Header 文字
 function updateHeader(instance, headerEl, gridEl) {
   if(!headerEl) return;
   const titleSpan = headerEl.querySelector(".curr-year-month");
-  const isGridVisible = gridEl && gridEl.style.display !== "none";
-  
-  if (isGridVisible) {
+  if (gridEl && gridEl.style.display !== "none") {
     titleSpan.textContent = `${instance.currentYear}年`;
-    const items = gridEl.querySelectorAll(".custom-fp-month-item");
-    items.forEach((item, idx) => {
-      if(idx === instance.currentMonth) item.classList.add("is-current");
-      else item.classList.remove("is-current");
-    });
-  } else {
-    const monthName = instance.l10n.months.longhand[instance.currentMonth];
-    titleSpan.textContent = `${instance.currentYear}年 ${monthName}`;
-  }
+    gridEl.querySelectorAll(".custom-fp-month-item").forEach((item, idx) => { idx === instance.currentMonth ? item.classList.add("is-current") : item.classList.remove("is-current"); });
+  } else { titleSpan.textContent = `${instance.currentYear}年 ${instance.l10n.months.longhand[instance.currentMonth]}`; }
 }
-
-// 輔助：渲染 Flatpickr 月份網格的綠點
 function renderMonthGridDots(instance, gridEl) {
   const currentYear = instance.currentYear;
   const monthsWithData = new Set();
-  
   allTreatmentLogs.forEach(log => {
     if (!log['治療日期']) return;
     const parts = log['治療日期'].trim().split('-');
-    if (parts.length >= 2) {
-      const y = parseInt(parts[0], 10);
-      const m = parseInt(parts[1], 10) - 1;
-      if (y === currentYear) monthsWithData.add(m);
-    }
+    if (parts.length >= 2 && parseInt(parts[0], 10) === currentYear) monthsWithData.add(parseInt(parts[1], 10) - 1);
   });
-
-  const items = gridEl.querySelectorAll(".custom-fp-month-item");
-  items.forEach((item, idx) => {
-    if(monthsWithData.has(idx)) item.classList.add("has-record");
-    else item.classList.remove("has-record");
-  });
+  gridEl.querySelectorAll(".custom-fp-month-item").forEach((item, idx) => { monthsWithData.has(idx) ? item.classList.add("has-record") : item.classList.remove("has-record"); });
 }
 
-
+// === 初始化 ===
 window.onload = function() {
   const today = new Date().toISOString().split('T')[0];
-  
-  // 1. 設定所有日期欄位預設值
   document.querySelectorAll('#treatmentDate, #maintenanceDate, #doctorConsultDate, #trackDate').forEach(el => el.value = today);
-
-  // 2. 統一使用增強版 Flatpickr 初始化所有日期 Input
   setupEnhancedFlatpickr('input[type="date"], #trackDate', {
     onChange: function(selectedDates, dateStr, instance) {
-      if (instance.element.id === 'filterDate') {
-        applyLogFilters();
-        if (selectedDates.length > 0) {
-          currentCalDate = new Date(selectedDates[0]);
-          isMonthPickerMode = false;
-          renderTreatmentCalendar(); 
-        }
-      }
+      if (instance.element.id === 'filterDate') { applyLogFilters(); if (selectedDates.length > 0) { currentCalDate = new Date(selectedDates[0]); isMonthPickerMode = false; renderTreatmentCalendar(); } }
     }
   });
-
-  // 3. 總覽的篩選器也套用
-  const overviewConfig = {
-    onChange: function() { renderOverviewList(); }
-  };
+  const overviewConfig = { onChange: function() { renderOverviewList(); } };
   setupEnhancedFlatpickr('#overviewStartDate', overviewConfig);
   setupEnhancedFlatpickr('#overviewEndDate', overviewConfig);
-
   loadSystemStaff();
 };
 
-/**
- * 載入系統下拉選單內容
- */
 function loadSystemStaff() {
   if (typeof google === 'undefined' || !google.script) return;
-
   google.script.run.withSuccessHandler(staff => {
-    const ds = document.getElementById('selectDoctor');
-    if(ds) {
-      ds.innerHTML = '<option value="" disabled selected>請選擇醫師</option>';
-      staff.doctors.forEach(n => ds.innerHTML += `<option value="${n}">${n}</option>`);
-    }
-    const ns = document.getElementById('selectNurse');
-    if(ns) {
-      ns.innerHTML = '<option value="" disabled selected>請選擇護理師</option>';
-      staff.nurses.forEach(n => ns.innerHTML += `<option value="${n}">${n}</option>`);
-    }
-    const ts = document.getElementById('inputTherapist');
+    const setOptions = (id, list, placeholder) => {
+      const el = document.getElementById(id);
+      if(el) { el.innerHTML = `<option value="" disabled selected>${placeholder}</option>` + list.map(n => `<option value="${n}">${n}</option>`).join(''); }
+    };
+    setOptions('selectDoctor', staff.doctors, '請選擇醫師');
+    setOptions('selectNurse', staff.nurses, '請選擇護理師');
+    setOptions('inputTherapist', staff.therapists, '請選擇治療師');
+    setOptions('selectMaintStaff', staff.allStaff, '請選擇執行人員');
+    setOptions('selectMaintItem', staff.maintItems, '請選擇項目');
+    setOptions('trackStaff', staff.allStaff, '請選擇人員');
+    setOptions('trackType', staff.trackingTypes || [], '請選擇項目');
+    
     const fts = document.getElementById('filterTherapist');
-    if(ts) {
-      ts.innerHTML = '<option value="" disabled selected>請選擇治療師</option>';
-      staff.therapists.forEach(n => ts.innerHTML += `<option value="${n}">${n}</option>`);
-    }
-    if(fts) {
-      fts.innerHTML = '<option value="">所有執行人員</option>';
-      staff.therapists.forEach(n => fts.innerHTML += `<option value="${n}">${n}</option>`);
-    }
-    const ms = document.getElementById('selectMaintStaff');
-    if(ms) {
-      ms.innerHTML = '<option value="" disabled selected>請選擇執行人員</option>';
-      staff.allStaff.forEach(n => ms.innerHTML += `<option value="${n}">${n}</option>`);
-    }
-    const mi = document.getElementById('selectMaintItem');
-    if(mi) {
-      mi.innerHTML = '<option value="" disabled selected>請選擇項目</option>';
-      staff.maintItems.forEach(n => mi.innerHTML += `<option value="${n}">${n}</option>`);
-    }
-    const tStaff = document.getElementById('trackStaff');
-    if(tStaff) {
-       tStaff.innerHTML = '<option value="" disabled selected>請選擇人員</option>';
-       staff.allStaff.forEach(n => tStaff.innerHTML += `<option value="${n}">${n}</option>`);
-    }
-    const tt = document.getElementById('trackType');
-    if(tt) {
-       tt.innerHTML = '<option value="" disabled selected>請選擇項目</option>';
-       if(staff.trackingTypes) {
-         staff.trackingTypes.forEach(t => tt.innerHTML += `<option value="${t}">${t}</option>`);
-       }
-    }
+    if(fts) fts.innerHTML = '<option value="">所有執行人員</option>' + staff.therapists.map(n => `<option value="${n}">${n}</option>`).join('');
   }).getSystemStaff();
 }
 
-// 導覽切換
+// === 導覽與頁面切換 ===
 function navTo(viewName) {
+  // ★ 強制檢查：如果沒有選取個案，不能進入功能頁面
   if (!currentClient && viewName !== 'search') { alert("請先選取個案。"); return; }
+  
   const views = ['search', 'basic', 'images', 'treatment', 'maintenance', 'doctor', 'tracking', 'overview'];
   views.forEach(v => {
-    const el = document.getElementById('view-' + v);
-    if(el) el.classList.add('hidden');
-    const btn = document.getElementById('btn-' + v);
-    if(btn) btn.classList.remove('bg-slate-800', 'text-white', 'font-bold');
+    document.getElementById('view-' + v)?.classList.add('hidden');
+    document.getElementById('btn-' + v)?.classList.remove('active');
   });
   const target = document.getElementById('view-' + viewName);
-  if(target) target.classList.remove('hidden');
-  const targetBtn = document.getElementById('btn-' + viewName);
-  if(targetBtn) targetBtn.classList.add('bg-slate-800', 'text-white', 'font-bold');
-  const titles = { 'search':'搜尋','basic':'基本資料','images':'影像總覽','treatment':'治療紀錄','maintenance':'保養項目','doctor':'醫師看診','tracking':'個管追蹤','overview':'個案總覽' };
+  if(target) {
+    target.classList.remove('hidden');
+    target.classList.add('view-animate'); 
+  }
+  document.getElementById('btn-' + viewName)?.classList.add('active');
+  
+  const titles = { 'search':'首頁','basic':'基本資料','images':'影像總覽','treatment':'治療紀錄','maintenance':'保養項目','doctor':'醫師看診','tracking':'個管追蹤','overview':'個案總覽' };
   document.getElementById('pageTitle').textContent = titles[viewName] || '康飛運醫';
   
-  // 載入資料邏輯
-  if(viewName === 'basic') renderBasicInfo();
-  if(viewName === 'doctor') loadDoctorHistory();
-  if(viewName === 'treatment') loadTreatmentHistory();
-  if(viewName === 'maintenance') loadMaintenanceHistory();
-  if(viewName === 'tracking') loadTrackingHistory();
-  if(viewName === 'overview') loadOverviewData(); 
-  
-  // 載入影像資料
-  if(viewName === 'images') loadClientImages();
+  // ★ 切換頁面時，帶入 Current Client ID 重新讀取資料
+  if (currentClient) {
+    if(viewName === 'basic') renderBasicInfo();
+    if(viewName === 'doctor') loadDoctorHistory();
+    if(viewName === 'treatment') loadTreatmentHistory();
+    if(viewName === 'maintenance') loadMaintenanceHistory();
+    if(viewName === 'tracking') loadTrackingHistory();
+    if(viewName === 'overview') loadOverviewData(); 
+    if(viewName === 'images') loadClientImages();
+  }
 }
 
-// --- 影像總覽功能區 ---
+// === 搜尋與個案選取 ===
+function handleSearch() {
+  const inputEl = document.getElementById('searchInput');
+  const kw = inputEl.value.trim();
+  if (!kw) { alert("請輸入姓名或電話"); inputEl.focus(); return; }
+  const container = document.getElementById('searchResults');
+  container.innerHTML = '<div class="text-center py-8 text-slate-400 flex flex-col items-center gap-2"><span class="material-icons-outlined animate-spin">sync</span><span>資料庫搜尋中...</span></div>';
+  google.script.run.withSuccessHandler(data => {
+      container.innerHTML = '';
+      if(data.length === 0) { container.innerHTML = '<div class="text-center py-6 text-slate-400 bg-white rounded-2xl border border-slate-100 shadow-sm">查無此個案資料</div>'; return; }
+      data.forEach(c => {
+        const div = document.createElement('div');
+        div.className = "bg-white p-5 rounded-3xl shadow-sm border border-slate-100 hover:border-emerald-400 hover:shadow-md cursor-pointer transition-all flex justify-between items-center group mb-3 relative overflow-hidden";
+        div.onclick = () => selectClient(c);
+        div.innerHTML = `<div class="absolute left-0 top-0 bottom-0 w-1 bg-emerald-500 opacity-0 group-hover:opacity-100 transition-opacity"></div><div class="pl-2"> <div class="font-black text-slate-800 text-lg flex items-center gap-2">${c['姓名']} <span class="text-[10px] font-bold text-slate-400 bg-slate-50 px-2 py-1 rounded-lg border border-slate-200">${c['個案編號']}</span></div><div class="text-sm text-slate-400 mt-1 flex items-center gap-1 font-mono"><span class="material-icons-outlined text-[14px]">phone</span> ${c['電話']}</div></div><div class="w-10 h-10 rounded-full bg-slate-50 flex items-center justify-center text-slate-300 group-hover:bg-emerald-500 group-hover:text-white transition-all"><span class="material-icons-outlined">arrow_forward</span></div>`;
+        container.appendChild(div);
+      });
+  }).searchClient(kw);
+}
+
+function selectClient(c) {
+  // ★ 設定全域變數，這是關鍵
+  currentClient = c;
+  
+  // 更新頂部資訊欄
+  document.getElementById('topBarClientInfo').classList.remove('hidden');
+  document.getElementById('headerClientName').textContent = c['姓名'];
+  document.getElementById('headerClientDob').textContent = c['生日'];
+  
+  // ★ 自動填入所有隱藏的 ID 欄位 (確保新增資料時帶入正確 ID)
+  document.querySelectorAll('.auto-fill-id').forEach(el => el.value = c['個案編號']);
+  
+  // 跳轉至基本資料頁
+  navTo('basic');
+}
+
+// === 表單提交與歷史紀錄 (關鍵修正：強制帶入 currentClient ID) ===
+function submitForm(type) {
+  if (!currentClient) { alert("系統錯誤：未選取個案，請重新搜尋。"); return; }
+  
+  const clientId = currentClient['個案編號']; // ★ 確保使用變數中的 ID
+  const btn = type === 'tracking' ? document.querySelector('#trackingForm button[type="submit"]') : event.target;
+  const ot = btn ? btn.innerHTML : "儲存"; 
+  if(btn) { btn.disabled = true; btn.innerHTML = '<span class="material-icons-outlined animate-spin">sync</span> 儲存中...'; }
+  
+  if (type === 'doctor') {
+    const d = { 
+      clientId: clientId, // ★ 明確傳入 ID
+      date: document.getElementById('doctorConsultDate').value, 
+      doctor: document.getElementById('selectDoctor').value, 
+      nurse: document.getElementById('selectNurse').value, 
+      complaint: document.querySelector('#view-doctor textarea[name="主訴"]').value, 
+      objective: document.querySelector('#view-doctor textarea[name="客觀檢查"]').value, 
+      diagnosis: document.querySelector('#view-doctor textarea[name="診斷"]').value, 
+      plan: document.querySelector('#view-doctor textarea[name="治療計畫"]').value, 
+      remark: document.getElementById('doctorRemark').value 
+    };
+    if (!d.date || !d.doctor) { alert("請填寫日期與醫師"); if(btn){btn.disabled=false; btn.innerHTML=ot;} return; }
+    google.script.run.withSuccessHandler(res => { if(btn){btn.disabled=false; btn.innerHTML=ot;} if (res.success) { alert(res.message); document.getElementById('doctorForm').reset(); loadDoctorHistory(); } else { alert(res.message); } }).saveDoctorConsultation(d);
+  } else if (type === 'treatment') {
+    const d = { 
+      '個案編號': clientId, // ★ 明確傳入 ID
+      '治療日期': document.getElementById('treatmentDate').value, 
+      '執行治療師': document.getElementById('inputTherapist').value, 
+      '當日主訴': document.getElementById('inputComplaint').value, 
+      '治療內容': document.getElementById('inputContent').value, 
+      '備註/下次治療': document.getElementById('inputNextPlan').value 
+    };
+    if (!d['治療日期'] || !d['執行治療師']) { alert("請填寫日期與治療師"); if(btn){btn.disabled=false; btn.innerHTML=ot;} return; }
+    google.script.run.withSuccessHandler(res => { if(btn){btn.disabled=false; btn.innerHTML=ot;} if (res.success) { alert(res.message); document.getElementById('treatmentForm').reset(); loadTreatmentHistory(); } else { alert(res.message); } }).saveData('Treatment_Logs', d);
+  } else if (type === 'maintenance') {
+    const f = document.getElementById('maintenanceForm');
+    const d = { 
+      clientId: clientId, // ★ 明確傳入 ID
+      date: document.getElementById('maintenanceDate').value, 
+      staff: document.getElementById('selectMaintStaff').value, 
+      item: document.getElementById('selectMaintItem').value, 
+      bp: f.querySelector('input[name="血壓"]').value, 
+      spo2: f.querySelector('input[name="血氧"]').value, 
+      hr: f.querySelector('input[name="心律"]').value, 
+      temp: f.querySelector('input[name="體溫"]').value, 
+      remark: f.querySelector('textarea[name="備註"]').value 
+    };
+    if (!d.date || !d.staff || !d.item) { alert("請完整填寫必填欄位"); if(btn){btn.disabled=false; btn.innerHTML=ot;} return; }
+    google.script.run.withSuccessHandler(res => { if(btn){btn.disabled=false; btn.innerHTML=ot;} if (res.success) { alert(res.message); f.reset(); document.getElementById('maintenanceDate').value = new Date().toISOString().split('T')[0]; loadMaintenanceHistory(); } else { alert(res.message); } }).saveMaintenanceRecord(d);
+  } else if (type === 'tracking') {
+    const d = { 
+      clientId: clientId, // ★ 明確傳入 ID
+      trackDate: document.getElementById('trackDate').value, 
+      trackStaff: document.getElementById('trackStaff').value, 
+      trackType: document.getElementById('trackType').value, 
+      content: document.getElementById('trackContent').value 
+    };
+    if (!d.trackDate || !d.trackStaff || !d.trackType || !d.content) { alert("請完整填寫追蹤資料"); if(btn){btn.disabled=false; btn.innerHTML=ot;} return; }
+    google.script.run.withSuccessHandler(res => { if(btn){btn.disabled=false; btn.innerHTML=ot;} if (res.success) { alert(res.message); document.getElementById('trackContent').value = ""; loadTrackingHistory(); } else { alert(res.message); } }).saveTrackingRecord(d);
+  }
+}
+
+// === 列表渲染函數 (已確保傳入 ID 給後端) ===
+function loadTrackingHistory() {
+  const c = document.getElementById('trackingHistoryList'); c.innerHTML = '<div class="text-center py-6 text-slate-400">讀取中...</div>';
+  google.script.run.withSuccessHandler(recs => {
+    if (!recs || !recs.length) { c.innerHTML = `<div class="text-center text-slate-400 py-12 bg-white rounded-[2rem] border border-slate-100"><span class="material-icons-outlined text-4xl mb-2 text-slate-300">history_edu</span><p>尚無任何追蹤紀錄</p></div>`; return; }
+    c.innerHTML = recs.map(r => `<div class="bg-white p-6 rounded-[1.5rem] border border-slate-100 shadow-sm card-hover mb-4 relative overflow-hidden group"><div class="absolute left-0 top-0 bottom-0 w-1.5 bg-violet-500 opacity-80"></div><div class="pl-2"><div class="flex justify-between items-start mb-3"><div class="flex items-center gap-2"><span class="bg-violet-50 text-violet-700 text-xs font-bold px-3 py-1 rounded-full border border-violet-100">${r.type}</span><div class="text-slate-500 text-xs font-bold flex items-center bg-slate-50 px-2 py-1 rounded-lg"><span class="material-icons-outlined text-[14px] mr-1">person</span>${r.staff||'--'}</div></div><span class="text-slate-400 text-xs font-mono">${r.date}</span></div><div class="text-slate-700 text-sm leading-relaxed whitespace-pre-line bg-slate-50/50 p-3 rounded-xl">${r.content}</div></div></div>`).join('');
+  }).getTrackingHistory(currentClient['個案編號']);
+}
+function loadTreatmentHistory() {
+  const c = document.getElementById('historyListContainer'); c.innerHTML = '<div class="text-center py-6 text-slate-400">讀取中...</div>';
+  google.script.run.withSuccessHandler(logs => { allTreatmentLogs = logs || []; applyLogFilters(); renderTreatmentCalendar(); }).getClientHistory(currentClient['個案編號'], 'Treatment_Logs');
+}
+function renderTreatmentList(logs) {
+  const c = document.getElementById('historyListContainer');
+  if(!logs.length) { c.innerHTML = '<div class="text-center py-10 text-slate-300 bg-slate-50 rounded-2xl">無相關紀錄</div>'; return; }
+  c.innerHTML = logs.map(l => `<div class="bg-white p-6 rounded-[2rem] shadow-sm border border-slate-100 card-hover mb-4 relative overflow-hidden"><div class="absolute top-0 left-0 w-full h-1 bg-emerald-500"></div><div class="flex justify-between items-center mb-3"><span class="text-xs font-bold text-slate-400 font-mono bg-slate-50 px-2 py-1 rounded-lg">${l['治療日期']}</span><div class="flex items-center gap-1 text-sm font-bold text-emerald-600"><span class="material-icons-outlined text-sm">medical_services</span>${l['執行治療師']}</div></div><div class="space-y-3"><div class="text-xs text-slate-500 bg-slate-50 p-3 rounded-xl border border-slate-100"><span class="font-bold text-slate-400 block mb-1 uppercase tracking-widest text-[10px]">Complaint</span>${l['當日主訴']||'--'}</div><div class="text-sm text-slate-700 whitespace-pre-wrap px-1">${l['治療內容']}</div>${l['備註/下次治療']?`<div class="mt-2 text-xs text-slate-600 bg-amber-50 p-3 rounded-xl border border-amber-100"><span class="font-bold text-amber-500 block mb-1 flex items-center gap-1"><span class="material-icons-outlined text-[12px]">flag</span> Next Plan</span>${l['備註/下次治療']}</div>`:''}</div></div>`).join('');
+}
+function loadMaintenanceHistory() {
+  const c = document.getElementById('maintenanceHistoryList'); c.innerHTML = '<div class="text-center py-10 text-slate-400">紀錄載入中...</div>';
+  google.script.run.withSuccessHandler(logs => {
+    if(!logs || !logs.length) { c.innerHTML = '<div class="bg-white/50 border-2 border-dashed border-slate-200 rounded-[2.5rem] p-12 text-center text-slate-300">尚無歷史紀錄</div>'; return; }
+    c.innerHTML = logs.map(l => `<div class="bg-white p-6 rounded-[2rem] shadow-sm border border-slate-100 card-hover mb-4 flex flex-col md:flex-row gap-4 items-center"><div class="w-full md:w-auto flex items-center gap-4 border-b md:border-b-0 md:border-r border-slate-100 pb-4 md:pb-0 md:pr-6"><div class="text-center min-w-[60px]"><div class="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Date</div><div class="text-sm font-black text-slate-700 font-mono">${l['保養日期']||'--'}</div></div><div class="flex-1"><span class="px-2.5 py-1 bg-orange-50 text-orange-600 text-[11px] font-bold rounded-lg mb-1 inline-block">${l['保養項目']||'一般'}</span><div class="text-xs font-bold text-slate-400">人員：${l['執行人員']||'--'}</div></div></div><div class="w-full grid grid-cols-4 gap-2 text-center"><div class="p-2 rounded-xl bg-slate-50"><div class="text-[9px] font-bold text-slate-400 mb-1">BP</div><div class="text-sm font-black text-slate-700">${l['血壓']||'-'}</div></div><div class="p-2 rounded-xl bg-slate-50"><div class="text-[9px] font-bold text-slate-400 mb-1">SpO2</div><div class="text-sm font-black text-slate-700">${l['血氧']||'-'}</div></div><div class="p-2 rounded-xl bg-slate-50"><div class="text-[9px] font-bold text-slate-400 mb-1">HR</div><div class="text-sm font-black text-slate-700">${l['心律']||'-'}</div></div><div class="p-2 rounded-xl bg-slate-50"><div class="text-[9px] font-bold text-slate-400 mb-1">Temp</div><div class="text-sm font-black text-slate-700">${l['體溫']||'-'}</div></div></div></div>`).join('');
+  }).getMaintenanceHistory(currentClient['個案編號']);
+}
+function loadDoctorHistory() {
+  const c = document.getElementById('doctorHistoryList'); c.innerHTML = '<div class="text-center py-10 text-slate-400">讀取中...</div>';
+  google.script.run.withSuccessHandler(logs => {
+    if(!logs || !logs.length) { c.innerHTML = '<div class="py-12 text-center text-slate-300 bg-white rounded-[2rem] border border-slate-100">尚無看診紀錄</div>'; return; }
+    c.innerHTML = logs.map(l => `<div class="bg-white border border-slate-100 rounded-[2.5rem] p-8 shadow-sm mb-6 card-hover relative overflow-hidden"><div class="flex justify-between items-center mb-6 pb-4 border-b border-slate-50"><span class="text-xs font-bold bg-emerald-50 text-emerald-600 px-4 py-2 rounded-full font-mono">${l['看診日期']||'--'}</span><div class="text-sm font-bold text-slate-500 flex items-center gap-4"><div class="flex items-center gap-1"><span class="material-icons-outlined text-base">face</span> ${l['看診醫師']||'--'}</div><div class="flex items-center gap-1"><span class="material-icons-outlined text-base">person_outline</span> ${l['護理師']||'--'}</div></div></div><div class="grid grid-cols-1 md:grid-cols-2 gap-6 text-sm"><div class="bg-blue-50/40 p-5 rounded-[1.5rem] border border-blue-50/50"><div class="flex items-center gap-2 mb-2 text-blue-600 font-black"><span class="w-6 h-6 rounded-full bg-blue-100 flex items-center justify-center text-xs">S</span> 主訴</div><div class="text-slate-600 leading-relaxed">${l['S_主訴']||'--'}</div></div><div class="bg-indigo-50/40 p-5 rounded-[1.5rem] border border-indigo-50/50"><div class="flex items-center gap-2 mb-2 text-indigo-600 font-black"><span class="w-6 h-6 rounded-full bg-indigo-100 flex items-center justify-center text-xs">O</span> 檢查</div><div class="text-slate-600 leading-relaxed">${l['O_客觀檢查']||'--'}</div></div><div class="bg-amber-50/40 p-5 rounded-[1.5rem] border border-amber-50/50"><div class="flex items-center gap-2 mb-2 text-amber-600 font-black"><span class="w-6 h-6 rounded-full bg-amber-100 flex items-center justify-center text-xs">A</span> 診斷</div><div class="text-slate-600 leading-relaxed">${l['A_診斷']||'--'}</div></div><div class="bg-emerald-50/40 p-5 rounded-[1.5rem] border border-emerald-50/50"><div class="flex items-center gap-2 mb-2 text-emerald-600 font-black"><span class="w-6 h-6 rounded-full bg-emerald-100 flex items-center justify-center text-xs">P</span> 計畫</div><div class="text-slate-600 leading-relaxed">${l['P_治療計劃']||'--'}</div></div></div>${l['備註']&&l['備註']!=='--'?`<div class="mt-6 bg-slate-50 p-4 rounded-2xl text-xs text-slate-500 border border-slate-100 flex gap-2"><span class="font-bold shrink-0">Note:</span>${l['備註']}</div>`:''}</div>`).join('');
+  }).getClientHistory(currentClient['個案編號'], 'Doctor_Consultation');
+}
+
+// === 總覽與其他 (維持邏輯) ===
+function loadOverviewData() {
+  const container = document.getElementById('overviewListContainer'); container.innerHTML = '<div class="text-center py-12 text-slate-400 flex flex-col items-center gap-2"><span class="material-icons-outlined animate-spin">sync</span><span>讀取個案歷程中...</span></div>';
+  google.script.run.withSuccessHandler(data => { allOverviewRecords = data || []; renderOverviewList(); }).withFailureHandler(err => { container.innerHTML = `<div class="text-red-500 text-center py-10">載入失敗: ${err.message}</div>`; }).getCaseOverviewData(currentClient['個案編號']);
+}
+function renderOverviewList() {
+  const c = document.getElementById('overviewListContainer'); const f = getFilteredOverviewData();
+  document.getElementById('overviewStats').textContent = `共 ${f.length} 筆紀錄`;
+  if (!f.length) { c.innerHTML = `<div class="flex flex-col items-center justify-center py-24 bg-white rounded-[2.5rem] border border-slate-100"><div class="w-16 h-16 bg-slate-50 rounded-full flex items-center justify-center mb-4 text-slate-300"><span class="material-icons-outlined text-3xl">search_off</span></div><p class="text-slate-400 font-bold">無符合資料</p></div>`; return; }
+  c.innerHTML = f.map(i => {
+    let icon, clr, bg;
+    switch(i.category) { case 'doctor': icon='medical_services'; clr='text-blue-600'; bg='bg-blue-50'; break; case 'maintenance': icon='stars'; clr='text-orange-500'; bg='bg-orange-50'; break; case 'tracking': icon='fact_check'; clr='text-violet-600'; bg='bg-violet-50'; break; case 'treatment': icon='healing'; clr='text-emerald-600'; bg='bg-emerald-50'; break; default: icon='article'; clr='text-slate-600'; bg='bg-slate-50'; }
+    return `<div class="bg-white p-6 rounded-[2rem] border border-slate-100 shadow-sm card-hover flex gap-5 items-start group"><div class="flex flex-col items-center gap-2 pt-1"><div class="w-12 h-12 rounded-2xl flex items-center justify-center ${bg} ${clr}"><span class="material-icons-outlined text-2xl">${icon}</span></div></div><div class="flex-1"><div class="flex justify-between items-start mb-2"><div><h4 class="text-lg font-black text-slate-800 group-hover:text-emerald-600 transition-colors">${i.title}</h4><div class="text-xs font-bold text-slate-400 mt-1">${i.subtitle}</div></div><div class="text-right"><div class="text-sm font-bold text-slate-700 font-mono bg-slate-50 px-2 py-1 rounded-lg">${i.date}</div></div></div>${i.detail?`<div class="mt-3 pt-3 border-t border-slate-50 text-sm text-slate-600 leading-relaxed whitespace-pre-wrap">${i.detail}</div>` : ''}</div></div>`;
+  }).join('');
+}
+function setOverviewCategory(cat) {
+  currentOverviewCategory = cat;
+  ['all', 'doctor', 'maintenance', 'tracking', 'treatment'].forEach(b => {
+    const el = document.getElementById('filter-btn-' + b);
+    if(b === cat) { el.className = "px-4 py-2 rounded-xl text-sm font-bold bg-slate-800 text-white shadow-md transform scale-105 transition-all"; }
+    else { el.className = "px-4 py-2 rounded-xl text-sm font-bold text-slate-500 hover:bg-white hover:text-slate-700 transition-all"; }
+  });
+  renderOverviewList();
+}
+function getFilteredOverviewData() {
+  const s = document.getElementById('overviewStartDate').value; const e = document.getElementById('overviewEndDate').value;
+  return allOverviewRecords.filter(i => { if (currentOverviewCategory !== 'all' && i.category !== currentOverviewCategory) return false; if (s && i.date < s) return false; if (e && i.date > e) return false; return true; });
+}
+function exportOverviewToCSV() {
+  const d = getFilteredOverviewData(); if (!d.length) { alert("無資料"); return; }
+  const r = d.map(i => [`"${i.date}"`, `"${i.categoryName}"`, `"${(i.title+' '+i.subtitle).replace(/"/g,'""')}"`, `"${(i.detail||'').replace(/"/g,'""')}"`, `"${i.staff||''}"`].join(','));
+  const b = new Blob(["\uFEFF日期,類別,標題,內容,人員\n" + r.join("\n")], { type: "text/csv;charset=utf-8;" });
+  const a = document.createElement("a"); a.href = URL.createObjectURL(b); a.download = `${currentClient['姓名']}_歷程.csv`; document.body.appendChild(a); a.click(); document.body.removeChild(a);
+}
+function printOverviewReport() { window.print(); }
+function resetSearch() { currentClient = null; document.getElementById('topBarClientInfo').classList.add('hidden'); navTo('search'); }
+function closeModal(id) { document.getElementById(id).classList.add('hidden'); }
+function openModal(id) { document.getElementById(id).classList.remove('hidden'); }
+function renderTreatmentCalendar() {
+  const c = document.getElementById('treatmentCalendar'); if(!c) return;
+  const y = currentCalDate.getFullYear(); const m = currentCalDate.getMonth();
+  let h = '';
+  if (isMonthPickerMode) {
+    const activeMs = new Set(); allTreatmentLogs.forEach(l => { const p = l['治療日期'].split('-'); if(parseInt(p[0])===y) activeMs.add(parseInt(p[1])-1); });
+    h = `<div class="cal-header"><button onclick="changePickerYear(-1)" class="p-1 hover:bg-slate-100 rounded-lg text-slate-400 hover:text-emerald-500 transition"><span class="material-icons-outlined text-sm">chevron_left</span></button><div class="cal-title-btn bg-slate-100 text-emerald-600" onclick="toggleMonthPicker()"><span>${y}年</span><span class="material-icons-outlined text-xs">unfold_less</span></div><button onclick="changePickerYear(1)" class="p-1 hover:bg-slate-100 rounded-lg text-slate-400 hover:text-emerald-500 transition"><span class="material-icons-outlined text-sm">chevron_right</span></button></div><div class="cal-month-grid" style="display:grid; grid-template-columns:repeat(3,1fr); gap:8px;">`;
+    for(let i=0; i<12; i++) h+=`<div onclick="selectMonthFromPicker(${i})" class="cal-month-item ${i===m?'is-current':''} ${activeMs.has(i)?'has-record':''}">${i+1}月</div>`;
+    h += `</div>`;
+  } else {
+    const sel = document.getElementById('filterDate').value; const recs = new Set(allTreatmentLogs.map(l => l['治療日期']));
+    h = `<div class="cal-header"><button onclick="changeCalMonth(-1)" class="p-1 hover:bg-slate-100 rounded-lg text-slate-400 hover:text-emerald-500 transition"><span class="material-icons-outlined text-sm">chevron_left</span></button><div class="cal-title-btn" onclick="toggleMonthPicker()"><span>${y}年 ${m+1}月</span><span class="material-icons-outlined text-xs text-slate-300">expand_more</span></div><button onclick="changeCalMonth(1)" class="p-1 hover:bg-slate-100 rounded-lg text-slate-400 hover:text-emerald-500 transition"><span class="material-icons-outlined text-sm">chevron_right</span></button></div><div class="cal-grid"><div class="cal-weekday text-red-400">日</div><div class="cal-weekday">一</div><div class="cal-weekday">二</div><div class="cal-weekday">三</div><div class="cal-weekday">四</div><div class="cal-weekday">五</div><div class="cal-weekday">六</div>`;
+    const fd = new Date(y, m, 1).getDay(); const dim = new Date(y, m+1, 0).getDate();
+    for(let i=0; i<fd; i++) h+=`<div class="cal-day other-month"></div>`;
+    for(let d=1; d<=dim; d++) { const ds = `${y}-${String(m+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`; h+=`<div onclick="selectDateFromCal('${ds}')" class="cal-day ${ds===sel?'is-selected':''} ${recs.has(ds)?'has-record':''}">${d}</div>`; }
+    h += `</div>`;
+  }
+  c.innerHTML = h;
+}
+function toggleMonthPicker() { isMonthPickerMode = !isMonthPickerMode; renderTreatmentCalendar(); }
+function changePickerYear(o) { currentCalDate.setFullYear(currentCalDate.getFullYear() + o); renderTreatmentCalendar(); }
+function selectMonthFromPicker(m) { currentCalDate.setMonth(m); isMonthPickerMode = false; renderTreatmentCalendar(); }
+function changeCalMonth(o) { currentCalDate.setMonth(currentCalDate.getMonth() + o); renderTreatmentCalendar(); }
+function selectDateFromCal(d) { const i = document.getElementById('filterDate'); if(i._flatpickr) i._flatpickr.setDate(d, true); else { i.value = d; applyLogFilters(); } renderTreatmentCalendar(); }
+function resetTreatmentFilter() { document.getElementById('filterTherapist').value = ""; const i = document.getElementById('filterDate'); if(i._flatpickr) i._flatpickr.clear(); else i.value = ""; applyLogFilters(); isMonthPickerMode = false; currentCalDate = new Date(); renderTreatmentCalendar(); }
+function editClientInfo() { alert("編輯功能開發中..."); }
+function applyLogFilters() { const t=document.getElementById('filterTherapist').value; const d=document.getElementById('filterDate').value; renderTreatmentList(allTreatmentLogs.filter(l => (!t || l['執行治療師']===t) && (!d || l['治療日期']===d))); }
+
+// === 影像功能 (已修正點擊無效與上傳邏輯) ===
 
 function loadClientImages() {
-  const container = document.getElementById('imageGalleryContainer');
-  const statsText = document.getElementById('img-stats-text');
-  
+  const c = document.getElementById('imageGalleryContainer');
+  const st = document.getElementById('img-stats-text');
   if (!currentClient) return;
-
-  container.innerHTML = `<div class="col-span-full flex flex-col items-center justify-center py-20 text-slate-300"><span class="material-icons-outlined text-4xl animate-spin mb-3">sync</span><p>讀取影像中...</p></div>`;
-  
+  c.innerHTML = `<div class="col-span-full flex flex-col items-center justify-center py-20 text-slate-300"><span class="material-icons-outlined text-4xl animate-spin mb-3">sync</span><p>讀取影像中...</p></div>`;
   google.script.run.withSuccessHandler(res => {
-    if (res.success) {
-      renderImageGallery(res.images);
-      statsText.textContent = `共 ${res.images.length} 張影像紀錄`;
-    } else {
-      container.innerHTML = `<div class="col-span-full text-center py-20 bg-red-50 rounded-[2rem] text-red-400 border border-red-100">${res.message}</div>`;
-      statsText.textContent = "讀取失敗";
-    }
+    if (res.success) { renderImageGallery(res.images); st.textContent = `共 ${res.images.length} 張影像紀錄`; }
+    else { c.innerHTML = `<div class="col-span-full flex flex-col items-center justify-center py-16 bg-red-50 rounded-[2rem] border border-red-100 text-red-400 gap-3"><span class="material-icons-outlined text-4xl">error_outline</span><p>${res.message}</p></div>`; st.textContent = "讀取失敗"; }
   }).getClientImages(currentClient['個案編號']);
 }
 
-function renderImageGallery(images) {
-  const container = document.getElementById('imageGalleryContainer');
-  
-  if (!images || images.length === 0) {
-    container.innerHTML = `
-      <div class="col-span-full flex flex-col items-center justify-center py-24 bg-white border-2 border-dashed border-slate-100 rounded-[2.5rem]">
-         <div class="p-4 bg-slate-50 rounded-full mb-4 text-slate-300">
-            <span class="material-icons-outlined text-3xl">image_not_supported</span>
-         </div>
-         <p class="text-slate-400 font-bold">尚無影像紀錄</p>
-         <button onclick="openUploadModal()" class="mt-4 text-emerald-500 font-bold text-sm hover:underline">立即上傳</button>
-      </div>`;
-    return;
-  }
-
-  let html = '';
-  images.forEach(img => {
-    html += `
-      <div class="group relative bg-white rounded-3xl shadow-sm border border-slate-100 overflow-hidden hover:shadow-md transition-all cursor-pointer" onclick="window.open('${img.url}', '_blank')">
-         <div class="aspect-square bg-slate-100 relative overflow-hidden">
-            <img src="${img.thumbnail}" loading="lazy" class="w-full h-full object-cover transition duration-500 group-hover:scale-110" alt="${img.name}" onerror="this.src='https://via.placeholder.com/400?text=No+Preview'">
-            <div class="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-all"></div>
-         </div>
-         <div class="p-4">
-            <div class="flex justify-between items-start">
-               <div class="text-xs font-bold text-slate-400 mb-1">${img.date}</div>
-               <span class="material-icons-outlined text-slate-300 text-sm">open_in_new</span>
-            </div>
-            <h4 class="text-sm font-bold text-slate-700 truncate" title="${img.name}">${img.name}</h4>
-         </div>
-      </div>
-    `;
-  });
-  container.innerHTML = html;
+function renderImageGallery(imgs) {
+  const c = document.getElementById('imageGalleryContainer');
+  if (!imgs || imgs.length === 0) { c.innerHTML = `<div class="col-span-full flex flex-col items-center justify-center py-24 bg-white border-2 border-dashed border-slate-200 rounded-[2.5rem] group hover:border-emerald-300 transition-colors"><div class="p-4 bg-slate-50 rounded-full mb-4 text-slate-300 group-hover:text-emerald-400 transition-colors"><span class="material-icons-outlined text-3xl">add_photo_alternate</span></div><p class="text-slate-400 font-bold mb-2">尚無影像紀錄</p><button onclick="openUploadModal()" class="text-emerald-500 font-bold text-sm hover:text-emerald-600 transition">立即上傳</button></div>`; return; }
+  c.innerHTML = imgs.map(i => `<div class="group relative bg-white rounded-3xl shadow-sm border border-slate-100 overflow-hidden card-hover cursor-pointer" onclick="window.open('${i.url}', '_blank')"><div class="aspect-square bg-slate-50 relative overflow-hidden"><img src="${i.thumbnail}" loading="lazy" class="w-full h-full object-cover transition duration-500 group-hover:scale-105" alt="${i.name}" onerror="this.src='https://via.placeholder.com/400?text=Error'"><div class="absolute inset-0 bg-black/0 group-hover:bg-black/5 transition-all"></div></div><div class="p-4"><div class="flex justify-between items-start"><div class="text-xs font-bold text-slate-400 mb-1">${i.date}</div><span class="material-icons-outlined text-slate-300 text-sm group-hover:text-emerald-500 transition-colors">open_in_new</span></div><h4 class="text-sm font-bold text-slate-700 truncate">${i.name}</h4></div></div>`).join('');
 }
 
 let filesToUpload = [];
 
+// 1. 開啟上傳對話框
 function openUploadModal() {
   if (!currentClient) { alert("請先選擇個案"); return; }
-  document.getElementById('uploadImageModal').classList.remove('hidden');
-  document.getElementById('uploadInput').value = "";
+  
+  // 顯示 Modal
+  const modal = document.getElementById('uploadImageModal');
+  if (modal) modal.classList.remove('hidden');
+  
+  // 重置 input 與清單
+  const uploadInput = document.getElementById('uploadInput');
+  if (uploadInput) uploadInput.value = "";
+  
   document.getElementById('previewList').innerHTML = "";
   document.getElementById('uploadPreviewArea').classList.add('hidden');
   filesToUpload = [];
 }
 
+// 2. 新增此函數以解決「無法點擊選擇檔案」的問題
+// 請確保 HTML 中的「選擇檔案」按鈕使用 onclick="triggerFileSelect()"
+function triggerFileSelect() {
+  const fileInput = document.getElementById('uploadInput');
+  if (fileInput) {
+    fileInput.click();
+  } else {
+    alert("系統錯誤：找不到檔案上傳元件 (ID: uploadInput)");
+  }
+}
+
+// 3. 預覽檔案 (綁定在 input onchange)
 function previewFiles(input) {
   const files = input.files;
   if (!files || files.length === 0) return;
-  
   const listEl = document.getElementById('previewList');
-  const areaEl = document.getElementById('uploadPreviewArea');
-  
-  areaEl.classList.remove('hidden');
+  document.getElementById('uploadPreviewArea').classList.remove('hidden');
   filesToUpload = Array.from(files);
-
-  let html = '';
-  filesToUpload.forEach((f, idx) => {
-    html += `
-      <div class="flex items-center justify-between bg-slate-50 p-3 rounded-xl border border-slate-100">
-         <div class="flex items-center gap-3 overflow-hidden">
-            <span class="material-icons-outlined text-slate-400 text-lg">image</span>
-            <span class="text-sm font-bold text-slate-600 truncate">${f.name}</span>
-         </div>
-         <span class="text-xs text-slate-400">${(f.size/1024/1024).toFixed(1)} MB</span>
-      </div>`;
-  });
-  listEl.innerHTML = html;
+  listEl.innerHTML = filesToUpload.map(f => `<div class="flex items-center justify-between bg-white p-3 rounded-xl border border-slate-100 shadow-sm"><div class="flex items-center gap-3 overflow-hidden"><div class="w-8 h-8 rounded-lg bg-emerald-50 flex items-center justify-center text-emerald-500"><span class="material-icons-outlined text-base">image</span></div><span class="text-sm font-bold text-slate-600 truncate">${f.name}</span></div><span class="text-xs text-slate-400 font-mono">${(f.size/1024/1024).toFixed(1)} MB</span></div>`).join('');
 }
 
+// 4. 執行上傳 (已修正 ID 檢查邏輯)
 function startUpload() {
-  if (filesToUpload.length === 0) { alert("請選擇檔案"); return; }
+  if (!currentClient || !currentClient['個案編號']) {
+    alert("系統錯誤：遺失個案編號，請重新整理頁面。");
+    return;
+  }
+  if (filesToUpload.length === 0) { 
+    alert("請先選擇檔案"); 
+    return; 
+  }
   
   const btn = document.getElementById('btnStartUpload');
-  const originalText = btn.innerText;
-  
-  let uploadedCount = 0;
+  const ot = btn.innerHTML;
+  let count = 0; 
   const total = filesToUpload.length;
   
-  btn.disabled = true;
-  btn.innerText = `上傳中 (0/${total})...`;
-
-  const uploadNext = (index) => {
-    if (index >= total) {
-      btn.disabled = false;
-      btn.innerText = originalText;
-      alert("上傳完成！");
-      closeModal('uploadImageModal');
+  btn.disabled = true; 
+  btn.innerHTML = `<span class="material-icons-outlined animate-spin mr-2 text-sm">sync</span> 上傳中 (0/${total})...`;
+  
+  const next = (idx) => {
+    if (idx >= total) { 
+      btn.disabled = false; 
+      btn.innerHTML = ot; 
+      alert("上傳完成！"); 
+      closeModal('uploadImageModal'); 
       loadClientImages(); 
-      return;
+      return; 
     }
-
-    const file = filesToUpload[index];
-    const reader = new FileReader();
     
-    reader.onload = function(e) {
-      const content = e.target.result.split(',')[1]; 
-      google.script.run.withSuccessHandler(res => {
-        uploadedCount++;
-        btn.innerText = `上傳中 (${uploadedCount}/${total})...`;
-        if(!res.success) { console.error("Upload failed: " + res.message); }
-        uploadNext(index + 1);
-      }).uploadClientImage(currentClient['個案編號'], content, file.name, file.type);
+    const f = filesToUpload[idx]; 
+    const r = new FileReader();
+    
+    r.onload = function(e) {
+      const content = e.target.result.split(',')[1]; // 取得 Base64
+      
+      // 呼叫後端 uploadClientImage，並傳入個案編號
+      google.script.run
+        .withSuccessHandler(() => { 
+          count++; 
+          btn.innerHTML = `<span class="material-icons-outlined animate-spin mr-2 text-sm">sync</span> 上傳中 (${count}/${total})...`; 
+          next(idx + 1); 
+        })
+        .withFailureHandler((err) => {
+           alert("上傳失敗 (" + f.name + "): " + err.message);
+           btn.disabled = false;
+           btn.innerHTML = ot;
+        })
+        .uploadClientImage(currentClient['個案編號'], content, f.name, f.type);
     };
-    reader.readAsDataURL(file);
+    r.readAsDataURL(f);
   };
-  uploadNext(0);
+  next(0);
 }
-
-// --- 通用功能區 ---
-
-function handleSearch() {
-  const inputEl = document.getElementById('searchInput');
-  if (!inputEl) return;
-  const kw = inputEl.value.trim();
-  if (!kw) { alert("請輸入姓名或電話號碼"); inputEl.focus(); return; }
-  const container = document.getElementById('searchResults');
-  container.innerHTML = '<div class="text-center py-10 text-slate-400 flex flex-col items-center gap-2"><span class="material-icons-outlined animate-spin">sync</span><span>搜尋中...</span></div>';
-  if (typeof google === 'undefined' || !google.script) { container.innerHTML = '<div class="text-center py-10 text-red-400">無法連接後端資料庫</div>'; return; }
-  google.script.run.withSuccessHandler(data => {
-      container.innerHTML = '';
-      if(data.length === 0) { container.innerHTML = '<div class="text-center py-10 text-slate-400 bg-slate-50 rounded-2xl border border-dashed border-slate-200">查無資料</div>'; return; }
-      data.forEach(c => {
-        const div = document.createElement('div');
-        div.className = "bg-white p-5 rounded-3xl shadow-sm border border-slate-100 hover:border-emerald-500 cursor-pointer transition flex justify-between items-center group mb-3";
-        div.onclick = () => selectClient(c);
-        div.innerHTML = `<div><div class="font-black text-slate-800 text-lg">${c['姓名']} <span class="text-xs font-normal text-slate-400 ml-1 bg-slate-100 px-2 py-0.5 rounded-full">${c['個案編號']}</span></div><div class="text-sm text-slate-400 mt-1 flex items-center gap-1"><span class="material-icons-outlined text-[14px]">phone</span> ${c['電話']}</div></div><div class="text-emerald-500 font-bold opacity-0 group-hover:opacity-100 transition flex items-center gap-1">選取 <span class="material-icons-outlined text-sm">arrow_forward</span></div>`;
-        container.appendChild(div);
-      });
-    }).withFailureHandler(error => { container.innerHTML = `<div class="text-center py-10 text-red-500 bg-red-50 rounded-2xl border border-red-100">發生錯誤：${error.message}</div>`; }).searchClient(kw);
-}
-
-function selectClient(c) {
-  currentClient = c;
-  document.getElementById('topBarClientInfo').classList.remove('hidden');
-  document.getElementById('headerClientName').textContent = c['姓名'];
-  document.getElementById('headerClientDob').textContent = c['生日'];
-  document.querySelectorAll('.auto-fill-id').forEach(el => el.value = c['個案編號']);
-  navTo('basic');
-}
-
-function renderBasicInfo() {
-  if (!currentClient) return;
-  const formatPhone = (phoneStr) => { if (!phoneStr) return '--'; const clean = phoneStr.toString().replace(/\D/g, ''); return clean.length === 10 ? `${clean.substring(0, 4)}-${clean.substring(4, 7)}-${clean.substring(7)}` : phoneStr; };
-  document.getElementById('display-client-id').textContent = currentClient['個案編號'] || '--';
-  document.getElementById('display-name').textContent = currentClient['姓名'] || '--';
-  document.getElementById('display-gender').textContent = currentClient['性別'] || '--';
-  document.getElementById('display-birthday').textContent = currentClient['生日'] || '--';
-  document.getElementById('display-id-number').textContent = currentClient['身分證字號'] || '--';
-  document.getElementById('display-phone').textContent = formatPhone(currentClient['電話']);
-  document.getElementById('display-emergency-name').textContent = currentClient['緊急聯絡人'] || '--';
-  document.getElementById('display-emergency-phone').textContent = formatPhone(currentClient['緊急聯絡人電話']);
-  const notesText = currentClient['慢性病或特殊疾病'];
-  document.getElementById('display-notes').textContent = (notesText && notesText.trim() !== "") ? notesText : '尚無備註紀錄。';
-}
-
-function autoDetectGender(input) {
-  const idNo = input.value.trim().toUpperCase();
-  const preview = document.getElementById('genderPreview');
-  if (idNo.length >= 2) {
-    const secondChar = idNo.charAt(1);
-    if (secondChar === '1') { preview.textContent = "男"; preview.style.color = "#047857"; } else if (secondChar === '2') { preview.textContent = "女"; preview.style.color = "#db2777"; } else { preview.textContent = "格式錯誤"; preview.style.color = "#ef4444"; }
-  } else { preview.textContent = "請輸入身分證"; preview.style.color = "#059669"; }
-}
-
-function submitNewClient() {
-  const data = { name: document.getElementById('addName').value.trim(), dob: document.getElementById('addDob').value, idNo: document.getElementById('addIdNo').value.trim().toUpperCase(), phone: document.getElementById('addPhone').value.trim(), emerName: document.getElementById('addEmerName').value.trim(), emerPhone: document.getElementById('addEmerPhone').value.trim(), chronic: document.getElementById('addChronic').value.trim(), gender: document.getElementById('genderPreview').textContent };
-  if (!data.name || !data.dob || !data.phone) { alert("請填寫姓名、生日與電話"); return; }
-  const btn = document.getElementById('btnSubmitClient'); const originalText = btn.innerText; btn.disabled = true; btn.innerText = "處理中...";
-  google.script.run.withSuccessHandler(res => { btn.disabled = false; btn.innerText = originalText; if (res.success) { alert("【新增完成】\n個案編號：" + res.clientId); closeModal('addClientModal'); document.getElementById('addClientForm').reset(); selectClient(res.fullData); } else { alert("錯誤：" + res.message); } }).createNewClient(data);
-}
-
-function submitForm(type) {
-  if (!currentClient) { alert("請先選擇個案"); return; }
-  const btn = type === 'tracking' ? document.querySelector('#trackingForm button[type="submit"]') : event.target;
-  const originalText = btn ? btn.innerText : "儲存"; if(btn) { btn.disabled = true; btn.innerText = "儲存中..."; }
-  
-  if (type === 'doctor') {
-    const formData = { clientId: currentClient['個案編號'], date: document.getElementById('doctorConsultDate').value, doctor: document.getElementById('selectDoctor').value, nurse: document.getElementById('selectNurse').value, complaint: document.querySelector('#view-doctor textarea[name="主訴"]').value, objective: document.querySelector('#view-doctor textarea[name="客觀檢查"]').value, diagnosis: document.querySelector('#view-doctor textarea[name="診斷"]').value, plan: document.querySelector('#view-doctor textarea[name="治療計畫"]').value, remark: document.getElementById('doctorRemark').value };
-    if (!formData.date || !formData.doctor) { alert("請填寫日期與醫師"); if(btn){btn.disabled=false; btn.innerText=originalText;} return; }
-    google.script.run.withSuccessHandler(res => { if(btn){btn.disabled=false; btn.innerText=originalText;} if (res && res.message) { alert(res.message); if(res.success){ document.getElementById('doctorForm').reset(); loadDoctorHistory(); } } }).saveDoctorConsultation(formData);
-  
-  } else if (type === 'treatment') {
-    // ★★★ 修改處：新增 '備註/下次治療' 欄位 ★★★
-    const formData = { 
-      '個案編號': currentClient['個案編號'], 
-      '治療日期': document.getElementById('treatmentDate').value, 
-      '執行治療師': document.getElementById('inputTherapist').value, 
-      '當日主訴': document.getElementById('inputComplaint').value, 
-      '治療內容': document.getElementById('inputContent').value,
-      '備註/下次治療': document.getElementById('inputNextPlan').value // 對應 Index.html 新增的 ID
-    };
-    
-    if (!formData['治療日期'] || !formData['執行治療師']) { alert("請填寫日期與治療師"); if(btn){btn.disabled=false; btn.innerText=originalText;} return; }
-    google.script.run.withSuccessHandler(res => { if(btn){btn.disabled=false; btn.innerText=originalText;} if (res && res.message) { alert(res.message); if(res.success){ document.getElementById('treatmentForm').reset(); loadTreatmentHistory(); } } }).saveData('Treatment_Logs', formData);
-  
-  } else if (type === 'maintenance') {
-    const form = document.getElementById('maintenanceForm');
-    const formData = { clientId: currentClient['個案編號'], date: document.getElementById('maintenanceDate').value, staff: document.getElementById('selectMaintStaff').value, item: document.getElementById('selectMaintItem').value, bp: form.querySelector('input[name="血壓"]').value, spo2: form.querySelector('input[name="血氧"]').value, hr: form.querySelector('input[name="心律"]').value, temp: form.querySelector('input[name="體溫"]').value, remark: form.querySelector('textarea[name="備註"]').value };
-    if (!formData.date || !formData.staff || !formData.item) { alert("請完整填寫日期、人員與項目"); if(btn){btn.disabled=false; btn.innerText=originalText;} return; }
-    google.script.run.withSuccessHandler(res => { if(btn){btn.disabled=false; btn.innerText=originalText;} if (res && res.message) { alert(res.message); if(res.success){ form.reset(); document.getElementById('maintenanceDate').value = new Date().toISOString().split('T')[0]; loadMaintenanceHistory(); } } }).saveMaintenanceRecord(formData);
-  
-  } else if (type === 'tracking') {
-    const formData = { clientId: currentClient['個案編號'], trackDate: document.getElementById('trackDate').value, trackStaff: document.getElementById('trackStaff').value, trackType: document.getElementById('trackType').value, content: document.getElementById('trackContent').value };
-    if (!formData.trackDate || !formData.trackStaff || !formData.trackType || !formData.content) { alert("請完整填寫日期、人員、項目與內容"); if(btn) { btn.disabled = false; btn.innerText = originalText; } return; }
-    google.script.run.withSuccessHandler(res => { if(btn) { btn.disabled = false; btn.innerText = originalText; } if (res.success) { alert(res.message); document.getElementById('trackContent').value = ""; loadTrackingHistory(); } else { alert("錯誤：" + res.message); } }).saveTrackingRecord(formData);
-  }
-}
-
-function loadTrackingHistory() {
-  const container = document.getElementById('trackingHistoryList'); if(!container) return;
-  container.innerHTML = '<div class="text-center py-4 text-slate-400">讀取中...</div>';
-  google.script.run.withSuccessHandler(records => {
-    if (!records || records.length === 0) { container.innerHTML = `<div class="text-center text-slate-400 py-10 bg-white/50 border-2 border-dashed border-slate-100 rounded-[2.5rem]"><span class="material-icons-outlined text-4xl mb-2">history_edu</span><p>尚無任何追蹤紀錄</p></div>`; return; }
-    let html = ''; records.forEach(rec => { html += `<div class="bg-white p-5 rounded-[2rem] border border-slate-100 shadow-sm hover:shadow-md transition-all relative overflow-hidden group mb-4"><div class="absolute left-0 top-0 bottom-0 w-1.5 bg-violet-400"></div><div class="ml-3"><div class="flex justify-between items-start mb-2"><div class="flex items-center gap-2 flex-wrap"><span class="bg-violet-100 text-violet-700 text-xs font-bold px-3 py-1 rounded-full border border-violet-100">${rec.type}</span><span class="text-slate-500 text-xs font-bold flex items-center bg-slate-50 px-2 py-0.5 rounded-lg border border-slate-100"><span class="material-icons-outlined text-[14px] mr-1">person</span>${rec.staff || '--'}</span><span class="text-slate-400 text-xs font-mono flex items-center ml-1">${rec.date}</span></div></div><div class="text-slate-700 text-sm leading-relaxed whitespace-pre-line pl-1 mt-2">${rec.content}</div></div></div>`; }); container.innerHTML = html;
-  }).getTrackingHistory(currentClient['個案編號']);
-}
-
-function loadTreatmentHistory() {
-  const container = document.getElementById('historyListContainer');
-  container.innerHTML = '<div class="text-center py-10 text-slate-400">讀取中...</div>';
-  google.script.run.withSuccessHandler(logs => { allTreatmentLogs = logs || []; applyLogFilters(); renderTreatmentCalendar(); }).getClientHistory(currentClient['個案編號'], 'Treatment_Logs');
-}
-
-function loadMaintenanceHistory() {
-  const container = document.getElementById('maintenanceHistoryList'); if (!currentClient) return;
-  container.innerHTML = '<div class="text-center py-10 text-slate-400 italic">紀錄載入中...</div>';
-  google.script.run.withSuccessHandler(logs => { renderMaintenanceList(logs); }).getMaintenanceHistory(currentClient['個案編號']);
-}
-
-function loadDoctorHistory() {
-  const container = document.getElementById('doctorHistoryList'); container.innerHTML = '<div class="text-center py-10 text-slate-400">讀取中...</div>';
-  google.script.run.withSuccessHandler(logs => {
-    if(!logs || !logs.length) { container.innerHTML = '<div class="py-10 text-center text-slate-300">尚無紀錄</div>'; return; }
-    let html = ''; logs.forEach(log => { html += `<div class="bg-white border border-slate-100 rounded-3xl p-8 shadow-sm mb-6"><div class="flex justify-between items-center mb-6"><span class="text-xs font-bold bg-emerald-50 text-emerald-600 px-4 py-1.5 rounded-full ring-1 ring-emerald-100">${log['看診日期'] || '--'}</span><span class="text-sm font-bold text-slate-500">醫師：<span class="text-slate-800 mr-3">${log['看診醫師'] || '--'}</span>護理：<span class="text-slate-800">${log['護理師'] || '--'}</span></span></div><div class="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs"><div class="bg-blue-50/50 p-4 rounded-2xl border border-blue-100"><p class="text-blue-600 mb-2 font-black">主訴 (S)</p><div class="text-slate-700 whitespace-pre-wrap">${log['S_主訴'] || '--'}</div></div><div class="bg-indigo-50/50 p-4 rounded-2xl border border-indigo-100"><p class="text-indigo-600 mb-2 font-black">檢查 (O)</p><div class="text-slate-700 whitespace-pre-wrap">${log['O_客觀檢查'] || '--'}</div></div><div class="bg-amber-50/50 p-4 rounded-2xl border border-amber-100"><p class="text-amber-600 mb-2 font-black">診斷 (A)</p><div class="text-slate-700 whitespace-pre-wrap">${log['A_診斷'] || '--'}</div></div><div class="bg-emerald-50/50 p-4 rounded-2xl border border-emerald-100"><p class="text-emerald-600 mb-2 font-black">計畫 (P)</p><div class="text-slate-700 whitespace-pre-wrap">${log['P_治療計劃'] || '--'}</div></div></div>${log['備註'] && log['備註'] !== '--' ? `<div class="mt-4 bg-slate-50 p-4 rounded-2xl border border-dashed border-slate-200 text-xs text-slate-600 whitespace-pre-wrap">備註：${log['備註']}</div>` : ''}</div>`; }); container.innerHTML = html;
-  }).getClientHistory(currentClient['個案編號'], 'Doctor_Consultation');
-}
-
-function renderMaintenanceList(logs) {
-  const container = document.getElementById('maintenanceHistoryList'); if (!logs || logs.length === 0) { container.innerHTML = '<div class="bg-white/50 border-2 border-dashed border-slate-200 rounded-[2.5rem] p-12 text-center text-slate-300">尚無歷史紀錄</div>'; return; }
-  let html = ''; logs.forEach(log => { html += `<div class="bg-white p-6 rounded-[2rem] shadow-sm border border-slate-100 flex justify-between items-center group hover:border-orange-200 transition-all mb-4"><div class="flex items-center gap-6"><div class="text-center border-r border-slate-100 pr-6"><div class="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Date</div><div class="text-sm font-black text-slate-800">${log['保養日期'] || '--'}</div></div><div><div class="flex items-center gap-2 mb-1"><span class="px-2 py-0.5 bg-orange-50 text-orange-500 text-[10px] font-bold rounded-md">${log['保養項目'] || '一般'}</span><span class="text-xs font-bold text-slate-400">人員：${log['執行人員'] || '--'}</span></div><div class="text-xs text-slate-500 line-clamp-1">${log['備註'] || '無相關備註內容'}</div></div></div><div class="grid grid-cols-4 gap-2 text-center"><div class="px-3 border-r border-slate-50"><div class="text-[9px] font-bold text-slate-300">BP</div><div class="text-xs font-black text-slate-700">${log['血壓'] || '-'}</div></div><div class="px-3 border-r border-slate-50"><div class="text-[9px] font-bold text-slate-300">SpO2</div><div class="text-xs font-black text-slate-700">${log['血氧'] || '-'}</div></div><div class="px-3 border-r border-slate-50"><div class="text-[9px] font-bold text-slate-300">HR</div><div class="text-xs font-black text-slate-700">${log['心律'] || '-'}</div></div><div class="px-3"><div class="text-[9px] font-bold text-slate-300">Temp</div><div class="text-xs font-black text-slate-700">${log['體溫'] || '-'}</div></div></div></div>`; }); container.innerHTML = html;
-}
-
-function applyLogFilters() {
-  const t = document.getElementById('filterTherapist').value;
-  const d = document.getElementById('filterDate').value;
-  const filtered = allTreatmentLogs.filter(log => { let mt = t ? log['執行治療師'] === t : true; let md = d ? (log['治療日期'] && log['治療日期'].includes(d)) : true; return mt && md; });
-  renderTreatmentList(filtered);
-}
-
-function renderTreatmentList(logs) {
-  const container = document.getElementById('historyListContainer'); if(!logs.length) { container.innerHTML = '<div class="text-center py-10 text-slate-300">無紀錄</div>'; return; }
-  let html = ''; logs.forEach(log => { html += `<div class="bg-white p-5 rounded-2xl shadow-sm border border-slate-50 border-l-4 border-l-emerald-500 mb-4"><div class="flex justify-between items-center mb-2"><span class="text-xs font-bold text-slate-400">${log['治療日期']}</span><span class="text-sm font-bold text-emerald-600">${log['執行治療師']}</span></div><p class="text-xs text-slate-400 mb-2">主訴: ${log['當日主訴']||'--'}</p><p class="text-sm text-slate-700 whitespace-pre-wrap">${log['治療內容']}</p>${log['備註/下次治療'] ? `<p class="mt-2 text-xs text-slate-500 bg-slate-50 p-2 rounded">備註: ${log['備註/下次治療']}</p>` : ''}</div>`; }); container.innerHTML = html;
-}
-
-function loadOverviewData() {
-  const container = document.getElementById('overviewListContainer'); container.innerHTML = '<div class="text-center py-12 text-slate-400 flex flex-col items-center gap-2"><span class="material-icons-outlined animate-spin">sync</span><span>讀取個案歷程中...</span></div>';
-  google.script.run.withSuccessHandler(data => { allOverviewRecords = data || []; renderOverviewList(); }).withFailureHandler(err => { container.innerHTML = `<div class="text-red-500 text-center py-10">載入失敗: ${err.message}</div>`; }).getCaseOverviewData(currentClient['個案編號']);
-}
-
-function setOverviewCategory(cat) {
-  currentOverviewCategory = cat;
-  const btns = ['all', 'doctor', 'maintenance', 'tracking', 'treatment'];
-  btns.forEach(b => { const btnEl = document.getElementById('filter-btn-' + b); if(b === cat) { btnEl.classList.remove('text-slate-500', 'hover:bg-white'); btnEl.classList.add('bg-white', 'text-slate-800', 'shadow-sm', 'ring-1', 'ring-slate-200'); } else { btnEl.classList.remove('bg-white', 'text-slate-800', 'shadow-sm', 'ring-1', 'ring-slate-200'); btnEl.classList.add('text-slate-500', 'hover:bg-white', 'hover:text-slate-700'); } });
-  renderOverviewList();
-}
-
-function getFilteredOverviewData() {
-  const startDate = document.getElementById('overviewStartDate').value; const endDate = document.getElementById('overviewEndDate').value;
-  return allOverviewRecords.filter(item => { if (currentOverviewCategory !== 'all' && item.category !== currentOverviewCategory) return false; if (startDate && item.date < startDate) return false; if (endDate && item.date > endDate) return false; return true; });
-}
-
-function renderOverviewList() {
-  const container = document.getElementById('overviewListContainer'); const filtered = getFilteredOverviewData();
-  document.getElementById('overviewStats').textContent = `共 ${filtered.length} 筆紀錄`;
-  if (filtered.length === 0) { container.innerHTML = `<div class="flex flex-col items-center justify-center py-20 bg-white rounded-[2.5rem] border-2 border-dashed border-slate-100"><div class="w-16 h-16 bg-slate-50 rounded-full flex items-center justify-center mb-4"><span class="material-icons-outlined text-3xl text-slate-300">search_off</span></div><h4 class="text-lg font-bold text-slate-400">找不到符合條件的紀錄</h4><p class="text-sm text-slate-300 mt-1">請調整日期範圍或篩選類別</p></div>`; return; }
-  let html = ''; filtered.forEach(item => {
-    let icon, colorClass, bgClass;
-    switch(item.category) { case 'doctor': icon = 'medical_services'; colorClass = 'text-blue-600'; bgClass = 'bg-blue-50'; break; case 'maintenance': icon = 'stars'; colorClass = 'text-orange-500'; bgClass = 'bg-orange-50'; break; case 'tracking': icon = 'fact_check'; colorClass = 'text-violet-600'; bgClass = 'bg-violet-50'; break; case 'treatment': icon = 'healing'; colorClass = 'text-emerald-600'; bgClass = 'bg-emerald-50'; break; default: icon = 'article'; colorClass = 'text-slate-600'; bgClass = 'bg-slate-50'; }
-    html += `<div class="bg-white p-6 rounded-[2rem] border border-slate-100 shadow-sm hover:shadow-md transition-all group"><div class="flex items-start gap-5"><div class="flex flex-col items-center gap-2"><div class="w-12 h-12 rounded-2xl flex items-center justify-center ${bgClass} ${colorClass}"><span class="material-icons-outlined text-2xl">${icon}</span></div><div class="text-[10px] font-bold text-slate-400 bg-slate-50 px-2 py-1 rounded-lg">${item.categoryName}</div></div><div class="flex-1"><div class="flex justify-between items-start mb-2"><div><h4 class="text-lg font-black text-slate-800">${item.title}</h4><div class="text-xs font-bold text-slate-400 mt-0.5">${item.subtitle}</div></div><div class="text-right"><div class="text-sm font-bold text-slate-700 font-mono">${item.date}</div><div class="text-xs text-slate-400 mt-1 flex items-center justify-end gap-1"><span class="material-icons-outlined text-[12px]">person</span> ${item.staff || '--'}</div></div></div>${item.detail ? `<div class="mt-3 pt-3 border-t border-slate-50 text-sm text-slate-600 leading-relaxed whitespace-pre-wrap">${item.detail}</div>` : ''}</div></div></div>`;
-  });
-  container.innerHTML = html;
-}
-
-function exportOverviewToCSV() {
-  const filteredData = getFilteredOverviewData(); if (filteredData.length === 0) { alert("目前畫面中沒有資料可匯出"); return; }
-  const headers = ["日期", "類別", "標題/摘要", "詳細內容", "執行人員"];
-  const rows = filteredData.map(item => { const safeTitle = `"${(item.title + ' ' + item.subtitle).replace(/"/g, '""')}"`; const safeDetail = item.detail ? `"${item.detail.replace(/"/g, '""')}"` : ""; return [item.date, item.categoryName, safeTitle, safeDetail, item.staff].join(","); });
-  const csvContent = "\uFEFF" + headers.join(",") + "\n" + rows.join("\n"); const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" }); const url = URL.createObjectURL(blob); const link = document.createElement("a"); const fileName = `${currentClient['姓名']}_歷程紀錄_${new Date().toISOString().slice(0,10)}.csv`;
-  link.setAttribute("href", url); link.setAttribute("download", fileName); link.style.visibility = "hidden"; document.body.appendChild(link); link.click(); document.body.removeChild(link);
-}
-
-function printOverviewReport() { window.print(); }
-
-// 側邊欄月曆邏輯 (與 Input 共用樣式邏輯，但需獨立維持狀態)
-function renderTreatmentCalendar() {
-  const container = document.getElementById('treatmentCalendar');
-  if(!container) return;
-  const year = currentCalDate.getFullYear();
-  const month = currentCalDate.getMonth();
-  const monthNames = ["1月", "2月", "3月", "4月", "5月", "6月", "7月", "8月", "9月", "10月", "11月", "12月"];
-  
-  let html = '';
-
-  if (isMonthPickerMode) {
-    const monthsWithRecords = new Set();
-    allTreatmentLogs.forEach(log => {
-      if (!log['治療日期']) return;
-      const parts = log['治療日期'].trim().split('-');
-      if (parts.length >= 2) {
-        const y = parseInt(parts[0], 10);
-        const m = parseInt(parts[1], 10) - 1;
-        if (y === year) monthsWithRecords.add(m);
-      }
-    });
-
-    html += `<div class="cal-header"><button type="button" onclick="changePickerYear(-1)" class="p-1 hover:bg-slate-100 rounded-lg text-slate-400 hover:text-emerald-500 transition"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path></svg></button><div class="cal-title-btn bg-slate-100 text-emerald-600" onclick="toggleMonthPicker()"><span>${year}年</span><svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 15l7-7 7 7"></path></svg></div><button type="button" onclick="changePickerYear(1)" class="p-1 hover:bg-slate-100 rounded-lg text-slate-400 hover:text-emerald-500 transition"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path></svg></button></div><div class="cal-month-grid">`;
-    for (let m = 0; m < 12; m++) {
-      let classList = "cal-month-item";
-      if (m === month) classList += " is-current";
-      if (monthsWithRecords.has(m)) classList += " has-record";
-      html += `<div onclick="selectMonthFromPicker(${m})" class="${classList}">${m + 1}月</div>`;
-    }
-    html += `</div>`;
-  } else {
-    const selectedDateVal = document.getElementById('filterDate').value;
-    const recordedDates = new Set(allTreatmentLogs.map(log => log['治療日期'] ? log['治療日期'].trim() : ""));
-    html += `<div class="cal-header"><button type="button" onclick="changeCalMonth(-1)" class="p-1 hover:bg-slate-100 rounded-lg text-slate-400 hover:text-emerald-500 transition"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path></svg></button><div class="cal-title-btn" onclick="toggleMonthPicker()" title="切換年份月份"><span>${year}年 ${monthNames[month]}</span><svg class="w-3 h-3 text-slate-300" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg></div><button type="button" onclick="changeCalMonth(1)" class="p-1 hover:bg-slate-100 rounded-lg text-slate-400 hover:text-emerald-500 transition"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path></svg></button></div><div class="cal-grid"><div class="cal-weekday" style="color:#ef4444">日</div><div class="cal-weekday">一</div><div class="cal-weekday">二</div><div class="cal-weekday">三</div><div class="cal-weekday">四</div><div class="cal-weekday">五</div><div class="cal-weekday">六</div>`;
-    const firstDay = new Date(year, month, 1).getDay();
-    const daysInMonth = new Date(year, month + 1, 0).getDate();
-    for (let i = 0; i < firstDay; i++) html += `<div class="cal-day other-month"></div>`;
-    for (let day = 1; day <= daysInMonth; day++) {
-      const dateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
-      let classList = "cal-day";
-      if (dateStr === selectedDateVal) classList += " is-selected";
-      if (recordedDates.has(dateStr)) classList += " has-record";
-      html += `<div onclick="selectDateFromCal('${dateStr}')" class="${classList}">${day}</div>`;
-    }
-    html += `</div>`;
-  }
-  container.innerHTML = html;
-}
-
-function toggleMonthPicker() { isMonthPickerMode = !isMonthPickerMode; renderTreatmentCalendar(); }
-function changePickerYear(offset) { currentCalDate.setFullYear(currentCalDate.getFullYear() + offset); renderTreatmentCalendar(); }
-function selectMonthFromPicker(newMonth) { currentCalDate.setMonth(newMonth); isMonthPickerMode = false; renderTreatmentCalendar(); }
-function changeCalMonth(offset) { currentCalDate.setMonth(currentCalDate.getMonth() + offset); renderTreatmentCalendar(); }
-function selectDateFromCal(date) { const dateInput = document.getElementById('filterDate'); if (dateInput) { if (dateInput._flatpickr) { dateInput._flatpickr.setDate(date, true); } else { dateInput.value = date; applyLogFilters(); } } renderTreatmentCalendar(); }
-function resetTreatmentFilter() { const therapistSelect = document.getElementById('filterTherapist'); if (therapistSelect) therapistSelect.value = ""; const dateInput = document.getElementById('filterDate'); if (dateInput) { if (dateInput._flatpickr) { dateInput._flatpickr.clear(); } else { dateInput.value = ""; } } applyLogFilters(); isMonthPickerMode = false; currentCalDate = new Date(); renderTreatmentCalendar(); }
-function openModal(id) { document.getElementById(id).classList.remove('hidden'); }
-function closeModal(id) { document.getElementById(id).classList.add('hidden'); }
-function resetSearch() { currentClient = null; document.getElementById('topBarClientInfo').classList.add('hidden'); navTo('search'); }
-function editClientInfo() { alert("編輯功能開發中..."); }
 </script>
