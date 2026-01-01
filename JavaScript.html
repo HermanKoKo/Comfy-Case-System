@@ -124,7 +124,6 @@ function setupEnhancedFlatpickr(selector, options = {}) {
     // 渲染日期時，檢查是否有資料並加上綠點 class
     onDayCreate: function(dObj, dStr, fp, dayElem) {
       const dateKey = dayElem.dateObj.toISOString().split('T')[0];
-      // 這裡簡單比對全域 allTreatmentLogs，若要針對不同 input 顯示不同資料需擴充
       const hasRecord = allTreatmentLogs.some(log => log['治療日期'] && log['治療日期'].trim() === dateKey);
       
       if(hasRecord) {
@@ -144,7 +143,6 @@ function updateHeader(instance, headerEl, gridEl) {
   
   if (isGridVisible) {
     titleSpan.textContent = `${instance.currentYear}年`;
-    // 在網格中標示當前選擇的月份
     const items = gridEl.querySelectorAll(".custom-fp-month-item");
     items.forEach((item, idx) => {
       if(idx === instance.currentMonth) item.classList.add("is-current");
@@ -185,8 +183,7 @@ window.onload = function() {
   // 1. 設定所有日期欄位預設值
   document.querySelectorAll('#treatmentDate, #maintenanceDate, #doctorConsultDate, #trackDate').forEach(el => el.value = today);
 
-  // 2. ★ 統一使用增強版 Flatpickr 初始化所有日期 Input ★
-  // 針對側邊欄的篩選器，需加入 onChange 重繪邏輯
+  // 2. 統一使用增強版 Flatpickr 初始化所有日期 Input
   setupEnhancedFlatpickr('input[type="date"], #trackDate', {
     onChange: function(selectedDates, dateStr, instance) {
       if (instance.element.id === 'filterDate') {
@@ -194,7 +191,7 @@ window.onload = function() {
         if (selectedDates.length > 0) {
           currentCalDate = new Date(selectedDates[0]);
           isMonthPickerMode = false;
-          renderTreatmentCalendar(); // 同步更新側邊欄靜態月曆
+          renderTreatmentCalendar(); 
         }
       }
     }
@@ -262,6 +259,7 @@ function loadSystemStaff() {
   }).getSystemStaff();
 }
 
+// 導覽切換
 function navTo(viewName) {
   if (!currentClient && viewName !== 'search') { alert("請先選取個案。"); return; }
   const views = ['search', 'basic', 'images', 'treatment', 'maintenance', 'doctor', 'tracking', 'overview'];
@@ -277,13 +275,151 @@ function navTo(viewName) {
   if(targetBtn) targetBtn.classList.add('bg-slate-800', 'text-white', 'font-bold');
   const titles = { 'search':'搜尋','basic':'基本資料','images':'影像總覽','treatment':'治療紀錄','maintenance':'保養項目','doctor':'醫師看診','tracking':'個管追蹤','overview':'個案總覽' };
   document.getElementById('pageTitle').textContent = titles[viewName] || '康飛運醫';
+  
+  // 載入資料邏輯
   if(viewName === 'basic') renderBasicInfo();
   if(viewName === 'doctor') loadDoctorHistory();
   if(viewName === 'treatment') loadTreatmentHistory();
   if(viewName === 'maintenance') loadMaintenanceHistory();
   if(viewName === 'tracking') loadTrackingHistory();
   if(viewName === 'overview') loadOverviewData(); 
+  
+  // ★ 新增：載入影像資料
+  if(viewName === 'images') loadClientImages();
 }
+
+// --- 影像總覽功能區 ---
+
+function loadClientImages() {
+  const container = document.getElementById('imageGalleryContainer');
+  const statsText = document.getElementById('img-stats-text');
+  
+  if (!currentClient) return;
+
+  container.innerHTML = `<div class="col-span-full flex flex-col items-center justify-center py-20 text-slate-300"><span class="material-icons-outlined text-4xl animate-spin mb-3">sync</span><p>讀取影像中...</p></div>`;
+  
+  google.script.run.withSuccessHandler(res => {
+    if (res.success) {
+      renderImageGallery(res.images);
+      statsText.textContent = `共 ${res.images.length} 張影像紀錄`;
+    } else {
+      container.innerHTML = `<div class="col-span-full text-center py-20 bg-red-50 rounded-[2rem] text-red-400 border border-red-100">${res.message}</div>`;
+      statsText.textContent = "讀取失敗";
+    }
+  }).getClientImages(currentClient['個案編號']);
+}
+
+function renderImageGallery(images) {
+  const container = document.getElementById('imageGalleryContainer');
+  
+  if (!images || images.length === 0) {
+    container.innerHTML = `
+      <div class="col-span-full flex flex-col items-center justify-center py-24 bg-white border-2 border-dashed border-slate-100 rounded-[2.5rem]">
+         <div class="p-4 bg-slate-50 rounded-full mb-4 text-slate-300">
+            <span class="material-icons-outlined text-3xl">image_not_supported</span>
+         </div>
+         <p class="text-slate-400 font-bold">尚無影像紀錄</p>
+         <button onclick="openUploadModal()" class="mt-4 text-emerald-500 font-bold text-sm hover:underline">立即上傳</button>
+      </div>`;
+    return;
+  }
+
+  let html = '';
+  images.forEach(img => {
+    html += `
+      <div class="group relative bg-white rounded-3xl shadow-sm border border-slate-100 overflow-hidden hover:shadow-md transition-all cursor-pointer" onclick="window.open('${img.url}', '_blank')">
+         <div class="aspect-square bg-slate-100 relative overflow-hidden">
+            <img src="${img.thumbnail}" loading="lazy" class="w-full h-full object-cover transition duration-500 group-hover:scale-110" alt="${img.name}" onerror="this.src='https://via.placeholder.com/400?text=No+Preview'">
+            <div class="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-all"></div>
+         </div>
+         <div class="p-4">
+            <div class="flex justify-between items-start">
+               <div class="text-xs font-bold text-slate-400 mb-1">${img.date}</div>
+               <span class="material-icons-outlined text-slate-300 text-sm">open_in_new</span>
+            </div>
+            <h4 class="text-sm font-bold text-slate-700 truncate" title="${img.name}">${img.name}</h4>
+         </div>
+      </div>
+    `;
+  });
+  container.innerHTML = html;
+}
+
+let filesToUpload = [];
+
+function openUploadModal() {
+  if (!currentClient) { alert("請先選擇個案"); return; }
+  document.getElementById('uploadImageModal').classList.remove('hidden');
+  document.getElementById('uploadInput').value = "";
+  document.getElementById('previewList').innerHTML = "";
+  document.getElementById('uploadPreviewArea').classList.add('hidden');
+  filesToUpload = [];
+}
+
+function previewFiles(input) {
+  const files = input.files;
+  if (!files || files.length === 0) return;
+  
+  const listEl = document.getElementById('previewList');
+  const areaEl = document.getElementById('uploadPreviewArea');
+  
+  areaEl.classList.remove('hidden');
+  filesToUpload = Array.from(files);
+
+  let html = '';
+  filesToUpload.forEach((f, idx) => {
+    html += `
+      <div class="flex items-center justify-between bg-slate-50 p-3 rounded-xl border border-slate-100">
+         <div class="flex items-center gap-3 overflow-hidden">
+            <span class="material-icons-outlined text-slate-400 text-lg">image</span>
+            <span class="text-sm font-bold text-slate-600 truncate">${f.name}</span>
+         </div>
+         <span class="text-xs text-slate-400">${(f.size/1024/1024).toFixed(1)} MB</span>
+      </div>`;
+  });
+  listEl.innerHTML = html;
+}
+
+function startUpload() {
+  if (filesToUpload.length === 0) { alert("請選擇檔案"); return; }
+  
+  const btn = document.getElementById('btnStartUpload');
+  const originalText = btn.innerText;
+  
+  let uploadedCount = 0;
+  const total = filesToUpload.length;
+  
+  btn.disabled = true;
+  btn.innerText = `上傳中 (0/${total})...`;
+
+  const uploadNext = (index) => {
+    if (index >= total) {
+      btn.disabled = false;
+      btn.innerText = originalText;
+      alert("上傳完成！");
+      closeModal('uploadImageModal');
+      loadClientImages(); 
+      return;
+    }
+
+    const file = filesToUpload[index];
+    const reader = new FileReader();
+    
+    reader.onload = function(e) {
+      const content = e.target.result.split(',')[1]; 
+      google.script.run.withSuccessHandler(res => {
+        uploadedCount++;
+        btn.innerText = `上傳中 (${uploadedCount}/${total})...`;
+        if(!res.success) { console.error("Upload failed: " + res.message); }
+        uploadNext(index + 1);
+      }).uploadClientImage(currentClient['個案編號'], content, file.name, file.type);
+    };
+    reader.readAsDataURL(file);
+  };
+  uploadNext(0);
+}
+
+// --- 通用功能區 ---
 
 function handleSearch() {
   const inputEl = document.getElementById('searchInput');
@@ -439,7 +575,7 @@ function renderOverviewList() {
   if (filtered.length === 0) { container.innerHTML = `<div class="flex flex-col items-center justify-center py-20 bg-white rounded-[2.5rem] border-2 border-dashed border-slate-100"><div class="w-16 h-16 bg-slate-50 rounded-full flex items-center justify-center mb-4"><span class="material-icons-outlined text-3xl text-slate-300">search_off</span></div><h4 class="text-lg font-bold text-slate-400">找不到符合條件的紀錄</h4><p class="text-sm text-slate-300 mt-1">請調整日期範圍或篩選類別</p></div>`; return; }
   let html = ''; filtered.forEach(item => {
     let icon, colorClass, bgClass;
-    switch(item.category) { case 'doctor': icon = 'stethoscope'; colorClass = 'text-blue-600'; bgClass = 'bg-blue-50'; break; case 'maintenance': icon = 'stars'; colorClass = 'text-orange-500'; bgClass = 'bg-orange-50'; break; case 'tracking': icon = 'fact_check'; colorClass = 'text-violet-600'; bgClass = 'bg-violet-50'; break; case 'treatment': icon = 'healing'; colorClass = 'text-emerald-600'; bgClass = 'bg-emerald-50'; break; default: icon = 'article'; colorClass = 'text-slate-600'; bgClass = 'bg-slate-50'; }
+    switch(item.category) { case 'doctor': icon = 'medical_services'; colorClass = 'text-blue-600'; bgClass = 'bg-blue-50'; break; case 'maintenance': icon = 'stars'; colorClass = 'text-orange-500'; bgClass = 'bg-orange-50'; break; case 'tracking': icon = 'fact_check'; colorClass = 'text-violet-600'; bgClass = 'bg-violet-50'; break; case 'treatment': icon = 'healing'; colorClass = 'text-emerald-600'; bgClass = 'bg-emerald-50'; break; default: icon = 'article'; colorClass = 'text-slate-600'; bgClass = 'bg-slate-50'; }
     html += `<div class="bg-white p-6 rounded-[2rem] border border-slate-100 shadow-sm hover:shadow-md transition-all group"><div class="flex items-start gap-5"><div class="flex flex-col items-center gap-2"><div class="w-12 h-12 rounded-2xl flex items-center justify-center ${bgClass} ${colorClass}"><span class="material-icons-outlined text-2xl">${icon}</span></div><div class="text-[10px] font-bold text-slate-400 bg-slate-50 px-2 py-1 rounded-lg">${item.categoryName}</div></div><div class="flex-1"><div class="flex justify-between items-start mb-2"><div><h4 class="text-lg font-black text-slate-800">${item.title}</h4><div class="text-xs font-bold text-slate-400 mt-0.5">${item.subtitle}</div></div><div class="text-right"><div class="text-sm font-bold text-slate-700 font-mono">${item.date}</div><div class="text-xs text-slate-400 mt-1 flex items-center justify-end gap-1"><span class="material-icons-outlined text-[12px]">person</span> ${item.staff || '--'}</div></div></div>${item.detail ? `<div class="mt-3 pt-3 border-t border-slate-50 text-sm text-slate-600 leading-relaxed whitespace-pre-wrap">${item.detail}</div>` : ''}</div></div></div>`;
   });
   container.innerHTML = html;

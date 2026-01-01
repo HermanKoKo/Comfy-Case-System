@@ -16,7 +16,7 @@
 
   /* === Flatpickr 基礎樣式 === */
   .flatpickr-calendar {
-    width: 260px !important; /* 稍微加寬以容納月份網格 */
+    width: 260px !important; 
     background: #fff;
     border-radius: 1.5rem !important;
     box-shadow: 0 20px 25px -5px rgb(0 0 0 / 0.1), 0 8px 10px -6px rgb(0 0 0 / 0.1) !important;
@@ -24,22 +24,20 @@
     font-family: 'Noto Sans TC', sans-serif !important;
     padding: 16px !important;
     box-sizing: border-box !important;
-    overflow: hidden; /* 確保內容不溢出圓角 */
+    overflow: hidden;
   }
   .flatpickr-calendar.static {
     position: absolute !important; top: calc(100% + 5px) !important; left: 0 !important; z-index: 999 !important; display: none;
   }
   .flatpickr-calendar.static.open { display: block !important; }
   
-  /* ★ 隱藏原生 Header ★ */
-  .flatpickr-months { display: none !important; }
+  /* 隱藏原生 Header */
+  .flatpickr-months { display: none !important; } 
 
-  /* 調整內部容器 */
   .flatpickr-innerContainer, .flatpickr-rContainer, .flatpickr-days, .dayContainer {
     width: 100% !important; min-width: 100% !important; max-width: 100% !important;
   }
   
-  /* 星期列 */
   .flatpickr-weekdays {
     height: 30px !important; background: #ffffff !important; display: flex !important;
     width: 100% !important; justify-content: space-between !important; margin-bottom: 4px;
@@ -49,7 +47,6 @@
     flex: 1 !important; display: flex !important; justify-content: center !important; align-items: center !important;
   }
 
-  /* 日期格子 */
   .flatpickr-day {
     flex: 0 0 14.28% !important; max-width: 14.28% !important; height: 32px !important;     
     line-height: 32px !important; margin: 2px 0 !important; border-radius: 50% !important;
@@ -57,6 +54,7 @@
     align-items: center !important; box-sizing: border-box !important; border: 1px solid transparent !important;
     color: #475569 !important;
   }
+  
   .flatpickr-day.selected, .flatpickr-day.selected:hover {
     background: #1e293b !important; border-color: #1e293b !important; color: #fff !important; font-weight: 700;
   }
@@ -65,7 +63,7 @@
   }
   .flatpickr-day.today { border-color: #10b981 !important; color: #10b981 !important; }
   .flatpickr-day.prevMonthDay, .flatpickr-day.nextMonthDay { color: #cbd5e1 !important; }
-  
+
   /* Input 跳出月曆的綠點 */
   .flatpickr-day.has-record::after {
     content: ''; position: absolute; bottom: 4px; width: 4px; height: 4px;
@@ -75,13 +73,20 @@
     background-color: #34d399; bottom: 3px; border: 1px solid #1e293b;
   }
 
-  /* === ★ 注入 Flatpickr 的自定義介面樣式 ★ === */
+  /* === 注入 Flatpickr 的自定義 Header 樣式 === */
   .custom-fp-header {
-    display: flex; justify-content: space-between; align-items: center;
-    margin-bottom: 12px; height: 32px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 12px;
+    height: 32px;
   }
   .custom-fp-nav-btn {
-    padding: 4px; border-radius: 8px; color: #94a3b8; cursor: pointer; transition: all 0.2s;
+    padding: 4px;
+    border-radius: 8px;
+    color: #94a3b8;
+    cursor: pointer;
+    transition: all 0.2s;
     display: flex; align-items: center; justify-content: center;
   }
   .custom-fp-nav-btn:hover { background-color: #f1f5f9; color: #10b981; }
@@ -93,16 +98,30 @@
   }
   .custom-fp-title:hover { background-color: #f1f5f9; color: #10b981; }
 
-  /* 注入的月份網格 */
+  /* === ★修正：注入 Flatpickr 的自定義月份網格 === */
+  /* 將 position 改為 relative 並設定高度，防止視窗塌陷裁切 */
   .custom-fp-month-grid {
-    display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; padding: 10px 0;
-    position: absolute; top: 50px; left: 16px; right: 16px; bottom: 16px;
-    background: white; z-index: 10; animation: fadeIn 0.2s ease-out;
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 8px;
+    padding: 10px 0;
+    
+    /* 修正部分開始 */
+    position: relative; 
+    height: 250px; /* 給定高度撐開容器 */
+    width: 100%;
+    /* 修正部分結束 */
+    
+    background: white;
+    z-index: 10;
+    animation: fadeIn 0.2s ease-out;
   }
+  
   .custom-fp-month-item {
     display: flex; align-items: center; justify-content: center;
     border-radius: 12px; font-size: 13px; font-weight: 700; color: #64748b;
-    cursor: pointer; transition: all 0.2s; border: 1px solid transparent; position: relative;
+    cursor: pointer; transition: all 0.2s; border: 1px solid transparent;
+    position: relative;
   }
   .custom-fp-month-item:hover { background-color: #f0fdf9; color: #059669; }
   .custom-fp-month-item.is-current {
@@ -115,7 +134,7 @@
   }
   .custom-fp-month-item.is-current.has-record::after { background-color: white; opacity: 0.8; }
 
-  /* === 側邊欄治療月曆樣式 (保持一致) === */
+  /* === 側邊欄治療月曆樣式 (保持不變) === */
   .cal-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; position: relative; height: 32px; }
   .cal-title-btn { font-weight: 700; color: #334155; font-size: 0.875rem; padding: 4px 12px; border-radius: 8px; cursor: pointer; transition: all 0.2s; display: flex; align-items: center; gap: 4px; user-select: none; }
   .cal-title-btn:hover { background-color: #f1f5f9; color: #10b981; }
@@ -127,6 +146,8 @@
   .cal-day.other-month { opacity: 0; pointer-events: none; }
   .cal-day.has-record::after { content: ''; position: absolute; bottom: 4px; width: 4px; height: 4px; background-color: #10b981; border-radius: 50%; z-index: 10; }
   .cal-day.is-selected.has-record::after { background-color: #34d399; bottom: 3px; border: 1px solid #1e293b; }
+  
+  /* 側邊欄月份選擇 */
   .cal-month-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; padding: 8px 0; animation: fadeIn 0.2s ease-in-out; }
   .cal-month-item { display: flex; align-items: center; justify-content: center; padding: 12px; border-radius: 12px; font-size: 14px; font-weight: 700; color: #64748b; cursor: pointer; transition: all 0.2s; background-color: #ffffff; border: 1px solid transparent; position: relative; }
   .cal-month-item:hover { background-color: #f0fdf9; color: #059669; border-color: #d1fae5; }
@@ -136,6 +157,7 @@
 
   @keyframes fadeIn { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: translateY(0); } }
 
+  /* 基礎設定 */
   body { font-family: 'Noto Sans TC', sans-serif; overflow: hidden; background-color: #f3f4f6; }
   ::-webkit-scrollbar { width: 6px; height: 6px; }
   ::-webkit-scrollbar-track { background: transparent; }

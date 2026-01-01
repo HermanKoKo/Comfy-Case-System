@@ -132,6 +132,35 @@
         </div>
       </div>
 
+      <!-- 影像總覽視圖 -->
+      <div id="view-images" class="hidden max-w-7xl mx-auto space-y-6">
+        <div class="bg-white rounded-[2rem] p-6 shadow-sm border border-slate-100 flex justify-between items-center no-print">
+           <div class="flex items-center gap-4">
+              <div class="p-3 bg-indigo-50 rounded-2xl text-indigo-600">
+                 <span class="material-icons-outlined">image</span>
+              </div>
+              <div>
+                 <h3 class="font-black text-slate-800 text-lg">影像紀錄</h3>
+                 <p id="img-stats-text" class="text-xs font-bold text-slate-400">共 0 張影像紀錄</p>
+              </div>
+           </div>
+           
+           <button onclick="openUploadModal()" class="flex items-center gap-2 bg-white border border-slate-200 hover:border-emerald-500 hover:text-emerald-600 text-slate-600 px-5 py-3 rounded-xl font-bold transition shadow-sm active:scale-95">
+              <span class="material-icons-outlined text-lg">cloud_upload</span>
+              上傳檔案
+           </button>
+        </div>
+
+        <!-- 圖片網格容器 -->
+        <div id="imageGalleryContainer" class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6 min-h-[400px]">
+           <!-- 載入動畫 (預設顯示) -->
+           <div class="col-span-full flex flex-col items-center justify-center py-20 text-slate-300">
+              <span class="material-icons-outlined text-4xl animate-spin mb-3">sync</span>
+              <p>讀取影像中...</p>
+           </div>
+        </div>
+      </div>
+
       <!-- 治療紀錄視圖 -->
       <div id="view-treatment" class="hidden max-w-6xl mx-auto space-y-8">
          <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 no-print">
@@ -174,8 +203,15 @@
                    <h3 class="font-black text-slate-800 text-lg flex items-center gap-2">
                      <span class="material-icons-outlined text-2xl text-emerald-500">add_circle</span> 新增治療紀錄
                    </h3>
+                   <!-- ★★★ 新增：治療紀錄上傳按鈕 ★★★ -->
+                   <button type="button" onclick="openUploadModal()" class="flex items-center gap-2 bg-white border border-slate-200 hover:border-emerald-500 hover:text-emerald-600 text-slate-600 px-4 py-2 rounded-xl font-bold transition shadow-sm active:scale-95 text-sm">
+                      <span class="material-icons-outlined text-base">cloud_upload</span>
+                      上傳檔案
+                   </button>
                  </div>
+                 
                  <input type="hidden" name="個案編號" class="auto-fill-id">
+                 
                  <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                     <div class="space-y-2">
                       <label class="text-xs font-bold text-slate-400 ml-1">治療日期</label>
@@ -352,9 +388,16 @@
       <!-- 醫師看診視圖 -->
       <div id="view-doctor" class="hidden max-w-5xl mx-auto space-y-6">
         <div class="bg-white rounded-[2.5rem] shadow-sm border border-slate-100 overflow-hidden no-print">
-          <div class="px-8 py-5 bg-slate-50 border-b border-slate-100 flex items-center gap-3">
-             <span class="w-2 h-6 bg-emerald-500 rounded-full"></span>
-             <h3 class="font-bold text-slate-800 text-lg">新增醫師看診單</h3>
+          <div class="px-8 py-5 bg-slate-50 border-b border-slate-100 flex justify-between items-center">
+             <div class="flex items-center gap-3">
+               <span class="w-2 h-6 bg-emerald-500 rounded-full"></span>
+               <h3 class="font-bold text-slate-800 text-lg">新增醫師看診單</h3>
+             </div>
+             <!-- ★★★ 新增：醫師看診上傳按鈕 ★★★ -->
+             <button type="button" onclick="openUploadModal()" class="flex items-center gap-2 bg-white border border-slate-200 hover:border-emerald-500 hover:text-emerald-600 text-slate-600 px-4 py-2 rounded-xl font-bold transition shadow-sm active:scale-95 text-sm">
+                <span class="material-icons-outlined text-base">cloud_upload</span>
+                上傳檔案
+             </button>
           </div>
           <form id="doctorForm" class="p-8 space-y-8">
             <input type="hidden" name="個案編號" class="auto-fill-id">
@@ -404,7 +447,7 @@
            <div class="flex flex-col xl:flex-row justify-between items-start xl:items-center gap-4">
               <div class="flex flex-wrap items-center gap-2 bg-slate-50 p-1 rounded-2xl border border-slate-100">
                  <button onclick="setOverviewCategory('all')" id="filter-btn-all" class="px-4 py-2 rounded-xl text-sm font-bold bg-white text-slate-800 shadow-sm ring-1 ring-slate-200 transition">全部</button>
-                 <button onclick="setOverviewCategory('doctor')" id="filter-btn-doctor" class="px-4 py-2 rounded-xl text-sm font-bold text-slate-500 hover:bg-white hover:text-slate-700 hover:shadow-sm transition"><span class="material-icons-outlined text-[16px] align-middle mr-1">stethoscope</span>醫師看診</button>
+                 <button onclick="setOverviewCategory('doctor')" id="filter-btn-doctor" class="px-4 py-2 rounded-xl text-sm font-bold text-slate-500 hover:bg-white hover:text-slate-700 hover:shadow-sm transition"><span class="material-icons-outlined text-[16px] align-middle mr-1">medical_services</span>醫師看診</button>
                  <button onclick="setOverviewCategory('maintenance')" id="filter-btn-maintenance" class="px-4 py-2 rounded-xl text-sm font-bold text-slate-500 hover:bg-white hover:text-slate-700 hover:shadow-sm transition"><span class="material-icons-outlined text-[16px] align-middle mr-1">stars</span>保養項目</button>
                  <button onclick="setOverviewCategory('tracking')" id="filter-btn-tracking" class="px-4 py-2 rounded-xl text-sm font-bold text-slate-500 hover:bg-white hover:text-slate-700 hover:shadow-sm transition"><span class="material-icons-outlined text-[16px] align-middle mr-1">fact_check</span>個管追蹤</button>
                  <button onclick="setOverviewCategory('treatment')" id="filter-btn-treatment" class="px-4 py-2 rounded-xl text-sm font-bold text-slate-500 hover:bg-white hover:text-slate-700 hover:shadow-sm transition"><span class="material-icons-outlined text-[16px] align-middle mr-1">healing</span>治療紀錄</button>
@@ -462,6 +505,38 @@
            </div>
            <button type="button" id="btnSubmitClient" onclick="submitNewClient()" class="w-full bg-emerald-500 text-white font-black py-4 rounded-2xl shadow-xl transition-all">建立個案資料</button>
         </form>
+     </div>
+  </div>
+
+  <!-- Modal: 上傳影像 -->
+  <div id="uploadImageModal" class="hidden fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[60] flex items-center justify-center p-4 no-print">
+     <div class="bg-white w-full max-w-lg rounded-[2.5rem] overflow-hidden shadow-2xl relative">
+        <div class="p-8 border-b border-slate-100 flex justify-between items-center">
+           <h3 class="text-xl font-black text-slate-800">上傳影像</h3>
+           <button onclick="closeModal('uploadImageModal')" class="text-slate-300 hover:text-slate-500 transition text-2xl">✕</button>
+        </div>
+        
+        <div class="p-8 space-y-6">
+           <!-- 拖曳上傳區 -->
+           <div class="relative w-full h-48 rounded-3xl border-2 border-dashed border-slate-200 bg-slate-50 hover:bg-slate-100 transition flex flex-col items-center justify-center group cursor-pointer">
+              <input type="file" id="uploadInput" accept="image/*" multiple class="absolute inset-0 w-full h-full opacity-0 cursor-pointer" onchange="previewFiles(this)">
+              <div class="p-4 bg-white rounded-full shadow-sm mb-3 group-hover:scale-110 transition text-emerald-500">
+                 <span class="material-icons-outlined text-2xl">add_photo_alternate</span>
+              </div>
+              <p class="text-slate-500 font-bold text-sm">點擊或拖曳圖片至此</p>
+              <p class="text-slate-400 text-xs mt-1">支援 JPG, PNG, WEBP</p>
+           </div>
+
+           <!-- 預覽區 -->
+           <div id="uploadPreviewArea" class="hidden space-y-2">
+              <p class="text-xs font-bold text-slate-400 uppercase tracking-widest">待上傳列表</p>
+              <div id="previewList" class="max-h-32 overflow-y-auto custom-scrollbar space-y-2"></div>
+           </div>
+
+           <button onclick="startUpload()" id="btnStartUpload" class="w-full bg-emerald-500 hover:bg-emerald-600 text-white font-black py-4 rounded-2xl shadow-lg shadow-emerald-500/20 transition active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed">
+              開始上傳
+           </button>
+        </div>
      </div>
   </div>
   

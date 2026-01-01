@@ -10,9 +10,9 @@ const CONFIG = {
     CLIENT: 'Client_Basic_Info',
     TREATMENT: 'Treatment_Logs',
     DOCTOR: 'Doctor_Consultation',
-    TRACKING: 'Case_Tracking',
+    TRACKING: 'Case_Tracking',     // 系統預設尋找這個名稱的 Sheet
     SYSTEM: 'System',
-    MAINTENANCE: 'Health_Maintenance', // 補上代碼中用到的保養表單名稱
+    MAINTENANCE: 'Health_Maintenance',
     IMAGE: 'Image_Gallery'
   }
 };
@@ -141,18 +141,26 @@ function getSystemStaff() {
 }
 
 /**
- * 儲存個管追蹤紀錄 (DB_Tracking)
+ * ★★★ [修正] 儲存個管追蹤紀錄 (DB_Tracking) ★★★
+ * 自動檢查工作表是否存在，不存在則建立
  */
 function saveTrackingRecord(formObj) {
   try {
     const ss = SpreadsheetApp.openById(CONFIG.SPREADSHEET_ID);
-    const sheet = ss.getSheetByName(CONFIG.SHEETS.TRACKING);
+    let sheet = ss.getSheetByName(CONFIG.SHEETS.TRACKING);
+    
+    // ★ 如果找不到工作表，自動建立並寫入標題
+    if (!sheet) {
+      sheet = ss.insertSheet(CONFIG.SHEETS.TRACKING);
+      sheet.appendRow(["追蹤ID", "個案編號", "追蹤日期", "追蹤人員", "追蹤項目", "追蹤內容", "建立時間"]);
+    }
     
     // 1. 產生唯一追蹤ID (TR + 年月日 + 3位隨機)
     const now = new Date();
     const dateStr = Utilities.formatDate(now, ss.getSpreadsheetTimeZone(), "yyyyMMdd");
     const uniqueId = "TR" + dateStr + Math.floor(Math.random() * 1000).toString().padStart(3, '0');
     
+    // 2. 準備寫入資料
     const newRow = [
       uniqueId,                
       "'" + formObj.clientId,  // 加 ' 防止科學記號
@@ -177,9 +185,12 @@ function getTrackingHistory(clientId) {
   try {
     const ss = SpreadsheetApp.openById(CONFIG.SPREADSHEET_ID);
     const sheet = ss.getSheetByName(CONFIG.SHEETS.TRACKING);
-    if (!sheet) return [];
+    if (!sheet) return []; // 若無此表直接回傳空陣列
     
     const data = sheet.getDataRange().getValues();
+    // 檢查是否有資料 (包含標題至少2行)
+    if (data.length <= 1) return [];
+
     const headers = data[0];
     
     // 定義欄位索引
@@ -404,6 +415,7 @@ function saveMaintenanceRecord(data) {
 
 /**
  * 取得個案所有歷程資料 (聚合 4 個工作表)
+ * 用於「個案總覽」頁面
  */
 function getCaseOverviewData(clientId) {
   try {
@@ -436,7 +448,6 @@ function getCaseOverviewData(clientId) {
       const data = maintSheet.getDataRange().getValues();
       data.slice(1).forEach(row => {
         if (String(row[1]).replace(/^'/, '') === String(clientId)) {
-          // 組合生理數值字串
           const vitals = [];
           if(row[5]) vitals.push(`BP:${row[5]}`);
           if(row[6]) vitals.push(`SpO2:${row[6]}%`);
@@ -478,7 +489,7 @@ function getCaseOverviewData(clientId) {
     const treatSheet = ss.getSheetByName(CONFIG.SHEETS.TREATMENT);
     if (treatSheet) {
       const data = treatSheet.getDataRange().getValues();
-      const headers = data[0]; // 需要動態對應 Header
+      const headers = data[0]; 
       const idxId = headers.indexOf("個案編號");
       const idxDate = headers.indexOf("治療日期");
       const idxStaff = headers.indexOf("執行治療師");
@@ -487,7 +498,7 @@ function getCaseOverviewData(clientId) {
       data.slice(1).forEach(row => {
         if (String(row[idxId]).replace(/^'/, '') === String(clientId)) {
           result.push({
-            id: 'T-' + formatDateForJSON(row[idxDate]), // 治療紀錄沒 ID，用日期代替
+            id: 'T-' + formatDateForJSON(row[idxDate]), 
             date: formatDateForJSON(row[idxDate]),
             category: 'treatment',
             categoryName: '治療紀錄',
@@ -507,6 +518,108 @@ function getCaseOverviewData(clientId) {
     throw new Error("取得總覽資料失敗: " + e.message);
   }
 }
+
+/**
+ * ==========================================
+ * 影像總覽專用邏輯 (新增)
+ * ==========================================
+ */
+
+/**
+ * 1. 取得個案資料夾內的所有圖片
+ */
+function getClientImages(clientId) {
+  try {
+    const ss = SpreadsheetApp.openById(CONFIG.SPREADSHEET_ID);
+    const sheet = ss.getSheetByName(CONFIG.SHEETS.CLIENT);
+    const data = sheet.getDataRange().getDisplayValues();
+    
+    // 找出該個案的 Google Drive 資料夾連結 (假設在第 H 欄，索引 7)
+    // 這裡遍歷尋找個案編號
+    let folderUrl = "";
+    for (let i = 1; i < data.length; i++) {
+      // data[i][0] 是個案編號
+      if (String(data[i][0]).replace(/^'/, '') === String(clientId)) {
+        folderUrl = data[i][7]; // 第 8 欄 (H) 是資料夾連結
+        break;
+      }
+    }
+
+    if (!folderUrl || folderUrl === "資料夾建立失敗") {
+      return { success: false, message: "找不到此個案的雲端資料夾連結" };
+    }
+
+    // 從 URL 提取 ID
+    const folderId = folderUrl.match(/[-\w]{25,}/);
+    if (!folderId) return { success: false, message: "無效的資料夾連結" };
+
+    const folder = DriveApp.getFolderById(folderId[0]);
+    const files = folder.getFiles();
+    const imageList = [];
+
+    while (files.hasNext()) {
+      const file = files.next();
+      const mimeType = file.getMimeType();
+      
+      // 只抓取圖片
+      if (mimeType.indexOf("image") !== -1) {
+        imageList.push({
+          id: file.getId(),
+          name: file.getName(),
+          url: file.getUrl(),
+          // 產生縮圖連結 (注意：這需要檔案權限為公開或使用者已登入)
+          thumbnail: "https://lh3.googleusercontent.com/d/" + file.getId() + "=s400", 
+          date: Utilities.formatDate(file.getDateCreated(), Session.getScriptTimeZone(), "yyyy-MM-dd HH:mm"),
+          type: mimeType
+        });
+      }
+    }
+
+    // 依日期排序 (新的在前)
+    imageList.sort((a, b) => b.date.localeCompare(a.date));
+
+    return { success: true, images: imageList, folderUrl: folderUrl };
+
+  } catch (e) {
+    return { success: false, message: "讀取影像失敗: " + e.toString() };
+  }
+}
+
+/**
+ * 2. 上傳圖片到個案資料夾
+ */
+function uploadClientImage(clientId, fileData, fileName, mimeType) {
+  try {
+    const ss = SpreadsheetApp.openById(CONFIG.SPREADSHEET_ID);
+    const sheet = ss.getSheetByName(CONFIG.SHEETS.CLIENT);
+    const data = sheet.getDataRange().getDisplayValues();
+    
+    let folderUrl = "";
+    for (let i = 1; i < data.length; i++) {
+      if (String(data[i][0]).replace(/^'/, '') === String(clientId)) {
+        folderUrl = data[i][7];
+        break;
+      }
+    }
+
+    if (!folderUrl) throw new Error("找不到個案資料夾");
+    const folderIdMatch = folderUrl.match(/[-\w]{25,}/);
+    if (!folderIdMatch) throw new Error("資料夾 ID 解析失敗");
+    
+    const folder = DriveApp.getFolderById(folderIdMatch[0]);
+    
+    // 將 base64 解碼並建立檔案
+    const decoded = Utilities.base64Decode(fileData);
+    const blob = Utilities.newBlob(decoded, mimeType, fileName);
+    const file = folder.createFile(blob);
+    
+    return { success: true, message: "上傳成功" };
+
+  } catch (e) {
+    return { success: false, message: "上傳失敗: " + e.toString() };
+  }
+}
+
 
 // 輔助函式：日期轉字串 yyyy-MM-dd
 function formatDateForJSON(dateVal) {
