@@ -100,7 +100,6 @@ function loadSystemStaff() {
 
 // === 導覽與頁面切換 ===
 function navTo(viewName) {
-  // ★ 強制檢查：如果沒有選取個案，不能進入功能頁面
   if (!currentClient && viewName !== 'search') { alert("請先選取個案。"); return; }
   
   const views = ['search', 'basic', 'images', 'treatment', 'maintenance', 'doctor', 'tracking', 'overview'];
@@ -118,7 +117,6 @@ function navTo(viewName) {
   const titles = { 'search':'首頁','basic':'基本資料','images':'影像總覽','treatment':'治療紀錄','maintenance':'保養項目','doctor':'醫師看診','tracking':'個管追蹤','overview':'個案總覽' };
   document.getElementById('pageTitle').textContent = titles[viewName] || '康飛運醫';
   
-  // ★ 切換頁面時，帶入 Current Client ID 重新讀取資料
   if (currentClient) {
     if(viewName === 'basic') renderBasicInfo();
     if(viewName === 'doctor') loadDoctorHistory();
@@ -151,33 +149,26 @@ function handleSearch() {
 }
 
 function selectClient(c) {
-  // ★ 設定全域變數，這是關鍵
   currentClient = c;
-  
-  // 更新頂部資訊欄
   document.getElementById('topBarClientInfo').classList.remove('hidden');
   document.getElementById('headerClientName').textContent = c['姓名'];
   document.getElementById('headerClientDob').textContent = c['生日'];
-  
-  // ★ 自動填入所有隱藏的 ID 欄位 (確保新增資料時帶入正確 ID)
   document.querySelectorAll('.auto-fill-id').forEach(el => el.value = c['個案編號']);
-  
-  // 跳轉至基本資料頁
   navTo('basic');
 }
 
-// === 表單提交與歷史紀錄 (關鍵修正：強制帶入 currentClient ID) ===
+// === 表單提交 ===
 function submitForm(type) {
   if (!currentClient) { alert("系統錯誤：未選取個案，請重新搜尋。"); return; }
   
-  const clientId = currentClient['個案編號']; // ★ 確保使用變數中的 ID
+  const clientId = currentClient['個案編號'];
   const btn = type === 'tracking' ? document.querySelector('#trackingForm button[type="submit"]') : event.target;
   const ot = btn ? btn.innerHTML : "儲存"; 
   if(btn) { btn.disabled = true; btn.innerHTML = '<span class="material-icons-outlined animate-spin">sync</span> 儲存中...'; }
   
   if (type === 'doctor') {
     const d = { 
-      clientId: clientId, // ★ 明確傳入 ID
+      clientId: clientId,
       date: document.getElementById('doctorConsultDate').value, 
       doctor: document.getElementById('selectDoctor').value, 
       nurse: document.getElementById('selectNurse').value, 
@@ -191,7 +182,7 @@ function submitForm(type) {
     google.script.run.withSuccessHandler(res => { if(btn){btn.disabled=false; btn.innerHTML=ot;} if (res.success) { alert(res.message); document.getElementById('doctorForm').reset(); loadDoctorHistory(); } else { alert(res.message); } }).saveDoctorConsultation(d);
   } else if (type === 'treatment') {
     const d = { 
-      '個案編號': clientId, // ★ 明確傳入 ID
+      '個案編號': clientId,
       '治療日期': document.getElementById('treatmentDate').value, 
       '執行治療師': document.getElementById('inputTherapist').value, 
       '當日主訴': document.getElementById('inputComplaint').value, 
@@ -203,7 +194,7 @@ function submitForm(type) {
   } else if (type === 'maintenance') {
     const f = document.getElementById('maintenanceForm');
     const d = { 
-      clientId: clientId, // ★ 明確傳入 ID
+      clientId: clientId,
       date: document.getElementById('maintenanceDate').value, 
       staff: document.getElementById('selectMaintStaff').value, 
       item: document.getElementById('selectMaintItem').value, 
@@ -217,7 +208,7 @@ function submitForm(type) {
     google.script.run.withSuccessHandler(res => { if(btn){btn.disabled=false; btn.innerHTML=ot;} if (res.success) { alert(res.message); f.reset(); document.getElementById('maintenanceDate').value = new Date().toISOString().split('T')[0]; loadMaintenanceHistory(); } else { alert(res.message); } }).saveMaintenanceRecord(d);
   } else if (type === 'tracking') {
     const d = { 
-      clientId: clientId, // ★ 明確傳入 ID
+      clientId: clientId,
       trackDate: document.getElementById('trackDate').value, 
       trackStaff: document.getElementById('trackStaff').value, 
       trackType: document.getElementById('trackType').value, 
@@ -228,7 +219,7 @@ function submitForm(type) {
   }
 }
 
-// === 列表渲染函數 (已確保傳入 ID 給後端) ===
+// === 列表渲染函數 ===
 function loadTrackingHistory() {
   const c = document.getElementById('trackingHistoryList'); c.innerHTML = '<div class="text-center py-6 text-slate-400">讀取中...</div>';
   google.script.run.withSuccessHandler(recs => {
@@ -260,7 +251,7 @@ function loadDoctorHistory() {
   }).getClientHistory(currentClient['個案編號'], 'Doctor_Consultation');
 }
 
-// === 總覽與其他 (維持邏輯) ===
+// === 總覽與其他 ===
 function loadOverviewData() {
   const container = document.getElementById('overviewListContainer'); container.innerHTML = '<div class="text-center py-12 text-slate-400 flex flex-col items-center gap-2"><span class="material-icons-outlined animate-spin">sync</span><span>讀取個案歷程中...</span></div>';
   google.script.run.withSuccessHandler(data => { allOverviewRecords = data || []; renderOverviewList(); }).withFailureHandler(err => { container.innerHTML = `<div class="text-red-500 text-center py-10">載入失敗: ${err.message}</div>`; }).getCaseOverviewData(currentClient['個案編號']);
@@ -326,7 +317,7 @@ function resetTreatmentFilter() { document.getElementById('filterTherapist').val
 function editClientInfo() { alert("編輯功能開發中..."); }
 function applyLogFilters() { const t=document.getElementById('filterTherapist').value; const d=document.getElementById('filterDate').value; renderTreatmentList(allTreatmentLogs.filter(l => (!t || l['執行治療師']===t) && (!d || l['治療日期']===d))); }
 
-// === 影像功能 (已修正點擊無效與上傳邏輯) ===
+// === 影像功能 (已整合 Lightbox) ===
 
 function loadClientImages() {
   const c = document.getElementById('imageGalleryContainer');
@@ -339,43 +330,48 @@ function loadClientImages() {
   }).getClientImages(currentClient['個案編號']);
 }
 
+// ★ 修正重點：使用 openLightbox 取代 window.open，並保留新分頁按鈕的功能
 function renderImageGallery(imgs) {
   const c = document.getElementById('imageGalleryContainer');
   if (!imgs || imgs.length === 0) { c.innerHTML = `<div class="col-span-full flex flex-col items-center justify-center py-24 bg-white border-2 border-dashed border-slate-200 rounded-[2.5rem] group hover:border-emerald-300 transition-colors"><div class="p-4 bg-slate-50 rounded-full mb-4 text-slate-300 group-hover:text-emerald-400 transition-colors"><span class="material-icons-outlined text-3xl">add_photo_alternate</span></div><p class="text-slate-400 font-bold mb-2">尚無影像紀錄</p><button onclick="openUploadModal()" class="text-emerald-500 font-bold text-sm hover:text-emerald-600 transition">立即上傳</button></div>`; return; }
-  c.innerHTML = imgs.map(i => `<div class="group relative bg-white rounded-3xl shadow-sm border border-slate-100 overflow-hidden card-hover cursor-pointer" onclick="window.open('${i.url}', '_blank')"><div class="aspect-square bg-slate-50 relative overflow-hidden"><img src="${i.thumbnail}" loading="lazy" class="w-full h-full object-cover transition duration-500 group-hover:scale-105" alt="${i.name}" onerror="this.src='https://via.placeholder.com/400?text=Error'"><div class="absolute inset-0 bg-black/0 group-hover:bg-black/5 transition-all"></div></div><div class="p-4"><div class="flex justify-between items-start"><div class="text-xs font-bold text-slate-400 mb-1">${i.date}</div><span class="material-icons-outlined text-slate-300 text-sm group-hover:text-emerald-500 transition-colors">open_in_new</span></div><h4 class="text-sm font-bold text-slate-700 truncate">${i.name}</h4></div></div>`).join('');
+  
+  c.innerHTML = imgs.map(i => `
+    <div class="group relative bg-white rounded-3xl shadow-sm border border-slate-100 overflow-hidden card-hover cursor-pointer" onclick="openLightbox('${i.id}', '${i.name}')">
+        <div class="aspect-square bg-slate-50 relative overflow-hidden">
+            <img src="${i.thumbnail}" loading="lazy" class="w-full h-full object-cover transition duration-500 group-hover:scale-105" alt="${i.name}" onerror="this.src='https://via.placeholder.com/400?text=Error'">
+            <div class="absolute inset-0 bg-black/0 group-hover:bg-black/5 transition-all"></div>
+        </div>
+        <div class="p-4">
+            <div class="flex justify-between items-start">
+                <div class="text-xs font-bold text-slate-400 mb-1">${i.date}</div>
+                <!-- 點擊小箭頭可另開新分頁 (避免觸發 Lightbox) -->
+                <span class="material-icons-outlined text-slate-300 text-sm group-hover:text-emerald-500 transition-colors z-10 hover:bg-slate-100 rounded" 
+                      onclick="event.stopPropagation(); window.open('${i.url}', '_blank')">open_in_new</span>
+            </div>
+            <h4 class="text-sm font-bold text-slate-700 truncate" title="${i.name}">${i.name}</h4>
+        </div>
+    </div>
+  `).join('');
 }
 
 let filesToUpload = [];
 
-// 1. 開啟上傳對話框
 function openUploadModal() {
   if (!currentClient) { alert("請先選擇個案"); return; }
-  
-  // 顯示 Modal
   const modal = document.getElementById('uploadImageModal');
   if (modal) modal.classList.remove('hidden');
-  
-  // 重置 input 與清單
   const uploadInput = document.getElementById('uploadInput');
   if (uploadInput) uploadInput.value = "";
-  
   document.getElementById('previewList').innerHTML = "";
   document.getElementById('uploadPreviewArea').classList.add('hidden');
   filesToUpload = [];
 }
 
-// 2. 新增此函數以解決「無法點擊選擇檔案」的問題
-// 請確保 HTML 中的「選擇檔案」按鈕使用 onclick="triggerFileSelect()"
 function triggerFileSelect() {
   const fileInput = document.getElementById('uploadInput');
-  if (fileInput) {
-    fileInput.click();
-  } else {
-    alert("系統錯誤：找不到檔案上傳元件 (ID: uploadInput)");
-  }
+  if (fileInput) { fileInput.click(); } else { alert("系統錯誤：找不到檔案上傳元件"); }
 }
 
-// 3. 預覽檔案 (綁定在 input onchange)
 function previewFiles(input) {
   const files = input.files;
   if (!files || files.length === 0) return;
@@ -385,16 +381,9 @@ function previewFiles(input) {
   listEl.innerHTML = filesToUpload.map(f => `<div class="flex items-center justify-between bg-white p-3 rounded-xl border border-slate-100 shadow-sm"><div class="flex items-center gap-3 overflow-hidden"><div class="w-8 h-8 rounded-lg bg-emerald-50 flex items-center justify-center text-emerald-500"><span class="material-icons-outlined text-base">image</span></div><span class="text-sm font-bold text-slate-600 truncate">${f.name}</span></div><span class="text-xs text-slate-400 font-mono">${(f.size/1024/1024).toFixed(1)} MB</span></div>`).join('');
 }
 
-// 4. 執行上傳 (已修正 ID 檢查邏輯)
 function startUpload() {
-  if (!currentClient || !currentClient['個案編號']) {
-    alert("系統錯誤：遺失個案編號，請重新整理頁面。");
-    return;
-  }
-  if (filesToUpload.length === 0) { 
-    alert("請先選擇檔案"); 
-    return; 
-  }
+  if (!currentClient || !currentClient['個案編號']) { alert("系統錯誤：遺失個案編號，請重新整理頁面。"); return; }
+  if (filesToUpload.length === 0) { alert("請先選擇檔案"); return; }
   
   const btn = document.getElementById('btnStartUpload');
   const ot = btn.innerHTML;
@@ -405,37 +394,64 @@ function startUpload() {
   btn.innerHTML = `<span class="material-icons-outlined animate-spin mr-2 text-sm">sync</span> 上傳中 (0/${total})...`;
   
   const next = (idx) => {
-    if (idx >= total) { 
-      btn.disabled = false; 
-      btn.innerHTML = ot; 
-      alert("上傳完成！"); 
-      closeModal('uploadImageModal'); 
-      loadClientImages(); 
-      return; 
-    }
-    
+    if (idx >= total) { btn.disabled = false; btn.innerHTML = ot; alert("上傳完成！"); closeModal('uploadImageModal'); loadClientImages(); return; }
     const f = filesToUpload[idx]; 
     const r = new FileReader();
-    
     r.onload = function(e) {
-      const content = e.target.result.split(',')[1]; // 取得 Base64
-      
-      // 呼叫後端 uploadClientImage，並傳入個案編號
+      const content = e.target.result.split(',')[1];
       google.script.run
-        .withSuccessHandler(() => { 
-          count++; 
-          btn.innerHTML = `<span class="material-icons-outlined animate-spin mr-2 text-sm">sync</span> 上傳中 (${count}/${total})...`; 
-          next(idx + 1); 
-        })
-        .withFailureHandler((err) => {
-           alert("上傳失敗 (" + f.name + "): " + err.message);
-           btn.disabled = false;
-           btn.innerHTML = ot;
-        })
+        .withSuccessHandler(() => { count++; btn.innerHTML = `<span class="material-icons-outlined animate-spin mr-2 text-sm">sync</span> 上傳中 (${count}/${total})...`; next(idx + 1); })
+        .withFailureHandler((err) => { alert("上傳失敗 (" + f.name + "): " + err.message); btn.disabled = false; btn.innerHTML = ot; })
         .uploadClientImage(currentClient['個案編號'], content, f.name, f.type);
     };
     r.readAsDataURL(f);
   };
   next(0);
 }
+
+// === 新增：Lightbox 燈箱控制邏輯 ===
+function openLightbox(id, name) {
+    const modal = document.getElementById('imageLightbox');
+    const img = document.getElementById('lightboxImage');
+    const loading = document.getElementById('lightboxLoading');
+    const titleDiv = document.getElementById('lightboxTitle');
+    
+    if (!modal || !img) return; // 安全檢查
+
+    modal.classList.remove('hidden');
+    loading.classList.remove('hidden');
+    
+    // 重置圖片狀態
+    img.style.opacity = '0';
+    img.style.transform = 'scale(0.95)';
+    img.src = ""; 
+
+    // 設定標題
+    if (titleDiv) titleDiv.textContent = name || '';
+
+    // 載入高解析度圖片 (使用 =s0 參數取得原圖)
+    const highResUrl = `https://lh3.googleusercontent.com/d/${id}=s0`;
+    
+    img.onload = function() {
+        loading.classList.add('hidden');
+        img.style.opacity = '1';
+        img.style.transform = 'scale(1)';
+    };
+    
+    img.src = highResUrl;
+    document.body.style.overflow = 'hidden'; // 禁止背景捲動
+}
+
+function closeLightbox() {
+    const modal = document.getElementById('imageLightbox');
+    if (modal) modal.classList.add('hidden');
+    const img = document.getElementById('lightboxImage');
+    if (img) img.src = ''; // 清空以釋放記憶體
+    document.body.style.overflow = ''; // 恢復背景捲動
+}
+
+// 支援 ESC 鍵關閉
+document.addEventListener('keydown', function(event) {
+    if (event.key === "Escape") closeLightbox();
+});
 </script>

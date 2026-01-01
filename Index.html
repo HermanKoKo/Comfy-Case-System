@@ -159,7 +159,7 @@
         </div>
       </div>
 
-      <!-- 治療紀錄視圖 (修改處) -->
+      <!-- 治療紀錄視圖 -->
       <div id="view-treatment" class="hidden max-w-6xl mx-auto space-y-8">
          <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 no-print">
             <div class="space-y-6">
@@ -233,7 +233,7 @@
                    <textarea id="inputContent" required placeholder="請詳述治療細節..." class="w-full px-5 py-4 bg-slate-50 border border-slate-100 rounded-2xl outline-none focus:border-emerald-500 transition-all h-40 resize-none"></textarea>
                  </div>
                  
-                 <!-- ★★★ 新增：備註 / 下次治療 ★★★ -->
+                 <!-- 備註 / 下次治療 -->
                  <div class="space-y-2">
                    <label class="text-xs font-bold text-slate-400 ml-1">備註 / 下次治療</label>
                    <textarea id="inputNextPlan" placeholder="請輸入備註或下次治療重點..." class="w-full px-5 py-4 bg-slate-50 border border-slate-100 rounded-2xl outline-none focus:border-emerald-500 transition-all h-24 resize-none"></textarea>
@@ -511,7 +511,7 @@
      </div>
   </div>
 
-  <!-- Modal: 上傳影像 (修正處) -->
+  <!-- Modal: 上傳影像 -->
   <div id="uploadImageModal" class="hidden fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[60] flex items-center justify-center p-4 no-print">
      <div class="bg-white w-full max-w-lg rounded-[2.5rem] overflow-hidden shadow-2xl relative">
         <div class="p-8 border-b border-slate-100 flex justify-between items-center">
@@ -520,9 +520,7 @@
         </div>
         
         <div class="p-8 space-y-6">
-           <!-- 修改：使用 onclick 觸發 hidden input，解決無法點擊問題 -->
            <div onclick="document.getElementById('uploadInput').click()" class="relative w-full h-48 rounded-3xl border-2 border-dashed border-slate-200 bg-slate-50 hover:bg-slate-100 transition flex flex-col items-center justify-center group cursor-pointer">
-              <!-- 修改：class 加入 hidden -->
               <input type="file" id="uploadInput" accept="image/*" multiple class="hidden" onchange="previewFiles(this)">
               <div class="p-4 bg-white rounded-full shadow-sm mb-3 group-hover:scale-110 transition text-emerald-500">
                  <span class="material-icons-outlined text-2xl">add_photo_alternate</span>
@@ -543,6 +541,32 @@
      </div>
   </div>
   
+  <!-- Lightbox 燈箱元件 (新增) -->
+  <div id="imageLightbox" class="fixed inset-0 z-[100] hidden bg-black/95 backdrop-blur-sm transition-opacity duration-300" onclick="if(event.target === this) closeLightbox()">
+      <!-- 關閉按鈕 -->
+      <button onclick="closeLightbox()" class="absolute top-6 right-6 text-white/80 hover:text-white transition p-2 bg-black/20 rounded-full z-[110]">
+          <span class="material-icons-outlined text-4xl">close</span>
+      </button>
+  
+      <!-- 圖片容器 -->
+      <div class="flex h-full w-full items-center justify-center p-4 sm:p-8">
+          <div class="relative max-h-full max-w-full">
+              <!-- 載入中動畫 -->
+              <div id="lightboxLoading" class="absolute inset-0 flex items-center justify-center">
+                  <span class="material-icons-outlined text-5xl text-emerald-500 animate-spin">sync</span>
+              </div>
+              
+              <!-- 預覽圖片 -->
+              <img id="lightboxImage" src="" alt="Preview" class="max-h-[85vh] max-w-full object-contain rounded-lg shadow-2xl opacity-0 transition-opacity duration-300 select-none">
+          </div>
+      </div>
+      
+      <!-- 底部標題列 -->
+      <div class="absolute bottom-0 left-0 right-0 p-6 bg-gradient-to-t from-black/80 to-transparent text-center">
+          <h4 id="lightboxTitle" class="text-white text-lg font-bold tracking-wide text-shadow-sm"></h4>
+      </div>
+  </div>
+
   <?!= include('JavaScript'); ?>
 </body>
 </html>
