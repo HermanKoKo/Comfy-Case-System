@@ -11,9 +11,8 @@
   <link href="https://fonts.googleapis.com/icon?family=Material+Icons+Outlined" rel="stylesheet">
   <?!= include('Stylesheet'); ?>
   
-  <!-- 新增：強制縮小治療月曆樣式的 CSS -->
+  <!-- 強制縮小治療月曆樣式的 CSS (保持不變) -->
   <style>
-    /* 讓月曆更緊湊，減少垂直高度 */
     #treatmentCalendar .cal-day {
         height: 2rem !important;
         line-height: 2rem !important;
@@ -187,16 +186,14 @@
       <!-- 治療紀錄視圖 (修改區域) -->
       <div id="view-treatment" class="hidden max-w-6xl mx-auto space-y-6">
          <div class="grid grid-cols-1 lg:grid-cols-3 gap-4 no-print">
-            <!-- 左側：月曆與篩選 (修改點：縮小間距與內距) -->
+            <!-- 左側：月曆與篩選 -->
             <div class="space-y-3">
-               <!-- 調整：p-4 -> p-3 (讓月曆區域更緊湊) -->
                <div class="bg-white p-3 rounded-[2rem] shadow-sm border border-slate-100 flex flex-col h-fit">
                    <h4 class="text-xs font-bold text-slate-400 uppercase tracking-widest flex items-center gap-2 mb-2">
                       <span class="material-icons-outlined text-lg text-emerald-500">calendar_month</span> 治療月曆
                    </h4>
                    <div id="treatmentCalendar"></div>
                </div>
-               <!-- 調整：p-4 -> p-3 -->
                <div class="bg-white p-3 rounded-[2rem] shadow-sm border border-slate-100 space-y-2 h-fit">
                   <div class="flex justify-between items-center">
                     <h4 class="text-xs font-bold text-slate-400 uppercase tracking-widest flex items-center gap-2">
@@ -223,7 +220,7 @@
                </div>
             </div>
             
-            <!-- 右側：新增表單 (修改點：縮小 p-5 -> p-4, 移除 placeholder) -->
+            <!-- 右側：新增表單 -->
             <div class="lg:col-span-2">
                <form id="treatmentForm" class="bg-white p-4 rounded-[2.5rem] shadow-sm border-t-4 border-emerald-500 border-x border-b border-slate-100 space-y-2 h-full">
                  
@@ -240,39 +237,36 @@
                  
                  <input type="hidden" name="個案編號" class="auto-fill-id">
                  
-                 <!-- 第一行：日期與治療師 (水平排列) -->
+                 <!-- 第一行：日期與治療師 -->
                  <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <!-- 治療日期 -->
                     <div class="flex items-center gap-3">
                       <label class="text-xs font-bold text-slate-400 shrink-0">治療日期</label>
-                      <input type="date" id="treatmentDate" required class="w-full px-5 py-2 bg-slate-50 border border-slate-100 rounded-2xl outline-none focus:border-emerald-500 transition-all cursor-pointer font-bold text-slate-700">
+                      <input type="date" id="treatmentDate" required class="w-full px-5 py-2.5 bg-slate-50 border border-slate-100 rounded-2xl outline-none focus:border-emerald-500 transition-all cursor-pointer font-bold text-slate-700">
                     </div>
-                    
-                    <!-- 治療師 -->
                     <div class="flex items-center gap-3">
                       <label class="text-xs font-bold text-slate-400 shrink-0">治療師</label>
                       <div class="relative w-full">
-                        <select id="inputTherapist" required class="w-full px-5 py-2 bg-slate-50 border border-slate-100 rounded-2xl outline-none focus:border-emerald-500 transition-all cursor-pointer appearance-none font-bold text-slate-700">
+                        <select id="inputTherapist" required class="w-full px-5 py-2.5 bg-slate-50 border border-slate-100 rounded-2xl outline-none focus:border-emerald-500 transition-all cursor-pointer appearance-none font-bold text-slate-700">
                            <option value="" disabled selected>請選擇治療師</option>
                         </select>
-                        <span class="material-icons-outlined absolute right-4 top-3 text-slate-400 pointer-events-none">expand_more</span>
+                        <span class="material-icons-outlined absolute right-4 top-3.5 text-slate-400 pointer-events-none">expand_more</span>
                       </div>
                     </div>
                  </div>
 
-                 <!-- 當日主訴 (移除 placeholder, 縮小高度) -->
+                 <!-- 當日主訴 -->
                  <div class="space-y-1">
                    <label class="text-xs font-bold text-slate-400 ml-1">當日主訴</label>
                    <textarea id="inputComplaint" class="w-full px-5 py-2.5 bg-slate-50 border border-slate-100 rounded-2xl outline-none focus:border-emerald-500 transition-all h-14 resize-none"></textarea>
                  </div>
 
-                 <!-- 治療內容 (移除 placeholder, 縮小高度) -->
+                 <!-- 治療內容 (修改：放大高度至 h-48) -->
                  <div class="space-y-1">
                    <label class="text-xs font-bold text-slate-400 ml-1">治療內容</label>
-                   <textarea id="inputContent" required class="w-full px-5 py-2.5 bg-slate-50 border border-slate-100 rounded-2xl outline-none focus:border-emerald-500 transition-all h-20 resize-none"></textarea>
+                   <textarea id="inputContent" required class="w-full px-5 py-2.5 bg-slate-50 border border-slate-100 rounded-2xl outline-none focus:border-emerald-500 transition-all h-48 resize-none"></textarea>
                  </div>
                  
-                 <!-- 備註 / 下次治療 (移除 placeholder, 縮小高度) -->
+                 <!-- 備註 / 下次治療 -->
                  <div class="space-y-1">
                    <label class="text-xs font-bold text-slate-400 ml-1">備註 / 下次治療</label>
                    <textarea id="inputNextPlan" class="w-full px-5 py-2.5 bg-slate-50 border border-slate-100 rounded-2xl outline-none focus:border-emerald-500 transition-all h-14 resize-none"></textarea>
@@ -290,7 +284,6 @@
                   <span class="w-1.5 h-6 bg-emerald-500 rounded-full"></span>
                   <h4 class="font-black text-slate-800 text-lg">歷史治療清單</h4>
                </div>
-               <!-- 修改點：顯示次數 -->
                <span id="treatmentHistoryCount" class="text-xs font-bold bg-emerald-100 text-emerald-600 px-2 py-1 rounded-lg">共 0 次</span>
              </div>
              <div id="historyListContainer" class="space-y-3 min-h-[200px]"></div>
@@ -532,31 +525,31 @@
            <div class="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-4">
               <div class="flex items-center gap-3">
                  <label class="w-28 shrink-0 text-sm font-bold text-slate-500 text-right">姓名 <span class="text-red-400">*</span></label>
-                 <input type="text" id="addName" required class="flex-1 px-4 py-2 bg-slate-50 border border-slate-100 rounded-xl outline-none focus:bg-white focus:border-emerald-500 transition-all">
+                 <input type="text" id="addName" required class="flex-1 px-4 py-2.5 bg-slate-50 border border-slate-100 rounded-xl outline-none focus:bg-white focus:border-emerald-500 transition-all">
               </div>
               <div class="flex items-center gap-3">
                  <label class="w-28 shrink-0 text-sm font-bold text-slate-500 text-right">生日 <span class="text-red-400">*</span></label>
-                 <input type="text" id="addDob" required maxlength="8" placeholder="西元出生年月日8碼" oninput="this.value = this.value.replace(/[^0-9]/g, '')" class="flex-1 px-4 py-2 bg-slate-50 border border-slate-100 rounded-xl outline-none focus:bg-white focus:border-emerald-500 transition-all">
+                 <input type="text" id="addDob" required maxlength="8" placeholder="西元出生年月日8碼" oninput="this.value = this.value.replace(/[^0-9]/g, '')" class="flex-1 px-4 py-2.5 bg-slate-50 border border-slate-100 rounded-xl outline-none focus:bg-white focus:border-emerald-500 transition-all">
               </div>
               <div class="flex items-center gap-3">
                  <label class="w-28 shrink-0 text-sm font-bold text-slate-500 text-right">身分證字號 <span class="text-red-400">*</span></label>
-                 <input type="text" id="addIdNo" required oninput="autoDetectGender(this)" class="flex-1 px-4 py-2 bg-slate-50 border border-slate-100 rounded-xl outline-none focus:bg-white focus:border-emerald-500 transition-all">
+                 <input type="text" id="addIdNo" required oninput="autoDetectGender(this)" class="flex-1 px-4 py-2.5 bg-slate-50 border border-slate-100 rounded-xl outline-none focus:bg-white focus:border-emerald-500 transition-all">
               </div>
               <div class="flex items-center gap-3">
                  <label class="w-28 shrink-0 text-sm font-bold text-slate-500 text-right">聯絡電話 <span class="text-red-400">*</span></label>
-                 <input type="text" id="addPhone" required class="flex-1 px-4 py-2 bg-slate-50 border border-slate-100 rounded-xl outline-none focus:bg-white focus:border-emerald-500 transition-all">
+                 <input type="text" id="addPhone" required class="flex-1 px-4 py-2.5 bg-slate-50 border border-slate-100 rounded-xl outline-none focus:bg-white focus:border-emerald-500 transition-all">
               </div>
               <div class="flex items-center gap-3">
                  <label class="w-28 shrink-0 text-sm font-bold text-slate-500 text-right">緊急聯絡人</label>
-                 <input type="text" id="addEmerName" class="flex-1 px-4 py-2 bg-slate-50 border border-slate-100 rounded-xl outline-none focus:bg-white focus:border-emerald-500 transition-all">
+                 <input type="text" id="addEmerName" class="flex-1 px-4 py-2.5 bg-slate-50 border border-slate-100 rounded-xl outline-none focus:bg-white focus:border-emerald-500 transition-all">
               </div>
               <div class="flex items-center gap-3">
                  <label class="w-28 shrink-0 text-sm font-bold text-slate-500 text-right">緊急聯絡電話</label>
-                 <input type="text" id="addEmerPhone" class="flex-1 px-4 py-2 bg-slate-50 border border-slate-100 rounded-xl outline-none focus:bg-white focus:border-emerald-500 transition-all">
+                 <input type="text" id="addEmerPhone" class="flex-1 px-4 py-2.5 bg-slate-50 border border-slate-100 rounded-xl outline-none focus:bg-white focus:border-emerald-500 transition-all">
               </div>
               <div class="col-span-1 md:col-span-2 space-y-1">
                  <label class="text-xs font-bold text-slate-400 ml-1 block">慢性病或特殊疾病</label>
-                 <textarea id="addChronic" rows="3" class="w-full px-4 py-2 bg-slate-50 border border-slate-100 rounded-xl outline-none focus:bg-white focus:border-emerald-500 transition-all resize-none"></textarea>
+                 <textarea id="addChronic" rows="3" class="w-full px-4 py-3 bg-slate-50 border border-slate-100 rounded-xl outline-none focus:bg-white focus:border-emerald-500 transition-all resize-none"></textarea>
               </div>
            </div>
            <div class="pt-2 sticky bottom-0 bg-white pb-1">
