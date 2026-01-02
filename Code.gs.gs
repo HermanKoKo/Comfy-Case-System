@@ -408,7 +408,7 @@ function saveMaintenanceRecord(data) {
 }
 
 /**
- * 取得個案總覽資料
+ * 取得個案總覽資料 (已修改：回傳完整詳細欄位)
  */
 function getCaseOverviewData(clientId) {
   try {
@@ -417,9 +417,12 @@ function getCaseOverviewData(clientId) {
     const result = [];
     const targetId = String(clientId).trim();
     
+    // 1. 醫師看診 (Doctor)
     const docSheet = ss.getSheetByName(CONFIG.SHEETS.DOCTOR);
     if (docSheet) {
       const data = docSheet.getDataRange().getValues();
+      // 假設欄位順序固定，若有變動需調整索引
+      // A:ID, B:CaseID, C:Date, D:Doc, E:Nurse, F:S, G:O, H:A, I:P, J:NurseRec, K:Remark
       const idx = data[0].map(normalizeHeader).indexOf(normalizeHeader("個案編號"));
       const targetCol = idx > -1 ? idx : 1; 
 
@@ -428,81 +431,109 @@ function getCaseOverviewData(clientId) {
           result.push({
             id: row[0],
             date: formatDateForJSON(row[2]),
-            category: 'doctor', categoryName: '醫師看診',
-            title: row[3] + " 醫師", subtitle: "診斷：" + (row[7] || '--'),
-            detail: row[8], staff: row[4]
+            category: 'doctor', 
+            categoryName: '醫師看診',
+            // 詳細欄位
+            doctor: row[3],
+            nurse: row[4],
+            s: row[5],
+            o: row[6],
+            a: row[7],
+            p: row[8],
+            nursingRecord: row[9], // J欄
+            remark: row[10]        // K欄
           });
         }
       });
     }
 
+    // 2. 保養項目 (Maintenance)
     const maintSheet = ss.getSheetByName(CONFIG.SHEETS.MAINTENANCE);
     if (maintSheet) {
       const data = maintSheet.getDataRange().getValues();
       const idx = data[0].map(normalizeHeader).indexOf(normalizeHeader("個案編號"));
       const targetCol = idx > -1 ? idx : 1;
-
+      // A:ID, B:CaseID, C:Date, D:Staff, E:Item, F:BP, G:SpO2, H:HR, I:Temp, J:Remark
+      
       data.slice(1).forEach(row => {
         if (String(row[targetCol]).replace(/^'/, '').trim() === targetId) {
-          const vitals = [];
-          if(row[5]) vitals.push(`BP:${row[5]}`);
-          if(row[6]) vitals.push(`SpO2:${row[6]}%`);
           result.push({
             id: row[0],
             date: formatDateForJSON(row[2]),
-            category: 'maintenance', categoryName: '保養項目',
-            title: row[4], subtitle: vitals.join(' | ') || '無生理數值',
-            detail: row[9], staff: row[3]
+            category: 'maintenance', 
+            categoryName: '保養項目',
+            // 詳細欄位
+            staff: row[3],
+            item: row[4],
+            bp: row[5],
+            spo2: row[6],
+            hr: row[7],
+            temp: row[8],
+            remark: row[9]
           });
         }
       });
     }
 
+    // 3. 個管追蹤 (Tracking)
     const trackSheet = ss.getSheetByName(CONFIG.SHEETS.TRACKING);
     if (trackSheet) {
       const data = trackSheet.getDataRange().getValues();
       const idx = data[0].map(normalizeHeader).indexOf(normalizeHeader("個案編號"));
       const targetCol = idx > -1 ? idx : 1;
+      // A:ID, B:CaseID, C:Date, D:Staff, E:Type, F:Content
 
       data.slice(1).forEach(row => {
         if (String(row[targetCol]).replace(/^'/, '').trim() === targetId) {
           result.push({
             id: row[0],
             date: formatDateForJSON(row[2]),
-            category: 'tracking', categoryName: '個管追蹤',
-            title: row[4], subtitle: "人員：" + (row[3] || '--'),
-            detail: row[5], staff: row[3]
+            category: 'tracking', 
+            categoryName: '個管追蹤',
+            // 詳細欄位
+            staff: row[3],
+            type: row[4],
+            content: row[5]
           });
         }
       });
     }
 
+    // 4. 治療紀錄 (Treatment)
     const treatSheet = ss.getSheetByName(CONFIG.SHEETS.TREATMENT);
     if (treatSheet) {
       const data = treatSheet.getDataRange().getValues();
       const headers = data[0].map(normalizeHeader);
       let idxId = headers.indexOf(normalizeHeader("個案編號"));
       if (idxId === -1) idxId = 1; 
+      
+      // 依據欄位名稱動態抓取索引 (避免欄位移動導致錯誤)
       const idxDate = headers.indexOf(normalizeHeader("治療日期"));
       const idxStaff = headers.indexOf(normalizeHeader("執行治療師"));
-      const idxContent = headers.indexOf(normalizeHeader("治療內容"));
       const idxItem = headers.indexOf(normalizeHeader("治療項目"));
+      const idxComplaint = headers.indexOf(normalizeHeader("當日主訴"));
+      const idxContent = headers.indexOf(normalizeHeader("治療內容"));
+      const idxNext = headers.indexOf(normalizeHeader("備註/下次治療")); // 需確認您的欄位名稱是否包含斜線或空格
       
       data.slice(1).forEach(row => {
         if (String(row[idxId]).replace(/^'/, '').trim() === targetId) {
-          const itemVal = (idxItem > -1 && row[idxItem]) ? row[idxItem] : "";
           result.push({
             id: 'T-' + formatDateForJSON(row[idxDate]), 
             date: formatDateForJSON(row[idxDate]),
-            category: 'treatment', categoryName: '治療紀錄',
-            title: "物理治療", 
-            subtitle: (itemVal ? itemVal + " | " : "") + "治療師：" + (row[idxStaff] || '--'),
-            detail: row[idxContent], staff: row[idxStaff]
+            category: 'treatment', 
+            categoryName: '治療紀錄',
+            // 詳細欄位
+            staff: row[idxStaff],
+            item: (idxItem > -1) ? row[idxItem] : "",
+            complaint: (idxComplaint > -1) ? row[idxComplaint] : "",
+            content: (idxContent > -1) ? row[idxContent] : "",
+            nextPlan: (idxNext > -1) ? row[idxNext] : "" // 若找不到則留空
           });
         }
       });
     }
 
+    // 排序：新到舊
     return result.sort((a, b) => new Date(b.date) - new Date(a.date));
 
   } catch (e) { throw new Error("取得總覽資料失敗: " + e.message); }
