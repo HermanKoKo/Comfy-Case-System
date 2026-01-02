@@ -27,20 +27,17 @@
   @media print {
     @page {
       size: A4 portrait;
-      /* 問題三修正：將頁面邊界設為 0，這會隱藏瀏覽器預設的頁首頁尾(包含網址) */
-      margin: 0mm; 
+      margin: 0mm; /* 移除瀏覽器預設邊界 (含網址) */
     }
 
-    /* 1. 全域設定與佈局修正 */
+    /* 1. 全域設定 */
     body {
-      /* 問題三配套：因為 @page 設為 0，需在這裡補回內距，避免內容貼邊 */
-      padding: 15mm 15mm !important; 
-      
-      /* 問題一修正：強制改為 block 佈局，取消原本的 flex，避免內容被側邊欄佔位擠到右邊 */
+      padding: 15mm 15mm !important; /* 自定義內距 */
       display: block !important; 
       margin: 0 !important;
       background-color: white !important;
-      font-size: 11px !important; /* 稍微縮小字體以容納更多內容 */
+      font-size: 11px !important;
+      color: #000 !important;
       width: 100% !important;
       height: auto !important;
       overflow: visible !important;
@@ -48,26 +45,27 @@
       print-color-adjust: exact !important;
     }
 
-    /* ★★★ [重要] 強制隱藏所有帶有 hidden class 的元素 ★★★ */
-    /* 這是解決「印出多餘空白頁」的關鍵 */
+    /* ★★★ 解決問題一：強制隱藏所有非當前視圖 ★★★ */
+    /* 確保被隱藏的視圖(hidden)在列印時絕對不佔位、不顯示 */
     .hidden {
         display: none !important;
     }
     
-    /* 隱藏載入動畫 */
-    .animate-spin, .print\:hidden {
+    /* 隱藏載入動畫與空資料佔位符，避免印出「尚無紀錄」的大框框 */
+    .animate-spin, .print\:hidden,
+    .text-center.py-10, .text-center.py-12, .text-center.py-20 {
         display: none !important;
     }
 
-    /* 2. 確保列印專用頁首顯示 */
+    /* 2. 頁首設定 */
     #print-header {
-      display: flex !important; /* 強制顯示 */
+      display: flex !important;
       flex-direction: row !important;
       justify-content: space-between !important;
       align-items: flex-end !important;
       width: 100% !important;
       margin-bottom: 15px !important;
-      border-bottom: 2px solid #000 !important; /* 加深線條 */
+      border-bottom: 2px solid #000 !important;
       padding-bottom: 5px !important;
     }
     #print-patient-info {
@@ -85,7 +83,7 @@
         display: none !important;
     }
 
-    /* 4. 強制重置主要容器寬度 */
+    /* 4. 容器重置 */
     #main-content, #contentArea, 
     #view-basic, #view-images, #view-treatment, 
     #view-maintenance, #view-doctor, #view-tracking, #view-overview {
@@ -98,14 +96,28 @@
       overflow: visible !important;
     }
 
-    /* 5. 美化排版：卡片樣式調整 (問題二修正) */
+    /* ★★★ 解決問題二：簡化卡片樣式 (去除底色、去除裝飾) ★★★ */
+    
+    /* 4.1 去除卡片陰影與圓角，背景透明 */
     .bg-white, .rounded-[2rem], .rounded-[2.5rem], .rounded-2xl, .rounded-xl, .rounded-3xl {
       box-shadow: none !important;
       border-radius: 0 !important;
       background: transparent !important;
     }
-    
-    /* 加強框線顏色，讓列印清楚可見 */
+
+    /* 4.2 去除左側顏色裝飾條 (那些 absolute 的 div) */
+    .absolute.left-0, .absolute.top-0.left-0 {
+        display: none !important;
+    }
+
+    /* 4.3 去除文字框底色 (讓所有背景變白/透明) */
+    .bg-slate-50, .bg-blue-50, .bg-indigo-50, .bg-amber-50, 
+    .bg-emerald-50, .bg-rose-50, .bg-orange-50, .bg-violet-50 {
+        background-color: transparent !important;
+        border: none !important; /* 內部區塊不需要邊框，靠排版 */
+    }
+
+    /* 4.4 外層卡片加強邊框 (黑色實線，像表格一樣清晰) */
     .space-y-3 > div, 
     .space-y-4 > div,
     #historyListContainer > div,
@@ -113,55 +125,49 @@
     #maintenanceHistoryList > div,
     #trackingHistoryList > div,
     #overviewListContainer > div {
-       border: 1px solid #94a3b8 !important; /* 加深邊框顏色 */
+       border: 1px solid #000 !important; /* 改為黑色實線 */
        margin-bottom: 8px !important;
-       padding: 6px !important;
+       padding: 8px !important;
        page-break-inside: avoid;
     }
     
-    /* 縮小標題間距與大小 */
-    h3, h4 { margin-bottom: 2px !important; font-size: 13px !important; color: #000 !important; }
+    /* 文字樣式調整 */
+    h3, h4 { margin-bottom: 2px !important; font-size: 13px !important; color: #000 !important; font-weight: bold !important; }
     p, div, span { line-height: 1.3 !important; color: #000 !important; }
     
-    /* 移除背景色塊，改用框線或純文字 (節省墨水且更清晰) */
-    .bg-slate-50, .bg-blue-50, .bg-indigo-50, .bg-amber-50, .bg-emerald-50, .bg-rose-50, .bg-orange-50 {
+    /* 標籤樣式 (如 S, O, A, P, Type) 改為純文字加框或粗體 */
+    span[class*="bg-"] {
         background-color: transparent !important;
-        border: 0 !important;
+        color: #000 !important;
+        border: 1px solid #ccc !important;
+        padding: 0 4px !important;
     }
 
-    /* 6. SOAP 優化：四欄並排 Grid (加強格線) */
+    /* 5. SOAP Grid 排版優化 (維持四欄) */
     .soap-grid-container,
     .grid.grid-cols-1.md\:grid-cols-2 { 
        display: grid !important;
        grid-template-columns: repeat(4, 1fr) !important; 
-       gap: 0 !important; /* 移除間隙，改用邊框 */
+       gap: 0 !important;
        margin-top: 4px !important;
-       border: 1px solid #64748b !important; /* 外框 */
+       border: 1px solid #000 !important;
     }
     .soap-grid-container > div {
-       border-right: 1px solid #64748b !important; /* 分隔線 */
-       border-bottom: 1px solid #64748b !important; /* 分隔線 */
+       border-right: 1px solid #000 !important;
+       border-bottom: 1px solid #000 !important;
        padding: 4px !important;
        grid-column: span 1 !important;
-       background-color: transparent !important;
     }
-    /* 處理最後一個格子的邊框 */
-    .soap-grid-container > div:nth-child(4n) {
-       border-right: none !important;
-    }
-    
-    /* 備註與護理紀錄跨欄 */
+    .soap-grid-container > div:nth-child(4n) { border-right: none !important; }
     .soap-grid-container > div:nth-last-child(1),
     .soap-grid-container > div:nth-last-child(2) {
        grid-column: span 4 !important;
        border-right: none !important;
-       border-bottom: 1px solid #64748b !important;
+       border-bottom: 1px solid #000 !important;
     }
-    .soap-grid-container > div:last-child {
-       border-bottom: none !important;
-    }
+    .soap-grid-container > div:last-child { border-bottom: none !important; }
 
-    /* 7. 保養項目：橫向排列 */
+    /* 6. 保養項目橫向排列 */
     #maintenanceHistoryList > div .grid {
        display: flex !important;
        flex-wrap: wrap !important;
@@ -170,10 +176,10 @@
     #maintenanceHistoryList > div .grid > div {
        width: auto !important;
        min-width: 60px;
-       border: none !important; /* 內部數值不需要框線 */
+       border: none !important;
     }
     
-    /* 8. 輸入框與文字顯示優化 */
+    /* 7. 輸入框與文字顯示優化 */
     input, textarea, select {
       border: none !important;
       background: transparent !important;
