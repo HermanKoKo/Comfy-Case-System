@@ -97,7 +97,6 @@ function searchClient(keyword) {
       const phone = String(row[4]).replace(/^'/, '').trim().toLowerCase();
       
       // 注意：搜尋結果的物件映射可能需要根據 Index.html 的需求調整
-      // 這裡維持您原本的邏輯，但請注意資料夾連結是在 row[9]
       if (id.includes(query) || name.includes(query) || phone.includes(query)) {
         results.push({
           '個案編號': row[0], '姓名': row[1], '生日': row[2], '身分證字號': row[3],
@@ -158,7 +157,9 @@ function saveData(sheetName, dataObj) {
     return { success: true, message: "資料已新增" };
     
   } catch (e) { throw new Error(e.message); } finally { lock.releaseLock(); }
-}/**
+}
+
+/**
  * 取得系統人員與項目清單
  */
 function getSystemStaff() {
@@ -174,6 +175,7 @@ function getSystemStaff() {
     trackingTypes: rows.map(r => r[3]).filter(String),
     maintItems: rows.map(r => r[4]).filter(String),
     allStaff: rows.map(r => r[5]).filter(String),
+    // ★ 這裡是問題二的關鍵：從 G 欄 (Index 6) 取得治療項目
     treatmentItems: rows.map(r => r[6]).filter(String)
   };
 }
@@ -436,15 +438,14 @@ function saveMaintenanceRecord(data) {
     sheet.appendRow(newRow);
     return { success: true, message: "保養紀錄儲存成功！" };
   } catch (e) { return { success: false, message: "儲存失敗：" + e.toString() }; }
-}/**
+}
+
+/**
  * 取得個案總覽資料 (已修改：支援跨資料庫聚合)
  */
 function getCaseOverviewData(clientId) {
   try {
     if (!clientId) return [];
-    
-    // 注意：原本這裡是開啟一個 ss，現在改為分別取得各個 Sheet
-    // 因為這些 Sheet 可能分佈在不同的檔案中 (雖然目前只有 Client 在外部，但這樣寫最具擴充性)
     
     const result = [];
     const targetId = String(clientId).trim();

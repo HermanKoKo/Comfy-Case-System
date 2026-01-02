@@ -190,9 +190,10 @@
       color: #000 !important;
       -webkit-appearance: none !important;
     }
+  }/* 結束 @media print */
   }
 
-  /* === Flatpickr 日曆優化 (維持原樣) === */
+  /* === Flatpickr 日曆優化 (修復裁切問題重點) === */
   .flatpickr-calendar {
     font-family: 'Noto Sans TC', sans-serif !important;
     border: none !important;
@@ -200,8 +201,14 @@
     box-shadow: 0 20px 25px -5px rgb(0 0 0 / 0.1), 0 8px 10px -6px rgb(0 0 0 / 0.1) !important;
     padding: 16px !important;
     background: #fff !important;
+    
+    /* ★★★ 關鍵修復：強制將月曆層級設為最高，並確保絕對定位 ★★★ */
+    z-index: 99999 !important;
+    position: absolute !important;
   }
+
   .flatpickr-months { display: none !important; }
+  
   .flatpickr-day {
     border-radius: 12px !important;
     border: 1px solid transparent !important;
