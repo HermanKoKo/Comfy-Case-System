@@ -128,6 +128,59 @@ function navTo(viewName) {
   }
 }
 
+// === ★★★ [MODIFIED] 列印功能與右上角姓名修正 ★★★ ===
+function handlePrint() {
+  // 1. 設定日期
+  const today = new Date();
+  const dateStr = today.getFullYear() + "-" + 
+                  String(today.getMonth() + 1).padStart(2, '0') + "-" + 
+                  String(today.getDate()).padStart(2, '0');
+  
+  const dateEl = document.getElementById('print-date-display');
+  if(dateEl) dateEl.innerText = dateStr;
+
+  // 2. 設定個案資訊 (右上角姓名)
+  const infoEl = document.getElementById('print-patient-info');
+  if (infoEl) {
+      if (currentClient) {
+         // ★★★ 修改處：移除個案編號，只保留 姓名 - 生日 ★★★
+         infoEl.innerText = `${currentClient['姓名']} - ${currentClient['生日']}`;
+      } else {
+         infoEl.innerText = "個案列表";
+      }
+  }
+
+  // 3. 呼叫列印 (請在瀏覽器列印視窗中，取消勾選「頁首及頁尾」以移除網址)
+  window.print();
+}
+
+// === 基本資料渲染 ===
+function renderBasicInfo() {
+  if(!currentClient) return;
+  const fieldMap = {
+    'display-client-id': '個案編號',
+    'display-name': '姓名',
+    'display-gender': '性別',
+    'display-birthday': '生日',
+    'display-id-number': '身分證字號',
+    'display-phone': '電話',
+    'display-emergency-name': '緊急聯絡人',
+    'display-emergency-phone': '緊急聯絡電話',
+    'display-notes': '病史備註'
+  };
+  
+  for (const [domId, dbKey] of Object.entries(fieldMap)) {
+    const el = document.getElementById(domId);
+    if(el) {
+       if(domId === 'display-notes' && (!currentClient[dbKey] || currentClient[dbKey] === '')) continue;
+       el.textContent = currentClient[dbKey] || '--';
+    }
+  }
+  
+  const statusEl = document.getElementById('display-status');
+  if(statusEl && currentClient['狀態']) statusEl.textContent = currentClient['狀態'];
+}
+
 // === 搜尋與個案選取 ===
 function handleSearch() {
   const inputEl = document.getElementById('searchInput');
@@ -176,6 +229,7 @@ function submitForm(type) {
       objective: document.querySelector('#view-doctor textarea[name="客觀檢查"]').value, 
       diagnosis: document.querySelector('#view-doctor textarea[name="診斷"]').value, 
       plan: document.querySelector('#view-doctor textarea[name="治療計畫"]').value, 
+      nursing: document.getElementById('nursingRecord').value, 
       remark: document.getElementById('doctorRemark').value 
     };
     if (!d.date || !d.doctor) { alert("請填寫日期與醫師"); if(btn){btn.disabled=false; btn.innerHTML=ot;} return; }
@@ -274,23 +328,15 @@ function loadMaintenanceHistory() {
   const c = document.getElementById('maintenanceHistoryList'); c.innerHTML = '<div class="text-center py-10 text-slate-400">紀錄載入中...</div>';
   google.script.run.withSuccessHandler(logs => {
     if(!logs || !logs.length) { c.innerHTML = '<div class="bg-white/50 border-2 border-dashed border-slate-200 rounded-[2.5rem] p-12 text-center text-slate-300">尚無歷史紀錄</div>'; return; }
-    
-    // ★★★ 修改：垂直層次排版 ★★★
     c.innerHTML = logs.map(l => `
       <div class="bg-white p-6 rounded-[2rem] shadow-sm border border-slate-100 card-hover mb-4 flex flex-col md:flex-row gap-4 items-center">
-        <!-- 左側資訊欄 (修改處) -->
         <div class="w-full md:w-auto flex flex-col gap-1 border-b md:border-b-0 md:border-r border-slate-100 pb-4 md:pb-0 md:pr-6 min-w-[140px]">
-          <!-- 1. 日期 -->
           <div class="text-sm font-mono text-slate-500 tracking-tight">${l['保養日期']||'--'}</div>
-          <!-- 2. 項目 -->
           <span class="px-2.5 py-1 bg-orange-50 text-orange-600 text-[11px] font-bold rounded-lg w-fit mt-1">${l['保養項目']||'一般'}</span>
-          <!-- 3. 人員 -->
           <div class="text-xs font-bold text-slate-400 flex items-center gap-1 mt-2">
              <span class="material-icons-outlined text-sm text-slate-400">person</span>${l['執行人員']||'--'}
           </div>
         </div>
-        
-        <!-- 右側生理數值 (保持不變) -->
         <div class="w-full grid grid-cols-4 gap-2 text-center">
           <div class="p-2 rounded-xl bg-slate-50"><div class="text-[9px] font-bold text-slate-400 mb-1">BP</div><div class="text-sm font-black text-slate-700">${l['血壓']||'-'}</div></div>
           <div class="p-2 rounded-xl bg-slate-50"><div class="text-[9px] font-bold text-slate-400 mb-1">SpO2</div><div class="text-sm font-black text-slate-700">${l['血氧']||'-'}</div></div>
@@ -301,10 +347,12 @@ function loadMaintenanceHistory() {
   }).getMaintenanceHistory(currentClient['個案編號']);
 }
 
+// === 醫師看診紀錄 ===
 function loadDoctorHistory() {
   const c = document.getElementById('doctorHistoryList'); c.innerHTML = '<div class="text-center py-10 text-slate-400">讀取中...</div>';
   google.script.run.withSuccessHandler(logs => {
     if(!logs || !logs.length) { c.innerHTML = '<div class="py-12 text-center text-slate-300 bg-white rounded-[2rem] border border-slate-100">尚無看診紀錄</div>'; return; }
+    
     c.innerHTML = logs.map(l => `
       <div class="bg-white border border-slate-100 rounded-[2.5rem] p-8 shadow-sm mb-6 card-hover relative overflow-hidden">
         <div class="flex justify-between items-center mb-6 pb-4 border-b border-slate-50">
@@ -318,13 +366,36 @@ function loadDoctorHistory() {
             </div>
           </div>
         </div>
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-6 text-sm">
-          <div class="bg-blue-50/40 p-5 rounded-[1.5rem] border border-blue-50/50"><div class="flex items-center gap-2 mb-2 text-blue-600 font-black"><span class="w-6 h-6 rounded-full bg-blue-100 flex items-center justify-center text-xs">S</span> 主訴</div><div class="text-slate-600 leading-relaxed">${l['S_主訴']||'--'}</div></div>
-          <div class="bg-indigo-50/40 p-5 rounded-[1.5rem] border border-indigo-50/50"><div class="flex items-center gap-2 mb-2 text-indigo-600 font-black"><span class="w-6 h-6 rounded-full bg-indigo-100 flex items-center justify-center text-xs">O</span> 檢查</div><div class="text-slate-600 leading-relaxed">${l['O_客觀檢查']||'--'}</div></div>
-          <div class="bg-amber-50/40 p-5 rounded-[1.5rem] border border-amber-50/50"><div class="flex items-center gap-2 mb-2 text-amber-600 font-black"><span class="w-6 h-6 rounded-full bg-amber-100 flex items-center justify-center text-xs">A</span> 診斷</div><div class="text-slate-600 leading-relaxed">${l['A_診斷']||'--'}</div></div>
-          <div class="bg-emerald-50/40 p-5 rounded-[1.5rem] border border-emerald-50/50"><div class="flex items-center gap-2 mb-2 text-emerald-600 font-black"><span class="w-6 h-6 rounded-full bg-emerald-100 flex items-center justify-center text-xs">P</span> 計畫</div><div class="text-slate-600 leading-relaxed">${l['P_治療計劃']||'--'}</div></div>
+        
+        <div class="soap-grid-container grid grid-cols-1 md:grid-cols-2 gap-6 text-sm">
+          <div class="bg-blue-50/40 p-5 rounded-[1.5rem] border border-blue-50/50">
+             <div class="flex items-center gap-2 mb-2 text-blue-600 font-black"><span class="w-6 h-6 rounded-full bg-blue-100 flex items-center justify-center text-xs">S</span> 主訴</div>
+             <div class="text-slate-600 leading-relaxed">${l['S_主訴']||'--'}</div>
+          </div>
+          <div class="bg-indigo-50/40 p-5 rounded-[1.5rem] border border-indigo-50/50">
+             <div class="flex items-center gap-2 mb-2 text-indigo-600 font-black"><span class="w-6 h-6 rounded-full bg-indigo-100 flex items-center justify-center text-xs">O</span> 檢查</div>
+             <div class="text-slate-600 leading-relaxed">${l['O_客觀檢查']||'--'}</div>
+          </div>
+          <div class="bg-amber-50/40 p-5 rounded-[1.5rem] border border-amber-50/50">
+             <div class="flex items-center gap-2 mb-2 text-amber-600 font-black"><span class="w-6 h-6 rounded-full bg-amber-100 flex items-center justify-center text-xs">A</span> 診斷</div>
+             <div class="text-slate-600 leading-relaxed">${l['A_診斷']||'--'}</div>
+          </div>
+          <div class="bg-emerald-50/40 p-5 rounded-[1.5rem] border border-emerald-50/50">
+             <div class="flex items-center gap-2 mb-2 text-emerald-600 font-black"><span class="w-6 h-6 rounded-full bg-emerald-100 flex items-center justify-center text-xs">P</span> 計畫</div>
+             <div class="text-slate-600 leading-relaxed">${l['P_治療計劃']||'--'}</div>
+          </div>
+          
+          ${l['護理紀錄'] && l['護理紀錄']!=='--' ? `
+          <div class="md:col-span-2 bg-rose-50/40 p-5 rounded-[1.5rem] border border-rose-50/50">
+              <div class="flex items-center gap-2 mb-2 text-rose-600 font-black"><span class="w-6 h-6 rounded-full bg-rose-100 flex items-center justify-center text-xs">N</span> 護理紀錄</div>
+              <div class="text-slate-600 leading-relaxed">${l['護理紀錄']}</div>
+          </div>` : ''}
+
+          ${l['備註'] && l['備註']!=='--' ? `
+          <div class="md:col-span-2 bg-slate-50 p-4 rounded-2xl text-xs text-slate-500 border border-slate-100 flex gap-2">
+              <span class="font-bold shrink-0">Note:</span>${l['備註']}
+          </div>` : ''}
         </div>
-        ${l['備註']&&l['備註']!=='--'?`<div class="mt-6 bg-slate-50 p-4 rounded-2xl text-xs text-slate-500 border border-slate-100 flex gap-2"><span class="font-bold shrink-0">Note:</span>${l['備註']}</div>`:''}
       </div>`).join('');
   }).getClientHistory(currentClient['個案編號'], 'Doctor_Consultation');
 }
@@ -455,7 +526,7 @@ function exportOverviewToCSV() {
   const b = new Blob(["\uFEFF日期,類別,標題,內容,人員\n" + r.join("\n")], { type: "text/csv;charset=utf-8;" });
   const a = document.createElement("a"); a.href = URL.createObjectURL(b); a.download = `${currentClient['姓名']}_歷程.csv`; document.body.appendChild(a); a.click(); document.body.removeChild(a);
 }
-function printOverviewReport() { window.print(); }
+function printOverviewReport() { handlePrint(); } // 修改為呼叫新的 handlePrint
 function resetSearch() { currentClient = null; document.getElementById('topBarClientInfo').classList.add('hidden'); navTo('search'); }
 function closeModal(id) { document.getElementById(id).classList.add('hidden'); }
 function openModal(id) { document.getElementById(id).classList.remove('hidden'); }

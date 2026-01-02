@@ -37,6 +37,21 @@
 </head>
 <body class="bg-[#f8fafc] font-sans text-slate-900 antialiased h-screen overflow-hidden flex">
 
+  <!-- ★★★ [MODIFIED] 列印專用頁首 ★★★ -->
+  <!-- 修改：移除了下方的 "Case Management System" 文字 -->
+  <div id="print-header" class="hidden print:flex flex-row justify-between items-end border-b-2 border-slate-800 pb-2 mb-4 w-full bg-white">
+    <div class="text-xs">
+      <span class="font-bold text-slate-600">列印日期：</span>
+      <span id="print-date-display" class="font-mono"></span>
+    </div>
+    <div class="text-xl font-black text-center tracking-widest text-slate-800">
+      康飛運醫 | 個案紀錄
+    </div>
+    <div class="text-xs text-right">
+      <div id="print-patient-info" class="font-bold text-lg text-emerald-700"></div>
+    </div>
+  </div>
+
   <!-- Sidebar (列印時隱藏) -->
   <aside id="sidebar" class="w-64 bg-[#1e293b] text-white flex flex-col flex-shrink-0 z-20 shadow-xl no-print">
     <div class="p-5">
@@ -65,23 +80,20 @@
   </aside>
 
   <!-- Main -->
-  <main id="main-content" class="flex-1 flex flex-col h-screen overflow-hidden">
+  <main id="main-content" class="flex-1 flex flex-col h-screen overflow-hidden print:h-auto print:overflow-visible">
     <header class="bg-white border-b border-slate-200 px-6 py-3 flex justify-between items-center flex-shrink-0 shadow-sm z-10 no-print">
       <h2 id="pageTitle" class="text-lg font-bold text-slate-800">首頁</h2>
       
-      <!-- === [MODIFIED START] 優化右上角姓名/生日排版 === -->
       <div id="topBarClientInfo" class="hidden flex items-center gap-2 bg-slate-50 pl-4 pr-1 py-1 rounded-full border border-slate-100 shadow-sm">
         <span id="headerClientName" class="font-bold text-emerald-600 text-sm">--</span>
         <span id="headerClientDob" class="text-xs text-slate-500 font-mono bg-white px-3 py-1 rounded-full shadow-sm">--</span>
       </div>
-      <!-- === [MODIFIED END] === -->
-
     </header>
 
-    <div id="contentArea" class="flex-1 overflow-y-auto p-5 custom-scrollbar">
+    <div id="contentArea" class="flex-1 overflow-y-auto p-5 custom-scrollbar print:p-0 print:overflow-visible">
       
-      <!-- 搜尋頁面 -->
-      <div id="view-search" class="max-w-md mx-auto flex flex-col items-center justify-center min-h-[70vh] space-y-6">
+      <!-- 搜尋頁面 (列印時隱藏) -->
+      <div id="view-search" class="max-w-md mx-auto flex flex-col items-center justify-center min-h-[70vh] space-y-6 no-print">
         <div class="text-center space-y-3">
           <h3 class="text-3xl font-black text-slate-800 tracking-tight">歡迎使用<br>康飛個案系統</h3>
           <p class="text-slate-500">請先搜尋個案以開始作業，或點擊左下角新增個案。</p>
@@ -111,51 +123,51 @@
           </button>
         </div>
 
-        <div class="bg-white rounded-[2rem] shadow-sm border border-slate-100 overflow-hidden">
-          <div class="grid grid-cols-1 md:grid-cols-3">
-            <div class="p-5 border-b md:border-b-0 md:border-r border-slate-50">
+        <div class="bg-white rounded-[2rem] shadow-sm border border-slate-100 overflow-hidden print:border-0 print:shadow-none print:rounded-none">
+          <div class="grid grid-cols-1 md:grid-cols-3 print:grid-cols-3">
+            <div class="p-5 border-b md:border-b-0 md:border-r border-slate-50 print:p-2 print:border-slate-200">
               <label class="block text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">個案編號</label>
-              <div id="display-client-id" class="text-xl font-black text-slate-800">--</div>
+              <div id="display-client-id" class="text-xl font-black text-slate-800 print:text-base">--</div>
             </div>
-            <div class="p-5 border-b md:border-b-0 md:border-r border-slate-50">
+            <div class="p-5 border-b md:border-b-0 md:border-r border-slate-50 print:p-2 print:border-slate-200">
               <label class="block text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">姓名</label>
-              <div id="display-name" class="text-xl font-black text-emerald-600">--</div>
+              <div id="display-name" class="text-xl font-black text-emerald-600 print:text-base">--</div>
             </div>
-            <div class="p-5">
+            <div class="p-5 print:p-2">
               <label class="block text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">性別</label>
-              <div id="display-gender" class="text-xl font-black text-slate-800">--</div>
+              <div id="display-gender" class="text-xl font-black text-slate-800 print:text-base">--</div>
             </div>
           </div>
           
-          <div class="grid grid-cols-1 md:grid-cols-3 border-t border-slate-50">
-            <div class="p-5 border-b md:border-b-0 md:border-r border-slate-50">
+          <div class="grid grid-cols-1 md:grid-cols-3 border-t border-slate-50 print:grid-cols-3 print:border-slate-200">
+            <div class="p-5 border-b md:border-b-0 md:border-r border-slate-50 print:p-2 print:border-slate-200">
               <label class="block text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">出生日期</label>
-              <div id="display-birthday" class="text-lg font-bold text-slate-700">--</div>
+              <div id="display-birthday" class="text-lg font-bold text-slate-700 print:text-sm">--</div>
             </div>
-            <div class="p-5 border-b md:border-b-0 md:border-r border-slate-50">
+            <div class="p-5 border-b md:border-b-0 md:border-r border-slate-50 print:p-2 print:border-slate-200">
               <label class="block text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">身分證字號</label>
-              <div id="display-id-number" class="text-lg font-bold text-slate-700">--</div>
+              <div id="display-id-number" class="text-lg font-bold text-slate-700 print:text-sm">--</div>
             </div>
-            <div class="p-5">
+            <div class="p-5 print:p-2">
               <label class="block text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">聯絡電話</label>
-              <div id="display-phone" class="text-lg font-bold text-emerald-600">--</div>
+              <div id="display-phone" class="text-lg font-bold text-emerald-600 print:text-sm">--</div>
             </div>
           </div>
 
-          <div class="grid grid-cols-1 md:grid-cols-2 border-t border-slate-50">
-            <div class="p-5 border-b md:border-b-0 md:border-r border-slate-50">
+          <div class="grid grid-cols-1 md:grid-cols-2 border-t border-slate-50 print:grid-cols-2 print:border-slate-200">
+            <div class="p-5 border-b md:border-b-0 md:border-r border-slate-50 print:p-2 print:border-slate-200">
               <label class="block text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">緊急聯絡人</label>
-              <div id="display-emergency-name" class="text-lg font-bold text-slate-700">--</div>
+              <div id="display-emergency-name" class="text-lg font-bold text-slate-700 print:text-sm">--</div>
             </div>
-            <div class="p-5">
+            <div class="p-5 print:p-2">
               <label class="block text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">緊急聯絡人電話</label>
-              <div id="display-emergency-phone" class="text-lg font-bold text-slate-700">--</div>
+              <div id="display-emergency-phone" class="text-lg font-bold text-slate-700 print:text-sm">--</div>
             </div>
           </div>
 
-          <div class="p-5 border-t border-slate-50 bg-slate-50/30">
+          <div class="p-5 border-t border-slate-50 bg-slate-50/30 print:bg-white print:p-2 print:border-slate-200">
             <label class="block text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-2">個案備註 / 病史說明</label>
-            <div id="display-notes" class="text-slate-600 leading-relaxed min-h-[80px]">尚無備註紀錄。</div>
+            <div id="display-notes" class="text-slate-600 leading-relaxed min-h-[80px] print:min-h-0 print:text-xs">尚無備註紀錄。</div>
           </div>
         </div>
       </div>
@@ -180,7 +192,8 @@
         </div>
 
         <div id="imageGalleryContainer" class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 min-h-[400px]">
-           <div class="col-span-full flex flex-col items-center justify-center py-20 text-slate-300">
+           <!-- 加上 print:hidden 避免列印出載入畫面 -->
+           <div class="col-span-full flex flex-col items-center justify-center py-20 text-slate-300 print:hidden">
               <span class="material-icons-outlined text-4xl animate-spin mb-3">sync</span>
               <p>讀取影像中...</p>
            </div>
@@ -224,11 +237,11 @@
                </div>
             </div>
             
-            <!-- 右側：新增表單 -->
+            <!-- 右側：新增表單 (列印時隱藏) -->
             <div class="lg:col-span-2">
                <form id="treatmentForm" class="bg-white p-4 rounded-[2.5rem] shadow-sm border-t-4 border-emerald-500 border-x border-b border-slate-100 h-full flex flex-col gap-2">
-                 
-                 <!-- 表單標題 -->
+                 <!-- 表單內容省略，因為已加上 no-print class 在外層容器 -->
+                 <!-- ... (表單內容保持不變) ... -->
                  <div class="flex items-center justify-between">
                    <h3 class="font-black text-slate-800 text-lg flex items-center gap-2">
                      <span class="material-icons-outlined text-2xl text-emerald-500">add_circle</span> 新增治療紀錄
@@ -242,13 +255,10 @@
                  <input type="hidden" name="個案編號" class="auto-fill-id">
                  
                  <div class="grid grid-cols-1 md:grid-cols-3 gap-2">
-                    <!-- 1. 治療日期 -->
                     <div class="flex items-center gap-2">
                       <label class="text-xs font-bold text-slate-400 shrink-0">治療日期</label>
                       <input type="date" id="treatmentDate" required class="w-full px-3 py-2.5 bg-slate-50 border border-slate-100 rounded-2xl outline-none focus:border-emerald-500 transition-all cursor-pointer font-bold text-slate-700 text-sm">
                     </div>
-                    
-                    <!-- 2. 治療師 -->
                     <div class="flex items-center gap-2">
                       <label class="text-xs font-bold text-slate-400 shrink-0">治療師</label>
                       <div class="relative w-full">
@@ -258,8 +268,6 @@
                         <span class="material-icons-outlined absolute right-2 top-3 text-slate-400 pointer-events-none text-sm">expand_more</span>
                       </div>
                     </div>
-
-                    <!-- 3. 治療項目 -->
                     <div class="flex items-center gap-2">
                       <label class="text-xs font-bold text-slate-400 shrink-0">治療項目</label>
                       <div class="relative w-full">
@@ -270,45 +278,39 @@
                       </div>
                     </div>
                  </div>
-
-                 <!-- 當日主訴 -->
                  <div class="space-y-1">
                    <label class="text-xs font-bold text-slate-400 ml-1">當日主訴</label>
                    <textarea id="inputComplaint" class="w-full px-5 py-2.5 bg-slate-50 border border-slate-100 rounded-2xl outline-none focus:border-emerald-500 transition-all h-14 resize-none"></textarea>
                  </div>
-
-                 <!-- 治療內容 -->
                  <div class="space-y-1 flex-1 flex flex-col">
                    <label class="text-xs font-bold text-slate-400 ml-1">治療內容</label>
                    <textarea id="inputContent" required class="w-full px-5 py-2.5 bg-slate-50 border border-slate-100 rounded-2xl outline-none focus:border-emerald-500 transition-all h-full resize-none"></textarea>
                  </div>
-                 
-                 <!-- 備註 / 下次治療 -->
                  <div class="space-y-1">
                    <label class="text-xs font-bold text-slate-400 ml-1">備註 / 下次治療</label>
                    <textarea id="inputNextPlan" class="w-full px-5 py-2.5 bg-slate-50 border border-slate-100 rounded-2xl outline-none focus:border-emerald-500 transition-all h-14 resize-none"></textarea>
                  </div>
-                 
                  <button type="button" onclick="submitForm('treatment')" class="w-full bg-emerald-500 hover:bg-emerald-600 text-white font-black py-3 rounded-2xl shadow-lg shadow-emerald-500/20 transition-all active:scale-[0.98]">
                    儲存治療紀錄
                  </button>
                </form>
             </div>
          </div>
-         <div class="pt-2 border-t border-slate-100">
-             <div class="flex items-center gap-3 mb-4">
+         <div class="pt-2 border-t border-slate-100 print:border-0 print:pt-0">
+             <div class="flex items-center gap-3 mb-4 print:mb-2">
                <div class="flex items-center gap-2">
-                  <span class="w-1.5 h-6 bg-emerald-500 rounded-full"></span>
+                  <span class="w-1.5 h-6 bg-emerald-500 rounded-full print:hidden"></span>
                   <h4 class="font-black text-slate-800 text-lg">歷史治療清單</h4>
                </div>
-               <span id="treatmentHistoryCount" class="text-xs font-bold bg-emerald-100 text-emerald-600 px-2 py-1 rounded-lg">共 0 次</span>
+               <span id="treatmentHistoryCount" class="text-xs font-bold bg-emerald-100 text-emerald-600 px-2 py-1 rounded-lg print:border print:border-slate-200">共 0 次</span>
              </div>
-             <div id="historyListContainer" class="space-y-3 min-h-[200px]"></div>
+             <div id="historyListContainer" class="space-y-3 min-h-[200px] print:space-y-4"></div>
          </div>
       </div>
 
       <!-- 保養項目視圖 -->
       <div id="view-maintenance" class="hidden max-w-5xl mx-auto space-y-4">
+        <!-- 加上 no-print 隱藏輸入表單 -->
         <div class="bg-white rounded-[2.5rem] shadow-sm border border-slate-100 overflow-hidden no-print">
           <div class="px-6 py-4 border-b border-slate-50 flex items-center gap-3">
              <div class="p-2.5 bg-orange-50 rounded-2xl text-orange-500">
@@ -319,6 +321,7 @@
              <h3 class="font-black text-slate-800 text-lg">新增保養紀錄</h3>
           </div>
           <form id="maintenanceForm" class="p-5 space-y-3">
+             <!-- ... 表單內容保持不變 ... -->
             <input type="hidden" name="個案編號" class="auto-fill-id">
             <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
               <div class="space-y-1">
@@ -370,17 +373,20 @@
             </div>
           </form>
         </div>
-        <div class="space-y-3 pt-2">
+        <div class="space-y-3 pt-2 print:pt-0">
           <h4 class="font-black text-slate-800 flex items-center gap-2">
-            <span class="w-1.5 h-5 bg-orange-500 rounded-full"></span> 歷史保養紀錄
+            <span class="w-1.5 h-5 bg-orange-500 rounded-full print:hidden"></span> 歷史保養紀錄
           </h4>
-          <div id="maintenanceHistoryList" class="space-y-3 min-h-[100px]">
-            <div class="bg-white/50 border-2 border-dashed border-slate-200 rounded-[2.5rem] p-12 text-center text-slate-300">
+          <div id="maintenanceHistoryList" class="space-y-3 min-h-[100px] print:space-y-2">
+            <!-- 加上 print:hidden 避免列印出無紀錄的佔位符 -->
+            <div class="bg-white/50 border-2 border-dashed border-slate-200 rounded-[2.5rem] p-12 text-center text-slate-300 print:hidden">
               尚無歷史紀錄
             </div>
           </div>
         </div>
-      </div><!-- 個管追蹤視圖 -->
+      </div>
+      
+      <!-- 個管追蹤視圖 -->
       <div id="view-tracking" class="hidden max-w-6xl mx-auto space-y-4">
         <div class="flex justify-between items-center mb-2 no-print">
           <h3 class="text-2xl font-bold text-violet-700 flex items-center gap-3">
@@ -389,9 +395,11 @@
           </h3>
         </div>
         <div class="grid grid-cols-1 lg:grid-cols-3 gap-4">
+          <!-- 加上 no-print 隱藏新增表單 -->
           <div class="lg:col-span-1 bg-white rounded-[2.5rem] p-5 shadow-sm border border-slate-100 h-fit no-print">
             <h3 class="text-lg font-bold text-violet-600 mb-3 border-b border-violet-50 pb-2">新增紀錄</h3>
             <form id="trackingForm" onsubmit="event.preventDefault(); submitForm('tracking');">
+              <!-- ... 表單內容保持不變 ... -->
               <input type="hidden" name="個案編號" class="auto-fill-id">
               <div class="mb-2 space-y-1">
                 <label class="block text-sm font-bold text-slate-400 ml-1">追蹤日期</label>
@@ -425,18 +433,22 @@
           </div>
           <div class="lg:col-span-2">
             <h3 class="text-lg font-bold text-slate-700 mb-3 ml-2 flex items-center gap-2">
-              <span class="w-1.5 h-5 bg-violet-500 rounded-full"></span> 歷史紀錄
+              <span class="w-1.5 h-5 bg-violet-500 rounded-full print:hidden"></span> 歷史紀錄
             </h3>
-            <div id="trackingHistoryList" class="space-y-3 max-h-[700px] overflow-y-auto pr-2 custom-scrollbar">
-              <div class="text-center text-slate-400 py-10 bg-white/50 border-2 border-dashed border-slate-100 rounded-[2.5rem]">
+            <div id="trackingHistoryList" class="space-y-3 max-h-[700px] overflow-y-auto pr-2 custom-scrollbar print:max-h-none print:overflow-visible">
+              <!-- 加上 print:hidden -->
+              <div class="text-center text-slate-400 py-10 bg-white/50 border-2 border-dashed border-slate-100 rounded-[2.5rem] print:hidden">
                 <span class="material-icons-outlined text-4xl mb-2">history</span>
                 <p>尚無追蹤紀錄</p>
               </div>
             </div>
           </div>
         </div>
-      </div><!-- 醫師看診視圖 (修改區域) -->
+      </div>
+
+      <!-- 醫師看診視圖 -->
       <div id="view-doctor" class="hidden max-w-5xl mx-auto space-y-4">
+        <!-- 加上 no-print 隱藏新增表單 -->
         <div class="bg-white rounded-[2.5rem] shadow-sm border border-slate-100 overflow-hidden no-print">
           <div class="px-6 py-3 bg-slate-50 border-b border-slate-100 flex justify-between items-center">
              <div class="flex items-center gap-3">
@@ -459,14 +471,14 @@
               <div><label class="text-sm font-bold text-slate-400 block mb-1">護理師</label><select id="selectNurse" class="w-full px-4 py-2 bg-slate-50 border border-slate-100 rounded-2xl focus:border-emerald-500 outline-none transition-all"></select></div>
             </div>
             
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+            <!-- ★★★ [MODIFIED] 加上 soap-grid-container 供 CSS 識別 ★★★ -->
+            <div class="soap-grid-container grid grid-cols-1 md:grid-cols-2 gap-3">
               <!-- SOAP 區塊 -->
               <div class="space-y-1"><div class="flex items-center gap-2"><span class="bg-blue-100 text-blue-600 text-[10px] font-bold px-2 py-0.5 rounded">S</span><label class="text-sm font-bold">主訴</label></div><textarea name="主訴" rows="3" class="w-full px-4 py-2 bg-slate-50 border border-slate-100 rounded-2xl focus:border-emerald-500 outline-none transition-all resize-none"></textarea></div>
               <div class="space-y-1"><div class="flex items-center gap-2"><span class="bg-indigo-100 text-indigo-600 text-[10px] font-bold px-2 py-0.5 rounded">O</span><label class="text-sm font-bold">客觀檢查</label></div><textarea name="客觀檢查" rows="3" class="w-full px-4 py-2 bg-slate-50 border border-slate-100 rounded-2xl focus:border-emerald-500 outline-none transition-all resize-none"></textarea></div>
               <div class="space-y-1"><div class="flex items-center gap-2"><span class="bg-amber-100 text-amber-600 text-[10px] font-bold px-2 py-0.5 rounded">A</span><label class="text-sm font-bold">診斷</label></div><textarea name="診斷" rows="3" class="w-full px-4 py-2 bg-slate-50 border border-slate-100 rounded-2xl focus:border-emerald-500 outline-none transition-all resize-none"></textarea></div>
               <div class="space-y-1"><div class="flex items-center gap-2"><span class="bg-emerald-100 text-emerald-600 text-[10px] font-bold px-2 py-0.5 rounded">P</span><label class="text-sm font-bold">治療計畫</label></div><textarea name="治療計畫" rows="3" class="w-full px-4 py-2 bg-slate-50 border border-slate-100 rounded-2xl focus:border-emerald-500 outline-none transition-all resize-none"></textarea></div>
               
-              <!-- ★★★ 新增：護理紀錄 (插入在 SOAP 之後，備註之前) ★★★ -->
               <div class="md:col-span-2 space-y-1">
                   <div class="flex items-center gap-2">
                       <span class="bg-rose-100 text-rose-600 text-[10px] font-bold px-2 py-0.5 rounded">Nursing</span>
@@ -475,7 +487,6 @@
                   <textarea id="nursingRecord" rows="2" class="w-full px-4 py-2 bg-slate-50 border border-slate-100 rounded-2xl focus:border-emerald-500 outline-none transition-all resize-none"></textarea>
               </div>
 
-              <!-- 備註 -->
               <div class="md:col-span-2 space-y-1">
                   <div class="flex items-center gap-2">
                       <span class="bg-slate-100 text-slate-600 text-[10px] font-bold px-2 py-0.5 rounded">Note</span>
@@ -495,6 +506,7 @@
 
       <!-- 個案總覽 -->
       <div id="view-overview" class="hidden max-w-6xl mx-auto space-y-4">
+        <!-- 加上 no-print 隱藏篩選器 -->
         <div class="bg-white rounded-[2.5rem] shadow-sm border border-slate-100 p-5 no-print">
            <div class="flex justify-between items-center mb-4 border-b border-slate-50 pb-3">
               <div>
@@ -508,7 +520,8 @@
                  <button onclick="exportOverviewToCSV()" class="flex items-center px-4 py-2 text-sm font-bold text-white bg-green-600 rounded-xl hover:bg-green-700 shadow-sm transition active:scale-95">
                     <span class="material-icons-outlined text-[18px] mr-1">file_download</span> 匯出 Excel
                  </button>
-                 <button onclick="printOverviewReport()" class="flex items-center px-4 py-2 text-sm font-bold text-slate-600 bg-white border border-slate-200 rounded-xl hover:bg-slate-50 shadow-sm transition active:scale-95">
+                 <!-- 修改列印按鈕，綁定 handlePrint() -->
+                 <button onclick="handlePrint()" class="flex items-center px-4 py-2 text-sm font-bold text-slate-600 bg-white border border-slate-200 rounded-xl hover:bg-slate-50 shadow-sm transition active:scale-95">
                     <span class="material-icons-outlined text-[18px] mr-1">print</span> 列印 / PDF
                  </button>
               </div>
@@ -536,7 +549,8 @@
            </div>
         </div>
         <div id="overviewListContainer" class="min-h-[300px] space-y-4">
-           <div class="flex flex-col items-center justify-center py-20 bg-white rounded-[2.5rem] border-2 border-dashed border-slate-100">
+           <!-- 加上 print:hidden -->
+           <div class="flex flex-col items-center justify-center py-20 bg-white rounded-[2.5rem] border-2 border-dashed border-slate-100 print:hidden">
               <div class="w-16 h-16 bg-slate-50 rounded-full flex items-center justify-center mb-4">
                  <span class="material-icons-outlined text-3xl text-slate-300">manage_search</span>
               </div>
@@ -547,7 +561,7 @@
     </div>
   </main>
 
-  <!-- Modal: 新增個案 -->
+  <!-- Modal: 新增個案 (已加上 no-print) -->
   <div id="addClientModal" class="hidden fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 no-print">
      <div class="bg-white w-full max-w-3xl rounded-[2.5rem] overflow-hidden shadow-2xl">
         <div class="px-6 py-4 border-b border-slate-100 flex justify-between items-center bg-white sticky top-0 z-10">
@@ -555,6 +569,7 @@
            <button onclick="closeModal('addClientModal')" class="text-slate-300 hover:text-slate-500 transition text-3xl leading-none">&times;</button>
         </div>
         <form id="addClientForm" class="p-6 space-y-4 max-h-[80vh] overflow-y-auto custom-scrollbar">
+           <!-- 表單內容保持不變 -->
            <div class="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-4">
               <div class="flex items-center gap-3">
                  <label class="w-28 shrink-0 text-sm font-bold text-slate-500 text-right">姓名 <span class="text-red-400">*</span></label>
@@ -594,7 +609,7 @@
      </div>
   </div>
 
-  <!-- Modal: 上傳影像 -->
+  <!-- Modal: 上傳影像 (已加上 no-print) -->
   <div id="uploadImageModal" class="hidden fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[60] flex items-center justify-center p-4 no-print">
      <div class="bg-white w-full max-w-lg rounded-[2.5rem] overflow-hidden shadow-2xl relative">
         <div class="p-6 border-b border-slate-100 flex justify-between items-center">
@@ -603,7 +618,7 @@
         </div>
         
         <div class="p-6 space-y-4">
-           <!-- 拖曳區 -->
+           <!-- 上傳內容保持不變 -->
            <div onclick="document.getElementById('uploadInput').click()" class="relative w-full h-40 rounded-3xl border-2 border-dashed border-slate-200 bg-slate-50 hover:bg-slate-100 transition flex flex-col items-center justify-center group cursor-pointer">
               <input type="file" id="uploadInput" accept="image/*" multiple class="hidden" onchange="previewFiles(this)">
               <div class="p-4 bg-white rounded-full shadow-sm mb-2 group-hover:scale-110 transition text-emerald-500">
@@ -612,21 +627,15 @@
               <p class="text-slate-500 font-bold text-sm">點擊或拖曳圖片至此</p>
               <p class="text-slate-400 text-xs mt-1">支援 JPG, PNG, WEBP</p>
            </div>
-
-           <!-- 預覽區 -->
            <div id="uploadPreviewArea" class="hidden space-y-2">
               <p class="text-xs font-bold text-slate-400 uppercase tracking-widest">待上傳列表</p>
               <div id="previewList" class="max-h-32 overflow-y-auto custom-scrollbar space-y-2"></div>
            </div>
-           
-           <!-- ★★★ 新增：備註輸入框 (依據您的需求新增) ★★★ -->
            <div class="space-y-1">
               <label for="fileRemark" class="text-sm font-bold text-slate-500 ml-1">備註 (選填)</label>
               <input type="text" id="fileRemark" placeholder="請輸入關於此影像的說明..." 
                      class="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:border-emerald-500 transition-all text-sm font-medium text-slate-700 placeholder-slate-400">
            </div>
-
-           <!-- 按鈕 -->
            <button onclick="startUpload()" id="btnStartUpload" class="w-full bg-emerald-500 hover:bg-emerald-600 text-white font-black py-3.5 rounded-2xl shadow-lg shadow-emerald-500/20 transition active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed">
               開始上傳
            </button>
@@ -634,27 +643,20 @@
      </div>
   </div>
   
-  <!-- Lightbox 燈箱元件 -->
+  <!-- Lightbox 燈箱 (保持不變) -->
   <div id="imageLightbox" class="fixed inset-0 z-[100] hidden bg-black/95 backdrop-blur-sm transition-opacity duration-300" onclick="if(event.target === this) closeLightbox()">
-      <!-- 關閉按鈕 -->
+      <!-- ... Lightbox 內容 ... -->
       <button onclick="closeLightbox()" class="absolute top-6 right-6 text-white/80 hover:text-white transition p-2 bg-black/20 rounded-full z-[110]">
           <span class="material-icons-outlined text-4xl">close</span>
       </button>
-  
-      <!-- 圖片容器 -->
       <div class="flex h-full w-full items-center justify-center p-4 sm:p-8">
           <div class="relative max-h-full max-w-full">
-              <!-- 載入中動畫 -->
               <div id="lightboxLoading" class="absolute inset-0 flex items-center justify-center">
                   <span class="material-icons-outlined text-5xl text-emerald-500 animate-spin">sync</span>
               </div>
-              
-              <!-- 預覽圖片 -->
               <img id="lightboxImage" src="" alt="Preview" class="max-h-[85vh] max-w-full object-contain rounded-lg shadow-2xl opacity-0 transition-opacity duration-300 select-none">
           </div>
       </div>
-      
-      <!-- 底部標題列 -->
       <div class="absolute bottom-0 left-0 right-0 p-6 bg-gradient-to-t from-black/80 to-transparent text-center">
           <h4 id="lightboxTitle" class="text-white text-lg font-bold tracking-wide text-shadow-sm"></h4>
       </div>
@@ -678,11 +680,11 @@
       }
       
       c.innerHTML = logs.map(l => `
-        <div class="bg-white p-5 rounded-[2rem] shadow-sm border border-slate-100 card-hover relative overflow-hidden group">
-            <div class="absolute top-0 left-0 w-1.5 h-full bg-emerald-500"></div>
+        <div class="bg-white p-5 rounded-[2rem] shadow-sm border border-slate-100 card-hover relative overflow-hidden group print:break-inside-avoid print:border print:border-slate-200 print:shadow-none print:rounded-none">
+            <div class="absolute top-0 left-0 w-1.5 h-full bg-emerald-500 print:hidden"></div>
             <div class="pl-2">
                 <div class="flex justify-between items-center mb-3">
-                    <span class="text-xs font-bold text-slate-500 font-mono bg-slate-100 px-2 py-1 rounded-lg">${l['治療日期']}</span>
+                    <span class="text-xs font-bold text-slate-500 font-mono bg-slate-100 px-2 py-1 rounded-lg print:bg-white print:border print:border-slate-200">${l['治療日期']}</span>
                     
                     <div class="flex items-center gap-2">
                         ${l['治療項目'] ? `<span class="px-2 py-0.5 rounded text-[10px] font-bold bg-blue-50 text-blue-600 border border-blue-100">${l['治療項目']}</span>` : ''}
@@ -708,7 +710,7 @@
                     </div>` : ''}
                     
                     ${l['備註/下次治療'] ? `
-                    <div class="bg-amber-50 p-3 rounded-xl border border-amber-100 mt-2">
+                    <div class="bg-amber-50 p-3 rounded-xl border border-amber-100 mt-2 print:bg-white print:border-slate-200">
                         <div class="text-[10px] font-bold text-amber-500 uppercase tracking-wider mb-1 flex items-center gap-1">
                             <span class="material-icons-outlined text-[10px]">flag</span> 備註 / 下次治療
                         </div>
