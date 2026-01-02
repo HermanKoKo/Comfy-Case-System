@@ -68,10 +68,14 @@
   <main id="main-content" class="flex-1 flex flex-col h-screen overflow-hidden">
     <header class="bg-white border-b border-slate-200 px-6 py-3 flex justify-between items-center flex-shrink-0 shadow-sm z-10 no-print">
       <h2 id="pageTitle" class="text-lg font-bold text-slate-800">首頁</h2>
-      <div id="topBarClientInfo" class="hidden flex items-center gap-4 bg-slate-50 px-4 py-1.5 rounded-full border border-slate-100">
-        <span id="headerClientName" class="font-bold text-emerald-600">--</span>
-        <span id="headerClientDob" class="text-xs text-slate-400 font-mono bg-white px-2 py-1 rounded border border-slate-100">--</span>
+      
+      <!-- === [MODIFIED START] 優化右上角姓名/生日排版 === -->
+      <div id="topBarClientInfo" class="hidden flex items-center gap-2 bg-slate-50 pl-4 pr-1 py-1 rounded-full border border-slate-100 shadow-sm">
+        <span id="headerClientName" class="font-bold text-emerald-600 text-sm">--</span>
+        <span id="headerClientDob" class="text-xs text-slate-500 font-mono bg-white px-3 py-1 rounded-full shadow-sm">--</span>
       </div>
+      <!-- === [MODIFIED END] === -->
+
     </header>
 
     <div id="contentArea" class="flex-1 overflow-y-auto p-5 custom-scrollbar">
@@ -376,9 +380,7 @@
             </div>
           </div>
         </div>
-      </div>
-
-      <!-- 個管追蹤視圖 -->
+      </div><!-- 個管追蹤視圖 -->
       <div id="view-tracking" class="hidden max-w-6xl mx-auto space-y-4">
         <div class="flex justify-between items-center mb-2 no-print">
           <h3 class="text-2xl font-bold text-violet-700 flex items-center gap-3">
