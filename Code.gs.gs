@@ -125,11 +125,12 @@ function saveData(sheetName, dataObj) {
 
 /**
  * 取得系統人員與項目清單
+ * ★ 修改：新增讀取 Column G (Index 6) 作為治療項目 (treatmentItems)
  */
 function getSystemStaff() {
   const ss = SpreadsheetApp.openById(CONFIG.SPREADSHEET_ID);
   const sheet = ss.getSheetByName(CONFIG.SHEETS.SYSTEM);
-  if(!sheet) return { doctors:[], nurses:[], therapists:[], trackingTypes:[], maintItems:[], allStaff:[] };
+  if(!sheet) return { doctors:[], nurses:[], therapists:[], trackingTypes:[], maintItems:[], allStaff:[], treatmentItems:[] };
   
   const data = sheet.getDataRange().getValues();
   const rows = data.slice(1);
@@ -139,7 +140,8 @@ function getSystemStaff() {
     therapists: rows.map(r => r[2]).filter(String),
     trackingTypes: rows.map(r => r[3]).filter(String),
     maintItems: rows.map(r => r[4]).filter(String),
-    allStaff: rows.map(r => r[5]).filter(String)
+    allStaff: rows.map(r => r[5]).filter(String),
+    treatmentItems: rows.map(r => r[6]).filter(String) // ★ 新增：G欄 (Index 6) 治療項目
   };
 }
 
@@ -405,6 +407,7 @@ function saveMaintenanceRecord(data) {
 
 /**
  * 取得個案總覽資料
+ * ★ 修改：Treatment_Logs 新增讀取「治療項目」並整合至總覽顯示
  */
 function getCaseOverviewData(clientId) {
   try {
@@ -473,6 +476,7 @@ function getCaseOverviewData(clientId) {
       });
     }
 
+    // ★ 修改：治療紀錄部分
     const treatSheet = ss.getSheetByName(CONFIG.SHEETS.TREATMENT);
     if (treatSheet) {
       const data = treatSheet.getDataRange().getValues();
@@ -482,14 +486,18 @@ function getCaseOverviewData(clientId) {
       const idxDate = headers.indexOf(normalizeHeader("治療日期"));
       const idxStaff = headers.indexOf(normalizeHeader("執行治療師"));
       const idxContent = headers.indexOf(normalizeHeader("治療內容"));
+      const idxItem = headers.indexOf(normalizeHeader("治療項目")); // ★ 新增：取得治療項目索引
       
       data.slice(1).forEach(row => {
         if (String(row[idxId]).replace(/^'/, '').trim() === targetId) {
+          const itemVal = (idxItem > -1 && row[idxItem]) ? row[idxItem] : ""; // 取得項目值
           result.push({
             id: 'T-' + formatDateForJSON(row[idxDate]), 
             date: formatDateForJSON(row[idxDate]),
             category: 'treatment', categoryName: '治療紀錄',
-            title: "物理治療", subtitle: "治療師：" + (row[idxStaff] || '--'),
+            title: "物理治療", 
+            // ★ 修改：在副標題中加入治療項目
+            subtitle: (itemVal ? itemVal + " | " : "") + "治療師：" + (row[idxStaff] || '--'),
             detail: row[idxContent], staff: row[idxStaff]
           });
         }

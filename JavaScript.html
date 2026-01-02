@@ -93,6 +93,9 @@ function loadSystemStaff() {
     setOptions('trackStaff', staff.allStaff, '請選擇人員');
     setOptions('trackType', staff.trackingTypes || [], '請選擇項目');
     
+    // ★★★ 新增：設定治療項目下拉選單 ★★★
+    setOptions('inputTreatmentItem', staff.treatmentItems || [], '請選擇項目');
+    
     const fts = document.getElementById('filterTherapist');
     if(fts) fts.innerHTML = '<option value="">所有執行人員</option>' + staff.therapists.map(n => `<option value="${n}">${n}</option>`).join('');
   }).getSystemStaff();
@@ -184,7 +187,8 @@ function submitForm(type) {
     const d = { 
       '個案編號': clientId,
       '治療日期': document.getElementById('treatmentDate').value, 
-      '執行治療師': document.getElementById('inputTherapist').value, 
+      '執行治療師': document.getElementById('inputTherapist').value,
+      '治療項目': document.getElementById('inputTreatmentItem').value, // ★★★ 新增：傳送治療項目 ★★★
       '當日主訴': document.getElementById('inputComplaint').value, 
       '治療內容': document.getElementById('inputContent').value, 
       '備註/下次治療': document.getElementById('inputNextPlan').value 
@@ -217,9 +221,7 @@ function submitForm(type) {
     if (!d.trackDate || !d.trackStaff || !d.trackType || !d.content) { alert("請完整填寫追蹤資料"); if(btn){btn.disabled=false; btn.innerHTML=ot;} return; }
     google.script.run.withSuccessHandler(res => { if(btn){btn.disabled=false; btn.innerHTML=ot;} if (res.success) { alert(res.message); document.getElementById('trackContent').value = ""; loadTrackingHistory(); } else { alert(res.message); } }).saveTrackingRecord(d);
   }
-}
-
-// === 列表渲染函數 ===
+}// === 列表渲染函數 ===
 function loadTrackingHistory() {
   const c = document.getElementById('trackingHistoryList'); c.innerHTML = '<div class="text-center py-6 text-slate-400">讀取中...</div>';
   google.script.run.withSuccessHandler(recs => {
@@ -227,15 +229,47 @@ function loadTrackingHistory() {
     c.innerHTML = recs.map(r => `<div class="bg-white p-6 rounded-[1.5rem] border border-slate-100 shadow-sm card-hover mb-4 relative overflow-hidden group"><div class="absolute left-0 top-0 bottom-0 w-1.5 bg-violet-500 opacity-80"></div><div class="pl-2"><div class="flex justify-between items-start mb-3"><div class="flex items-center gap-2"><span class="bg-violet-50 text-violet-700 text-xs font-bold px-3 py-1 rounded-full border border-violet-100">${r.type}</span><div class="text-slate-500 text-xs font-bold flex items-center bg-slate-50 px-2 py-1 rounded-lg"><span class="material-icons-outlined text-[14px] mr-1">person</span>${r.staff||'--'}</div></div><span class="text-slate-400 text-xs font-mono">${r.date}</span></div><div class="text-slate-700 text-sm leading-relaxed whitespace-pre-line bg-slate-50/50 p-3 rounded-xl">${r.content}</div></div></div>`).join('');
   }).getTrackingHistory(currentClient['個案編號']);
 }
+
 function loadTreatmentHistory() {
   const c = document.getElementById('historyListContainer'); c.innerHTML = '<div class="text-center py-6 text-slate-400">讀取中...</div>';
   google.script.run.withSuccessHandler(logs => { allTreatmentLogs = logs || []; applyLogFilters(); renderTreatmentCalendar(); }).getClientHistory(currentClient['個案編號'], 'Treatment_Logs');
 }
+
+// ★★★ 修改重點：在歷史清單中顯示治療項目 ★★★
 function renderTreatmentList(logs) {
   const c = document.getElementById('historyListContainer');
+  // 更新計數
+  const countBadge = document.getElementById('treatmentHistoryCount');
+  if(countBadge) countBadge.textContent = `共 ${logs ? logs.length : 0} 次`;
+
   if(!logs.length) { c.innerHTML = '<div class="text-center py-10 text-slate-300 bg-slate-50 rounded-2xl">無相關紀錄</div>'; return; }
-  c.innerHTML = logs.map(l => `<div class="bg-white p-6 rounded-[2rem] shadow-sm border border-slate-100 card-hover mb-4 relative overflow-hidden"><div class="absolute top-0 left-0 w-full h-1 bg-emerald-500"></div><div class="flex justify-between items-center mb-3"><span class="text-xs font-bold text-slate-400 font-mono bg-slate-50 px-2 py-1 rounded-lg">${l['治療日期']}</span><div class="flex items-center gap-1 text-sm font-bold text-emerald-600"><span class="material-icons-outlined text-sm">medical_services</span>${l['執行治療師']}</div></div><div class="space-y-3"><div class="text-xs text-slate-500 bg-slate-50 p-3 rounded-xl border border-slate-100"><span class="font-bold text-slate-400 block mb-1 uppercase tracking-widest text-[10px]">Complaint</span>${l['當日主訴']||'--'}</div><div class="text-sm text-slate-700 whitespace-pre-wrap px-1">${l['治療內容']}</div>${l['備註/下次治療']?`<div class="mt-2 text-xs text-slate-600 bg-amber-50 p-3 rounded-xl border border-amber-100"><span class="font-bold text-amber-500 block mb-1 flex items-center gap-1"><span class="material-icons-outlined text-[12px]">flag</span> Next Plan</span>${l['備註/下次治療']}</div>`:''}</div></div>`).join('');
+  
+  c.innerHTML = logs.map(l => `
+    <div class="bg-white p-6 rounded-[2rem] shadow-sm border border-slate-100 card-hover mb-4 relative overflow-hidden">
+        <div class="absolute top-0 left-0 w-full h-1 bg-emerald-500"></div>
+        <div class="flex justify-between items-center mb-3">
+            <div class="flex items-center gap-2">
+               <span class="text-xs font-bold text-slate-400 font-mono bg-slate-50 px-2 py-1 rounded-lg">${l['治療日期']}</span>
+               
+               <!-- 新增：顯示治療項目 -->
+               ${l['治療項目'] ? `<span class="px-2 py-0.5 rounded text-[10px] font-bold bg-blue-50 text-blue-600 border border-blue-100">${l['治療項目']}</span>` : ''}
+            </div>
+            
+            <div class="flex items-center gap-1 text-sm font-bold text-emerald-600">
+                <span class="material-icons-outlined text-sm">medical_services</span>${l['執行治療師']}
+            </div>
+        </div>
+        <div class="space-y-3">
+            <div class="text-xs text-slate-500 bg-slate-50 p-3 rounded-xl border border-slate-100">
+                <span class="font-bold text-slate-400 block mb-1 uppercase tracking-widest text-[10px]">Complaint</span>
+                ${l['當日主訴']||'--'}
+            </div>
+            <div class="text-sm text-slate-700 whitespace-pre-wrap px-1">${l['治療內容']}</div>
+            ${l['備註/下次治療']?`<div class="mt-2 text-xs text-slate-600 bg-amber-50 p-3 rounded-xl border border-amber-100"><span class="font-bold text-amber-500 block mb-1 flex items-center gap-1"><span class="material-icons-outlined text-[12px]">flag</span> Next Plan</span>${l['備註/下次治療']}</div>`:''}
+        </div>
+    </div>`).join('');
 }
+
 function loadMaintenanceHistory() {
   const c = document.getElementById('maintenanceHistoryList'); c.innerHTML = '<div class="text-center py-10 text-slate-400">紀錄載入中...</div>';
   google.script.run.withSuccessHandler(logs => {
@@ -315,7 +349,9 @@ function changeCalMonth(o) { currentCalDate.setMonth(currentCalDate.getMonth() +
 function selectDateFromCal(d) { const i = document.getElementById('filterDate'); if(i._flatpickr) i._flatpickr.setDate(d, true); else { i.value = d; applyLogFilters(); } renderTreatmentCalendar(); }
 function resetTreatmentFilter() { document.getElementById('filterTherapist').value = ""; const i = document.getElementById('filterDate'); if(i._flatpickr) i._flatpickr.clear(); else i.value = ""; applyLogFilters(); isMonthPickerMode = false; currentCalDate = new Date(); renderTreatmentCalendar(); }
 function editClientInfo() { alert("編輯功能開發中..."); }
-function applyLogFilters() { const t=document.getElementById('filterTherapist').value; const d=document.getElementById('filterDate').value; renderTreatmentList(allTreatmentLogs.filter(l => (!t || l['執行治療師']===t) && (!d || l['治療日期']===d))); }// === 影像功能 (已整合 Lightbox) ===
+function applyLogFilters() { const t=document.getElementById('filterTherapist').value; const d=document.getElementById('filterDate').value; renderTreatmentList(allTreatmentLogs.filter(l => (!t || l['執行治療師']===t) && (!d || l['治療日期']===d))); }
+
+// === 影像功能 (已整合 Lightbox) ===
 
 function loadClientImages() {
   const c = document.getElementById('imageGalleryContainer');
@@ -328,7 +364,6 @@ function loadClientImages() {
   }).getClientImages(currentClient['個案編號']);
 }
 
-// ★ 修正重點：顯示備註內容
 function renderImageGallery(imgs) {
   const c = document.getElementById('imageGalleryContainer');
   if (!imgs || imgs.length === 0) { c.innerHTML = `<div class="col-span-full flex flex-col items-center justify-center py-24 bg-white border-2 border-dashed border-slate-200 rounded-[2.5rem] group hover:border-emerald-300 transition-colors"><div class="p-4 bg-slate-50 rounded-full mb-4 text-slate-300 group-hover:text-emerald-400 transition-colors"><span class="material-icons-outlined text-3xl">add_photo_alternate</span></div><p class="text-slate-400 font-bold mb-2">尚無影像紀錄</p><button onclick="openUploadModal()" class="text-emerald-500 font-bold text-sm hover:text-emerald-600 transition">立即上傳</button></div>`; return; }
@@ -342,13 +377,11 @@ function renderImageGallery(imgs) {
         <div class="p-4 flex flex-col flex-1">
             <div class="flex justify-between items-start mb-1">
                 <div class="text-xs font-bold text-slate-400">${i.date}</div>
-                <!-- 點擊小箭頭可另開新分頁 -->
                 <span class="material-icons-outlined text-slate-300 text-sm group-hover:text-emerald-500 transition-colors z-10 hover:bg-slate-100 rounded" 
                       onclick="event.stopPropagation(); window.open('${i.url}', '_blank')">open_in_new</span>
             </div>
             <h4 class="text-sm font-bold text-slate-700 truncate mb-1" title="${i.name}">${i.name}</h4>
             
-            <!-- ★★★ 新增：顯示備註 (如果有) ★★★ -->
             ${i.remark ? `
               <div class="mt-auto pt-2">
                 <div class="text-xs text-slate-500 bg-slate-50 p-2 rounded-xl border border-slate-100 line-clamp-2" title="${i.remark}">
@@ -369,11 +402,9 @@ function openUploadModal() {
   const modal = document.getElementById('uploadImageModal');
   if (modal) modal.classList.remove('hidden');
   
-  // 重置欄位
   const uploadInput = document.getElementById('uploadInput');
   if (uploadInput) uploadInput.value = "";
   
-  // ★ 重置備註欄位
   const remarkInput = document.getElementById('fileRemark');
   if (remarkInput) remarkInput.value = "";
 
@@ -396,12 +427,10 @@ function previewFiles(input) {
   listEl.innerHTML = filesToUpload.map(f => `<div class="flex items-center justify-between bg-white p-3 rounded-xl border border-slate-100 shadow-sm"><div class="flex items-center gap-3 overflow-hidden"><div class="w-8 h-8 rounded-lg bg-emerald-50 flex items-center justify-center text-emerald-500"><span class="material-icons-outlined text-base">image</span></div><span class="text-sm font-bold text-slate-600 truncate">${f.name}</span></div><span class="text-xs text-slate-400 font-mono">${(f.size/1024/1024).toFixed(1)} MB</span></div>`).join('');
 }
 
-// ★ 修正重點：傳送備註給後端
 function startUpload() {
   if (!currentClient || !currentClient['個案編號']) { alert("系統錯誤：遺失個案編號，請重新整理頁面。"); return; }
   if (filesToUpload.length === 0) { alert("請先選擇檔案"); return; }
   
-  // ★ 取得備註內容
   const remark = document.getElementById('fileRemark').value || "";
 
   const btn = document.getElementById('btnStartUpload');
@@ -426,7 +455,6 @@ function startUpload() {
     r.onload = function(e) {
       const content = e.target.result.split(',')[1];
       
-      // ★ 呼叫後端，加入 remark 參數
       google.script.run
         .withSuccessHandler(() => { 
            count++; 
@@ -438,14 +466,13 @@ function startUpload() {
            btn.disabled = false; 
            btn.innerHTML = ot; 
         })
-        .uploadClientImage(currentClient['個案編號'], content, f.name, f.type, remark); // <--- 加入 remark
+        .uploadClientImage(currentClient['個案編號'], content, f.name, f.type, remark);
     };
     r.readAsDataURL(f);
   };
   next(0);
 }
 
-// === Lightbox 燈箱控制邏輯 ===
 function openLightbox(id, name) {
     const modal = document.getElementById('imageLightbox');
     const img = document.getElementById('lightboxImage');
@@ -457,15 +484,12 @@ function openLightbox(id, name) {
     modal.classList.remove('hidden');
     loading.classList.remove('hidden');
     
-    // 重置圖片狀態
     img.style.opacity = '0';
     img.style.transform = 'scale(0.95)';
     img.src = ""; 
 
-    // 設定標題
     if (titleDiv) titleDiv.textContent = name || '';
 
-    // 載入高解析度圖片 (使用 =s0 參數取得原圖)
     const highResUrl = `https://lh3.googleusercontent.com/d/${id}=s0`;
     
     img.onload = function() {
@@ -475,18 +499,17 @@ function openLightbox(id, name) {
     };
     
     img.src = highResUrl;
-    document.body.style.overflow = 'hidden'; // 禁止背景捲動
+    document.body.style.overflow = 'hidden';
 }
 
 function closeLightbox() {
     const modal = document.getElementById('imageLightbox');
     if (modal) modal.classList.add('hidden');
     const img = document.getElementById('lightboxImage');
-    if (img) img.src = ''; // 清空以釋放記憶體
-    document.body.style.overflow = ''; // 恢復背景捲動
+    if (img) img.src = '';
+    document.body.style.overflow = '';
 }
 
-// 支援 ESC 鍵關閉
 document.addEventListener('keydown', function(event) {
     if (event.key === "Escape") closeLightbox();
 });

@@ -183,7 +183,7 @@
         </div>
       </div>
 
-      <!-- 治療紀錄視圖 -->
+      <!-- 治療紀錄視圖 (修改區域) -->
       <div id="view-treatment" class="hidden max-w-6xl mx-auto space-y-6">
          <div class="grid grid-cols-1 lg:grid-cols-3 gap-4 no-print">
             <!-- 左側：月曆與篩選 -->
@@ -218,9 +218,7 @@
                     </div>
                   </div>
                </div>
-            </div>
-            
-            <!-- 右側：新增表單 -->
+            </div><!-- 右側：新增表單 -->
             <div class="lg:col-span-2">
                <form id="treatmentForm" class="bg-white p-4 rounded-[2.5rem] shadow-sm border-t-4 border-emerald-500 border-x border-b border-slate-100 h-full flex flex-col gap-2">
                  
@@ -237,19 +235,34 @@
                  
                  <input type="hidden" name="個案編號" class="auto-fill-id">
                  
-                 <!-- 第一行：日期與治療師 -->
-                 <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div class="flex items-center gap-3">
+                 <!-- ★★★ 修改重點：改為 3 欄位佈局，加入治療項目 ★★★ -->
+                 <div class="grid grid-cols-1 md:grid-cols-3 gap-2">
+                    <!-- 1. 治療日期 -->
+                    <div class="flex items-center gap-2">
                       <label class="text-xs font-bold text-slate-400 shrink-0">治療日期</label>
-                      <input type="date" id="treatmentDate" required class="w-full px-5 py-2.5 bg-slate-50 border border-slate-100 rounded-2xl outline-none focus:border-emerald-500 transition-all cursor-pointer font-bold text-slate-700">
+                      <input type="date" id="treatmentDate" required class="w-full px-3 py-2.5 bg-slate-50 border border-slate-100 rounded-2xl outline-none focus:border-emerald-500 transition-all cursor-pointer font-bold text-slate-700 text-sm">
                     </div>
-                    <div class="flex items-center gap-3">
+                    
+                    <!-- 2. 治療師 -->
+                    <div class="flex items-center gap-2">
                       <label class="text-xs font-bold text-slate-400 shrink-0">治療師</label>
                       <div class="relative w-full">
-                        <select id="inputTherapist" required class="w-full px-5 py-2.5 bg-slate-50 border border-slate-100 rounded-2xl outline-none focus:border-emerald-500 transition-all cursor-pointer appearance-none font-bold text-slate-700">
+                        <select id="inputTherapist" required class="w-full px-3 py-2.5 bg-slate-50 border border-slate-100 rounded-2xl outline-none focus:border-emerald-500 transition-all cursor-pointer appearance-none font-bold text-slate-700 text-sm">
                            <option value="" disabled selected>請選擇治療師</option>
                         </select>
-                        <span class="material-icons-outlined absolute right-4 top-3.5 text-slate-400 pointer-events-none">expand_more</span>
+                        <span class="material-icons-outlined absolute right-2 top-3 text-slate-400 pointer-events-none text-sm">expand_more</span>
+                      </div>
+                    </div>
+
+                    <!-- 3. 治療項目 (新增) -->
+                    <div class="flex items-center gap-2">
+                      <label class="text-xs font-bold text-slate-400 shrink-0">治療項目</label>
+                      <div class="relative w-full">
+                        <select id="inputTreatmentItem" class="w-full px-3 py-2.5 bg-slate-50 border border-slate-100 rounded-2xl outline-none focus:border-emerald-500 transition-all cursor-pointer appearance-none font-bold text-slate-700 text-sm">
+                           <option value="" disabled selected>請選擇項目</option>
+                           <!-- 選項將由 JS 動態填入 -->
+                        </select>
+                        <span class="material-icons-outlined absolute right-2 top-3 text-slate-400 pointer-events-none text-sm">expand_more</span>
                       </div>
                     </div>
                  </div>
@@ -512,7 +525,9 @@
         </div>
       </div>
     </div>
-  </main><!-- Modal: 新增個案 -->
+  </main>
+
+  <!-- Modal: 新增個案 -->
   <div id="addClientModal" class="hidden fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 no-print">
      <div class="bg-white w-full max-w-3xl rounded-[2.5rem] overflow-hidden shadow-2xl">
         <div class="px-6 py-4 border-b border-slate-100 flex justify-between items-center bg-white sticky top-0 z-10">
@@ -584,7 +599,6 @@
               <div id="previewList" class="max-h-32 overflow-y-auto custom-scrollbar space-y-2"></div>
            </div>
            
-           <!-- ★★★ 新增：備註輸入框 (依據您的需求新增) ★★★ -->
            <div class="space-y-1">
               <label for="fileRemark" class="text-sm font-bold text-slate-500 ml-1">備註 (選填)</label>
               <input type="text" id="fileRemark" placeholder="請輸入關於此影像的說明..." 
@@ -627,13 +641,12 @@
 
   <?!= include('JavaScript'); ?>
   
-  <!-- Script Override to fulfill Requirements -->
+  <!-- Script Override -->
   <script>
     function renderTreatmentList(logs) {
       const c = document.getElementById('historyListContainer');
       const countBadge = document.getElementById('treatmentHistoryCount');
       
-      // Update count badge
       if(countBadge) {
          countBadge.textContent = `共 ${logs ? logs.length : 0} 次`;
       }
@@ -643,15 +656,22 @@
         return; 
       }
       
+      // ★★★ 修改重點：在歷史紀錄中顯示治療項目 ★★★
       c.innerHTML = logs.map(l => `
         <div class="bg-white p-5 rounded-[2rem] shadow-sm border border-slate-100 card-hover relative overflow-hidden group">
             <div class="absolute top-0 left-0 w-1.5 h-full bg-emerald-500"></div>
             <div class="pl-2">
                 <div class="flex justify-between items-center mb-3">
                     <span class="text-xs font-bold text-slate-500 font-mono bg-slate-100 px-2 py-1 rounded-lg">${l['治療日期']}</span>
-                    <div class="flex items-center gap-1 text-sm font-bold text-emerald-600">
-                        <span class="material-icons-outlined text-sm">face</span>
-                        ${l['執行治療師']}
+                    
+                    <div class="flex items-center gap-2">
+                        <!-- 新增：治療項目 Badge -->
+                        ${l['治療項目'] ? `<span class="px-2 py-0.5 rounded text-[10px] font-bold bg-blue-50 text-blue-600 border border-blue-100">${l['治療項目']}</span>` : ''}
+                        
+                        <div class="flex items-center gap-1 text-sm font-bold text-emerald-600">
+                            <span class="material-icons-outlined text-sm">face</span>
+                            ${l['執行治療師']}
+                        </div>
                     </div>
                 </div>
                 
