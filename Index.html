@@ -98,7 +98,9 @@
           <p class="text-slate-500">請先搜尋個案以開始作業，或點擊左下角新增個案。</p>
         </div>
         <div class="w-full relative group">
-          <input type="text" id="searchInput" onkeyup="if(event.key==='Enter')handleSearch()" placeholder="輸入姓名或電話..." class="w-full px-6 py-3 bg-white border-2 border-slate-100 rounded-3xl shadow-xl focus:border-emerald-500 outline-none transition text-lg">
+          <!-- ★★★ 修改處：移除 onkeyup，改用 oninput 並呼叫 handleSearchDebounced ★★★ -->
+          <input type="text" id="searchInput" oninput="handleSearchDebounced(this.value)" placeholder="輸入姓名或電話..." class="w-full px-6 py-3 bg-white border-2 border-slate-100 rounded-3xl shadow-xl focus:border-emerald-500 outline-none transition text-lg">
+          
           <button onclick="handleSearch()" class="absolute right-3 top-1/2 -translate-y-1/2 bg-emerald-500 text-white p-2.5 rounded-2xl shadow-lg hover:bg-emerald-600 transition">
             <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
           </button>
@@ -534,6 +536,7 @@
            </div>
         </div>
         <div id="overviewListContainer" class="min-h-[300px] space-y-4">
+           <!-- 加上 print:hidden -->
            <div class="flex flex-col items-center justify-center py-20 bg-white rounded-[2.5rem] border-2 border-dashed border-slate-100 print:hidden">
               <div class="w-16 h-16 bg-slate-50 rounded-full flex items-center justify-center mb-4">
                  <span class="material-icons-outlined text-3xl text-slate-300">manage_search</span>
@@ -543,7 +546,9 @@
         </div>
       </div>
     </div>
-  </main><!-- Modal: 新增個案 (已加上 no-print) -->
+  </main>
+
+  <!-- Modal: 新增個案 (已加上 no-print) -->
   <div id="addClientModal" class="hidden fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 no-print">
      <div class="bg-white w-full max-w-3xl rounded-[2.5rem] overflow-hidden shadow-2xl">
         <div class="px-6 py-4 border-b border-slate-100 flex justify-between items-center bg-white sticky top-0 z-10">
@@ -551,6 +556,7 @@
            <button onclick="closeModal('addClientModal')" class="text-slate-300 hover:text-slate-500 transition text-3xl leading-none">&times;</button>
         </div>
         <form id="addClientForm" class="p-6 space-y-4 max-h-[80vh] overflow-y-auto custom-scrollbar">
+           <!-- 表單內容保持不變 -->
            <div class="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-4">
               <div class="flex items-center gap-3">
                  <label class="w-28 shrink-0 text-sm font-bold text-slate-500 text-right">姓名 <span class="text-red-400">*</span></label>
@@ -599,6 +605,7 @@
         </div>
         
         <div class="p-6 space-y-4">
+           <!-- 上傳內容保持不變 -->
            <div onclick="document.getElementById('uploadInput').click()" class="relative w-full h-40 rounded-3xl border-2 border-dashed border-slate-200 bg-slate-50 hover:bg-slate-100 transition flex flex-col items-center justify-center group cursor-pointer">
               <input type="file" id="uploadInput" accept="image/*" multiple class="hidden" onchange="previewFiles(this)">
               <div class="p-4 bg-white rounded-full shadow-sm mb-2 group-hover:scale-110 transition text-emerald-500">
@@ -623,8 +630,9 @@
      </div>
   </div>
   
-  <!-- Lightbox 燈箱 -->
+  <!-- Lightbox 燈箱 (保持不變) -->
   <div id="imageLightbox" class="fixed inset-0 z-[100] hidden bg-black/95 backdrop-blur-sm transition-opacity duration-300" onclick="if(event.target === this) closeLightbox()">
+      <!-- ... Lightbox 內容 ... -->
       <button onclick="closeLightbox()" class="absolute top-6 right-6 text-white/80 hover:text-white transition p-2 bg-black/20 rounded-full z-[110]">
           <span class="material-icons-outlined text-4xl">close</span>
       </button>
@@ -641,13 +649,9 @@
       </div>
   </div>
 
-  <!-- 
-    ★★★ 關鍵修復：這裡只引入一次 JavaScript 檔案 ★★★ 
-    位置在所有 Modal 之後，但在 Script Override 之前
-  -->
   <?!= include('JavaScript'); ?>
   
-  <!-- Script Override (保持您原本的治療清單客製化渲染) -->
+  <!-- Script Override -->
   <script>
     function renderTreatmentList(logs) {
       const c = document.getElementById('historyListContainer');
@@ -704,5 +708,6 @@
         </div>`).join('');
     }
   </script>
+  <?!= include('JavaScript'); ?>
 </body>
 </html>

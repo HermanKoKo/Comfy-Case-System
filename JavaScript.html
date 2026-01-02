@@ -8,13 +8,14 @@ let allOverviewRecords = [];
 let currentOverviewCategory = 'all'; 
 let currentCalDate = new Date();
 let isMonthPickerMode = false; 
-let filesToUpload = []; // 確保此變數被宣告
+let filesToUpload = []; 
+let searchTimer = null; // ★★★ 新增：搜尋防抖動計時器 ★★★
 
 // ==========================================
 // 初始化與 UI 設定
 // ==========================================
 
-// Flatpickr 日期選擇器初始化設定 (保持原 UI 設計)
+// Flatpickr 日期選擇器初始化 (保持不變)
 function setupEnhancedFlatpickr(selector, options = {}) {
   const defaults = {
     locale: "zh_tw", dateFormat: "Y-m-d", disableMobile: true, allowInput: true, static: true,
@@ -144,60 +145,40 @@ function navTo(viewName) {
 }
 
 // ==========================================
-// ★★★ [NEW] 新增個案相關函式 (補上缺失的部分) ★★★
+// 新增個案相關函式
 // ==========================================
-
-// 自動判斷性別 (根據身分證字號)
 function autoDetectGender(input) {
   const val = input.value.toUpperCase();
-  input.value = val; // 強制轉大寫
+  input.value = val; 
   if (val.length >= 2) {
     const secondChar = val.charAt(1);
-    // 身分證第二碼 1 為男，2 為女
-    if (secondChar === '1') {
-      // 這裡假設未來可能會在 UI 上顯示性別，目前僅做判斷邏輯
-      // console.log("Detected Male");
-    } else if (secondChar === '2') {
-      // console.log("Detected Female");
-    }
+    if (secondChar === '1') { } else if (secondChar === '2') { }
   }
 }
 
-// 提交新個案資料
 function submitNewClient() {
   const btn = document.getElementById('btnSubmitClient');
   const originalText = btn.innerHTML;
   
-  // 取得表單欄位值
   const data = {
     name: document.getElementById('addName').value.trim(),
     dob: document.getElementById('addDob').value.trim(),
     idNo: document.getElementById('addIdNo').value.trim(),
     phone: document.getElementById('addPhone').value.trim(),
-    gender: '', // 稍後判斷
+    gender: '', 
     emerName: document.getElementById('addEmerName').value.trim(),
     emerPhone: document.getElementById('addEmerPhone').value.trim(),
     chronic: document.getElementById('addChronic').value.trim()
   };
 
-  // 簡易驗證
-  if (!data.name || !data.dob || !data.idNo || !data.phone) {
-    alert("請填寫所有必填欄位 (*)！");
-    return;
-  }
+  if (!data.name || !data.dob || !data.idNo || !data.phone) { alert("請填寫所有必填欄位 (*)！"); return; }
+  if (data.idNo.length < 2) { alert("身分證字號格式錯誤"); return; }
   
-  if (data.idNo.length < 2) {
-      alert("身分證字號格式錯誤");
-      return;
-  }
-  
-  // 自動判斷性別
   const secondChar = data.idNo.charAt(1);
   if (secondChar === '1') data.gender = '男';
   else if (secondChar === '2') data.gender = '女';
   else data.gender = '其他';
 
-  // UILoading 狀態
   btn.disabled = true;
   btn.innerHTML = '<span class="material-icons-outlined animate-spin">sync</span> 建立中...';
 
@@ -205,22 +186,10 @@ function submitNewClient() {
     .withSuccessHandler(function(res) {
       btn.disabled = false;
       btn.innerHTML = originalText;
-      
-      if (res.success) {
-        alert("個案建立成功！");
-        document.getElementById('addClientForm').reset();
-        closeModal('addClientModal');
-        // 自動選取新個案並跳轉
-        selectClient(res.fullData);
-      } else {
-        alert("建立失敗：" + res.message);
-      }
+      if (res.success) { alert("個案建立成功！"); document.getElementById('addClientForm').reset(); closeModal('addClientModal'); selectClient(res.fullData); } 
+      else { alert("建立失敗：" + res.message); }
     })
-    .withFailureHandler(function(e) {
-      btn.disabled = false;
-      btn.innerHTML = originalText;
-      alert("系統錯誤：" + e.message);
-    })
+    .withFailureHandler(function(e) { btn.disabled = false; btn.innerHTML = originalText; alert("系統錯誤：" + e.message); })
     .createNewClient(data);
 }
 
@@ -232,22 +201,19 @@ function handlePrint() {
   const dateStr = today.getFullYear() + "-" + 
                   String(today.getMonth() + 1).padStart(2, '0') + "-" + 
                   String(today.getDate()).padStart(2, '0');
-  
   const dateEl = document.getElementById('print-date-display');
   if(dateEl) dateEl.innerText = dateStr;
-
   const infoEl = document.getElementById('print-patient-info');
   if (infoEl) {
-      if (currentClient) {
-         infoEl.innerText = `${currentClient['姓名']} - ${currentClient['生日']}`;
-      } else {
-         infoEl.innerText = "個案列表";
-      }
+      if (currentClient) { infoEl.innerText = `${currentClient['姓名']} - ${currentClient['生日']}`; } 
+      else { infoEl.innerText = "個案列表"; }
   }
   window.print();
 }
 
-// === 基本資料渲染 ===
+// ==========================================
+// 基本資料渲染
+// ==========================================
 function renderBasicInfo() {
   if(!currentClient) return;
   const fieldMap = {
@@ -258,37 +224,83 @@ function renderBasicInfo() {
     'display-id-number': '身分證字號',
     'display-phone': '電話',
     'display-emergency-name': '緊急聯絡人',
-    'display-emergency-phone': '緊急聯絡人電話', // ★ 已修正：補上"人"字，與資料庫欄位一致
-    'display-notes': '慢性病或特殊疾病'       // ★ 已修正：改為正確的資料庫欄位名稱
+    'display-emergency-phone': '緊急聯絡人電話',
+    'display-notes': '慢性病或特殊疾病'
   };
-  
   for (const [domId, dbKey] of Object.entries(fieldMap)) {
     const el = document.getElementById(domId);
     if(el) {
-       // 如果是備註欄位且內容為空，則維持預設文字 (例如：尚無備註紀錄)
        if(domId === 'display-notes' && (!currentClient[dbKey] || currentClient[dbKey] === '')) continue;
        el.textContent = currentClient[dbKey] || '--';
     }
   }
-  
   const statusEl = document.getElementById('display-status');
   if(statusEl && currentClient['狀態']) statusEl.textContent = currentClient['狀態'];
 }
 
-function handleSearch() {
-  const inputEl = document.getElementById('searchInput');
-  const kw = inputEl.value.trim();
-  if (!kw) { alert("請輸入姓名或電話"); inputEl.focus(); return; }
+// ==========================================
+// ★★★ [MODIFIED] 搜尋功能 (加入防抖動與顯示修改) ★★★
+// ==========================================
+
+// 防抖動處理：當使用者停止打字 400 毫秒後才真正發送請求
+function handleSearchDebounced(val) {
+  const kw = val.trim();
   const container = document.getElementById('searchResults');
-  container.innerHTML = '<div class="text-center py-8 text-slate-400 flex flex-col items-center gap-2"><span class="material-icons-outlined animate-spin">sync</span><span>資料庫搜尋中...</span></div>';
+  
+  // 清除上一次的計時器
+  if (searchTimer) clearTimeout(searchTimer);
+  
+  // 如果輸入為空，清空結果並隱藏
+  if (!kw) {
+    container.innerHTML = '';
+    return;
+  }
+
+  // 設定新的計時器
+  searchTimer = setTimeout(() => {
+    handleSearch(kw);
+  }, 400); // 延遲 400ms
+}
+
+// 執行搜尋
+function handleSearch(keyword) {
+  // 如果是點擊放大鏡按鈕呼叫，則從 input 取值
+  const kw = keyword || document.getElementById('searchInput').value.trim();
+  if (!kw) return; // 空值不處理
+
+  const container = document.getElementById('searchResults');
+  // 顯示載入中動畫
+  container.innerHTML = '<div class="text-center py-8 text-slate-400 flex flex-col items-center gap-2"><span class="material-icons-outlined animate-spin">sync</span><span>搜尋中...</span></div>';
+  
   google.script.run.withSuccessHandler(data => {
       container.innerHTML = '';
-      if(data.length === 0) { container.innerHTML = '<div class="text-center py-6 text-slate-400 bg-white rounded-2xl border border-slate-100 shadow-sm">查無此個案資料</div>'; return; }
+      if(data.length === 0) { 
+        container.innerHTML = '<div class="text-center py-6 text-slate-400 bg-white rounded-2xl border border-slate-100 shadow-sm">查無此個案資料</div>'; 
+        return; 
+      }
+      
       data.forEach(c => {
         const div = document.createElement('div');
         div.className = "bg-white p-5 rounded-3xl shadow-sm border border-slate-100 hover:border-emerald-400 hover:shadow-md cursor-pointer transition-all flex justify-between items-center group mb-3 relative overflow-hidden";
         div.onclick = () => selectClient(c);
-        div.innerHTML = `<div class="absolute left-0 top-0 bottom-0 w-1 bg-emerald-500 opacity-0 group-hover:opacity-100 transition-opacity"></div><div class="pl-2"> <div class="font-black text-slate-800 text-lg flex items-center gap-2">${c['姓名']} <span class="text-[10px] font-bold text-slate-400 bg-slate-50 px-2 py-1 rounded-lg border border-slate-200">${c['個案編號']}</span></div><div class="text-sm text-slate-400 mt-1 flex items-center gap-1 font-mono"><span class="material-icons-outlined text-[14px]">phone</span> ${c['電話']}</div></div><div class="w-10 h-10 rounded-full bg-slate-50 flex items-center justify-center text-slate-300 group-hover:bg-emerald-500 group-hover:text-white transition-all"><span class="material-icons-outlined">arrow_forward</span></div>`;
+        
+        // ★★★ 修改處：這裡將顯示內容改為 姓名、生日、電話 (移除個案編號) ★★★
+        div.innerHTML = `
+          <div class="absolute left-0 top-0 bottom-0 w-1 bg-emerald-500 opacity-0 group-hover:opacity-100 transition-opacity"></div>
+          <div class="pl-2"> 
+            <div class="font-black text-slate-800 text-lg flex items-center gap-2">
+              ${c['姓名']} 
+              <span class="text-xs font-bold text-emerald-600 bg-emerald-50 px-2 py-1 rounded-lg border border-emerald-100 flex items-center gap-1">
+                <span class="material-icons-outlined text-[10px]">cake</span> ${c['生日']}
+              </span>
+            </div>
+            <div class="text-sm text-slate-400 mt-1 flex items-center gap-1 font-mono">
+              <span class="material-icons-outlined text-[14px]">phone</span> ${c['電話']}
+            </div>
+          </div>
+          <div class="w-10 h-10 rounded-full bg-slate-50 flex items-center justify-center text-slate-300 group-hover:bg-emerald-500 group-hover:text-white transition-all">
+            <span class="material-icons-outlined">arrow_forward</span>
+          </div>`;
         container.appendChild(div);
       });
   }).searchClient(kw);
@@ -369,7 +381,7 @@ function submitForm(type) {
 }
 
 // ==========================================
-// 歷史列表載入函式
+// 歷史列表載入與渲染
 // ==========================================
 function loadTrackingHistory() {
   const c = document.getElementById('trackingHistoryList'); c.innerHTML = '<div class="text-center py-6 text-slate-400">讀取中...</div>';
@@ -497,7 +509,7 @@ function loadDoctorHistory() {
 }
 
 // ==========================================
-// 個案總覽函式
+// 個案總覽
 // ==========================================
 function loadOverviewData() {
   const container = document.getElementById('overviewListContainer'); container.innerHTML = '<div class="text-center py-12 text-slate-400 flex flex-col items-center gap-2"><span class="material-icons-outlined animate-spin">sync</span><span>讀取個案歷程中...</span></div>';
@@ -662,7 +674,7 @@ function editClientInfo() { alert("編輯功能開發中..."); }
 function applyLogFilters() { const t=document.getElementById('filterTherapist').value; const d=document.getElementById('filterDate').value; renderTreatmentList(allTreatmentLogs.filter(l => (!t || l['執行治療師']===t) && (!d || l['治療日期']===d))); }
 
 // ==========================================
-// 影像功能 (上傳與檢視)
+// 影像功能
 // ==========================================
 function loadClientImages() {
   const c = document.getElementById('imageGalleryContainer');
@@ -720,7 +732,7 @@ function startUpload() {
 }
 
 // ==========================================
-// Lightbox 燈箱
+// Lightbox
 // ==========================================
 function openLightbox(id, name) {
     const modal = document.getElementById('imageLightbox');
