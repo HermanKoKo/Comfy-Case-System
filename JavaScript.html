@@ -315,9 +315,7 @@ function changeCalMonth(o) { currentCalDate.setMonth(currentCalDate.getMonth() +
 function selectDateFromCal(d) { const i = document.getElementById('filterDate'); if(i._flatpickr) i._flatpickr.setDate(d, true); else { i.value = d; applyLogFilters(); } renderTreatmentCalendar(); }
 function resetTreatmentFilter() { document.getElementById('filterTherapist').value = ""; const i = document.getElementById('filterDate'); if(i._flatpickr) i._flatpickr.clear(); else i.value = ""; applyLogFilters(); isMonthPickerMode = false; currentCalDate = new Date(); renderTreatmentCalendar(); }
 function editClientInfo() { alert("編輯功能開發中..."); }
-function applyLogFilters() { const t=document.getElementById('filterTherapist').value; const d=document.getElementById('filterDate').value; renderTreatmentList(allTreatmentLogs.filter(l => (!t || l['執行治療師']===t) && (!d || l['治療日期']===d))); }
-
-// === 影像功能 (已整合 Lightbox) ===
+function applyLogFilters() { const t=document.getElementById('filterTherapist').value; const d=document.getElementById('filterDate').value; renderTreatmentList(allTreatmentLogs.filter(l => (!t || l['執行治療師']===t) && (!d || l['治療日期']===d))); }// === 影像功能 (已整合 Lightbox) ===
 
 function loadClientImages() {
   const c = document.getElementById('imageGalleryContainer');
@@ -330,25 +328,35 @@ function loadClientImages() {
   }).getClientImages(currentClient['個案編號']);
 }
 
-// ★ 修正重點：使用 openLightbox 取代 window.open，並保留新分頁按鈕的功能
+// ★ 修正重點：顯示備註內容
 function renderImageGallery(imgs) {
   const c = document.getElementById('imageGalleryContainer');
   if (!imgs || imgs.length === 0) { c.innerHTML = `<div class="col-span-full flex flex-col items-center justify-center py-24 bg-white border-2 border-dashed border-slate-200 rounded-[2.5rem] group hover:border-emerald-300 transition-colors"><div class="p-4 bg-slate-50 rounded-full mb-4 text-slate-300 group-hover:text-emerald-400 transition-colors"><span class="material-icons-outlined text-3xl">add_photo_alternate</span></div><p class="text-slate-400 font-bold mb-2">尚無影像紀錄</p><button onclick="openUploadModal()" class="text-emerald-500 font-bold text-sm hover:text-emerald-600 transition">立即上傳</button></div>`; return; }
   
   c.innerHTML = imgs.map(i => `
-    <div class="group relative bg-white rounded-3xl shadow-sm border border-slate-100 overflow-hidden card-hover cursor-pointer" onclick="openLightbox('${i.id}', '${i.name}')">
-        <div class="aspect-square bg-slate-50 relative overflow-hidden">
+    <div class="group relative bg-white rounded-3xl shadow-sm border border-slate-100 overflow-hidden card-hover cursor-pointer flex flex-col h-full" onclick="openLightbox('${i.id}', '${i.name}')">
+        <div class="aspect-square bg-slate-50 relative overflow-hidden shrink-0">
             <img src="${i.thumbnail}" loading="lazy" class="w-full h-full object-cover transition duration-500 group-hover:scale-105" alt="${i.name}" onerror="this.src='https://via.placeholder.com/400?text=Error'">
             <div class="absolute inset-0 bg-black/0 group-hover:bg-black/5 transition-all"></div>
         </div>
-        <div class="p-4">
-            <div class="flex justify-between items-start">
-                <div class="text-xs font-bold text-slate-400 mb-1">${i.date}</div>
-                <!-- 點擊小箭頭可另開新分頁 (避免觸發 Lightbox) -->
+        <div class="p-4 flex flex-col flex-1">
+            <div class="flex justify-between items-start mb-1">
+                <div class="text-xs font-bold text-slate-400">${i.date}</div>
+                <!-- 點擊小箭頭可另開新分頁 -->
                 <span class="material-icons-outlined text-slate-300 text-sm group-hover:text-emerald-500 transition-colors z-10 hover:bg-slate-100 rounded" 
                       onclick="event.stopPropagation(); window.open('${i.url}', '_blank')">open_in_new</span>
             </div>
-            <h4 class="text-sm font-bold text-slate-700 truncate" title="${i.name}">${i.name}</h4>
+            <h4 class="text-sm font-bold text-slate-700 truncate mb-1" title="${i.name}">${i.name}</h4>
+            
+            <!-- ★★★ 新增：顯示備註 (如果有) ★★★ -->
+            ${i.remark ? `
+              <div class="mt-auto pt-2">
+                <div class="text-xs text-slate-500 bg-slate-50 p-2 rounded-xl border border-slate-100 line-clamp-2" title="${i.remark}">
+                  ${i.remark}
+                </div>
+              </div>
+            ` : ''}
+            
         </div>
     </div>
   `).join('');
@@ -360,8 +368,15 @@ function openUploadModal() {
   if (!currentClient) { alert("請先選擇個案"); return; }
   const modal = document.getElementById('uploadImageModal');
   if (modal) modal.classList.remove('hidden');
+  
+  // 重置欄位
   const uploadInput = document.getElementById('uploadInput');
   if (uploadInput) uploadInput.value = "";
+  
+  // ★ 重置備註欄位
+  const remarkInput = document.getElementById('fileRemark');
+  if (remarkInput) remarkInput.value = "";
+
   document.getElementById('previewList').innerHTML = "";
   document.getElementById('uploadPreviewArea').classList.add('hidden');
   filesToUpload = [];
@@ -381,10 +396,14 @@ function previewFiles(input) {
   listEl.innerHTML = filesToUpload.map(f => `<div class="flex items-center justify-between bg-white p-3 rounded-xl border border-slate-100 shadow-sm"><div class="flex items-center gap-3 overflow-hidden"><div class="w-8 h-8 rounded-lg bg-emerald-50 flex items-center justify-center text-emerald-500"><span class="material-icons-outlined text-base">image</span></div><span class="text-sm font-bold text-slate-600 truncate">${f.name}</span></div><span class="text-xs text-slate-400 font-mono">${(f.size/1024/1024).toFixed(1)} MB</span></div>`).join('');
 }
 
+// ★ 修正重點：傳送備註給後端
 function startUpload() {
   if (!currentClient || !currentClient['個案編號']) { alert("系統錯誤：遺失個案編號，請重新整理頁面。"); return; }
   if (filesToUpload.length === 0) { alert("請先選擇檔案"); return; }
   
+  // ★ 取得備註內容
+  const remark = document.getElementById('fileRemark').value || "";
+
   const btn = document.getElementById('btnStartUpload');
   const ot = btn.innerHTML;
   let count = 0; 
@@ -394,29 +413,46 @@ function startUpload() {
   btn.innerHTML = `<span class="material-icons-outlined animate-spin mr-2 text-sm">sync</span> 上傳中 (0/${total})...`;
   
   const next = (idx) => {
-    if (idx >= total) { btn.disabled = false; btn.innerHTML = ot; alert("上傳完成！"); closeModal('uploadImageModal'); loadClientImages(); return; }
+    if (idx >= total) { 
+      btn.disabled = false; 
+      btn.innerHTML = ot; 
+      alert("上傳完成！"); 
+      closeModal('uploadImageModal'); 
+      loadClientImages(); 
+      return; 
+    }
     const f = filesToUpload[idx]; 
     const r = new FileReader();
     r.onload = function(e) {
       const content = e.target.result.split(',')[1];
+      
+      // ★ 呼叫後端，加入 remark 參數
       google.script.run
-        .withSuccessHandler(() => { count++; btn.innerHTML = `<span class="material-icons-outlined animate-spin mr-2 text-sm">sync</span> 上傳中 (${count}/${total})...`; next(idx + 1); })
-        .withFailureHandler((err) => { alert("上傳失敗 (" + f.name + "): " + err.message); btn.disabled = false; btn.innerHTML = ot; })
-        .uploadClientImage(currentClient['個案編號'], content, f.name, f.type);
+        .withSuccessHandler(() => { 
+           count++; 
+           btn.innerHTML = `<span class="material-icons-outlined animate-spin mr-2 text-sm">sync</span> 上傳中 (${count}/${total})...`; 
+           next(idx + 1); 
+        })
+        .withFailureHandler((err) => { 
+           alert("上傳失敗 (" + f.name + "): " + err.message); 
+           btn.disabled = false; 
+           btn.innerHTML = ot; 
+        })
+        .uploadClientImage(currentClient['個案編號'], content, f.name, f.type, remark); // <--- 加入 remark
     };
     r.readAsDataURL(f);
   };
   next(0);
 }
 
-// === 新增：Lightbox 燈箱控制邏輯 ===
+// === Lightbox 燈箱控制邏輯 ===
 function openLightbox(id, name) {
     const modal = document.getElementById('imageLightbox');
     const img = document.getElementById('lightboxImage');
     const loading = document.getElementById('lightboxLoading');
     const titleDiv = document.getElementById('lightboxTitle');
     
-    if (!modal || !img) return; // 安全檢查
+    if (!modal || !img) return; 
 
     modal.classList.remove('hidden');
     loading.classList.remove('hidden');

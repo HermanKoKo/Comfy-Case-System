@@ -501,54 +501,59 @@ function getCaseOverviewData(clientId) {
   } catch (e) { throw new Error("取得總覽資料失敗: " + e.message); }
 }
 
-// 影像功能
+// 影像功能 - 修改版：從 Sheet 讀取，以便顯示備註
 function getClientImages(clientId) {
   try {
     const ss = SpreadsheetApp.openById(CONFIG.SPREADSHEET_ID);
-    const sheet = ss.getSheetByName(CONFIG.SHEETS.CLIENT);
+    const sheet = ss.getSheetByName(CONFIG.SHEETS.IMAGE); // 連接到 Image_Gallery
+    if (!sheet) return { success: false, message: "找不到影像資料表" };
+
     const data = sheet.getDataRange().getDisplayValues();
-    let folderUrl = "";
-    // ★ 修正：資料夾連結在 Column 10 (index 9)
-    for (let i = 1; i < data.length; i++) {
-      if (String(data[i][0]).replace(/^'/, '') === String(clientId)) {
-        folderUrl = data[i][9]; // ★ 原本是 7，改為 9
-        break;
-      }
-    }
-    
-    if (!folderUrl || folderUrl === "資料夾建立失敗") return { success: false, message: "找不到資料夾 (請確認是否已建立)" };
-    
-    const folderIdMatch = folderUrl.match(/[-\w]{25,}/);
-    if (!folderIdMatch) return { success: false, message: "無效的 Google Drive 連結" };
-    
-    const folder = DriveApp.getFolderById(folderIdMatch[0]);
-    const files = folder.getFiles();
     const imageList = [];
-    while (files.hasNext()) {
-      const file = files.next();
-      if (file.getMimeType().indexOf("image") !== -1) {
+    
+    // 欄位定義: 0:影像ID, 1:個案編號, 2:上傳日期, 3:檔案名稱, 4:GoogleDrive檔案連結, 5:備註
+    // 從第 2 行開始 (索引 1)，略過標題
+    for (let i = 1; i < data.length; i++) {
+      const row = data[i];
+      // 比對個案編號
+      if (String(row[1]).replace(/^'/, '').trim() === String(clientId).trim()) {
+        const fileUrl = row[4];
+        let fileId = "";
+        
+        // 從 URL 提取 File ID
+        const idMatch = fileUrl.match(/[-\w]{25,}/);
+        if (idMatch) fileId = idMatch[0];
+
         imageList.push({
-          id: file.getId(), name: file.getName(), url: file.getUrl(),
-          thumbnail: "https://lh3.googleusercontent.com/d/" + file.getId() + "=s400", 
-          date: Utilities.formatDate(file.getDateCreated(), Session.getScriptTimeZone(), "yyyy-MM-dd HH:mm")
+          id: row[0],      // 影像ID
+          name: row[3],    // 檔案名稱
+          url: fileUrl,    // Google Drive 連結
+          thumbnail: fileId ? "https://lh3.googleusercontent.com/d/" + fileId + "=s400" : "", // 縮圖
+          date: row[2],    // 上傳日期
+          remark: row[5]   // ★ 新增：備註 (F欄)
         });
       }
     }
+    
+    // 依日期排序 (新到舊)
     return { success: true, images: imageList.sort((a,b)=>b.date.localeCompare(a.date)) };
+
   } catch (e) { return { success: false, message: "讀取影像失敗: " + e.toString() }; }
 }
 
-function uploadClientImage(clientId, fileData, fileName, mimeType) {
+// 上傳影像 - 修改版：新增備註參數並寫入 Sheet
+function uploadClientImage(clientId, fileData, fileName, mimeType, remark) {
   try {
     const ss = SpreadsheetApp.openById(CONFIG.SPREADSHEET_ID);
-    const sheet = ss.getSheetByName(CONFIG.SHEETS.CLIENT);
-    const data = sheet.getDataRange().getDisplayValues();
+    
+    // 1. 先取得資料夾位置 (從 Client 資料表)
+    const clientSheet = ss.getSheetByName(CONFIG.SHEETS.CLIENT);
+    const clientData = clientSheet.getDataRange().getDisplayValues();
     let folderUrl = "";
     
-    // ★ 修正：資料夾連結在 Column 10 (index 9)
-    for (let i = 1; i < data.length; i++) {
-      if (String(data[i][0]).replace(/^'/, '') === String(clientId)) { 
-          folderUrl = data[i][9]; // ★ 原本是 7，改為 9
+    for (let i = 1; i < clientData.length; i++) {
+      if (String(clientData[i][0]).replace(/^'/, '') === String(clientId)) { 
+          folderUrl = clientData[i][9]; 
           break; 
       }
     }
@@ -558,8 +563,32 @@ function uploadClientImage(clientId, fileData, fileName, mimeType) {
     if (!folderIdMatch) throw new Error("資料夾 ID 解析失敗: " + folderUrl);
     
     const folder = DriveApp.getFolderById(folderIdMatch[0]);
+    
+    // 2. 儲存實體檔案到 Drive
     const blob = Utilities.newBlob(Utilities.base64Decode(fileData), mimeType, fileName);
-    folder.createFile(blob);
+    const file = folder.createFile(blob);
+    const fileUrl = file.getUrl();
+    
+    // 3. 寫入資料到 Image_Gallery Sheet
+    let imgSheet = ss.getSheetByName(CONFIG.SHEETS.IMAGE);
+    if (!imgSheet) {
+      // 若無工作表則建立
+      imgSheet = ss.insertSheet(CONFIG.SHEETS.IMAGE);
+      imgSheet.appendRow(["影像ID", "個案編號", "上傳日期", "檔案名稱", "GoogleDrive檔案連結", "備註"]);
+    }
+
+    const uniqueImgId = "IMG" + new Date().getTime(); // 簡單的 ID 生成
+    const nowStr = Utilities.formatDate(new Date(), ss.getSpreadsheetTimeZone(), "yyyy-MM-dd HH:mm");
+    
+    imgSheet.appendRow([
+      uniqueImgId,
+      "'" + clientId,
+      nowStr,
+      fileName,
+      fileUrl,
+      remark || "" // ★ 寫入備註
+    ]);
+
     return { success: true, message: "上傳成功" };
   } catch (e) { return { success: false, message: "上傳失敗: " + e.toString() }; }
 }
