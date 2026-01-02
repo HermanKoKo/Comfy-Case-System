@@ -1,12 +1,20 @@
 <script>
+// ==========================================
+// 全域變數宣告
+// ==========================================
 let currentClient = null;
 let allTreatmentLogs = [];
 let allOverviewRecords = []; 
 let currentOverviewCategory = 'all'; 
 let currentCalDate = new Date();
 let isMonthPickerMode = false; 
+let filesToUpload = []; // 確保此變數被宣告
 
-// === Flatpickr 初始化 (保持原 UI 設計) ===
+// ==========================================
+// 初始化與 UI 設定
+// ==========================================
+
+// Flatpickr 日期選擇器初始化設定 (保持原 UI 設計)
 function setupEnhancedFlatpickr(selector, options = {}) {
   const defaults = {
     locale: "zh_tw", dateFormat: "Y-m-d", disableMobile: true, allowInput: true, static: true,
@@ -44,6 +52,7 @@ function setupEnhancedFlatpickr(selector, options = {}) {
   };
   return flatpickr(selector, { ...defaults, ...options });
 }
+
 function updateHeader(instance, headerEl, gridEl) {
   if(!headerEl) return;
   const titleSpan = headerEl.querySelector(".curr-year-month");
@@ -52,6 +61,7 @@ function updateHeader(instance, headerEl, gridEl) {
     gridEl.querySelectorAll(".custom-fp-month-item").forEach((item, idx) => { idx === instance.currentMonth ? item.classList.add("is-current") : item.classList.remove("is-current"); });
   } else { titleSpan.textContent = `${instance.currentYear}年 ${instance.l10n.months.longhand[instance.currentMonth]}`; }
 }
+
 function renderMonthGridDots(instance, gridEl) {
   const currentYear = instance.currentYear;
   const monthsWithData = new Set();
@@ -63,18 +73,21 @@ function renderMonthGridDots(instance, gridEl) {
   gridEl.querySelectorAll(".custom-fp-month-item").forEach((item, idx) => { monthsWithData.has(idx) ? item.classList.add("has-record") : item.classList.remove("has-record"); });
 }
 
-// === 初始化 ===
+// 頁面載入完成後執行
 window.onload = function() {
   const today = new Date().toISOString().split('T')[0];
   document.querySelectorAll('#treatmentDate, #maintenanceDate, #doctorConsultDate, #trackDate').forEach(el => el.value = today);
+  
   setupEnhancedFlatpickr('input[type="date"], #trackDate', {
     onChange: function(selectedDates, dateStr, instance) {
       if (instance.element.id === 'filterDate') { applyLogFilters(); if (selectedDates.length > 0) { currentCalDate = new Date(selectedDates[0]); isMonthPickerMode = false; renderTreatmentCalendar(); } }
     }
   });
+  
   const overviewConfig = { onChange: function() { renderOverviewList(); } };
   setupEnhancedFlatpickr('#overviewStartDate', overviewConfig);
   setupEnhancedFlatpickr('#overviewEndDate', overviewConfig);
+  
   loadSystemStaff();
 };
 
@@ -98,7 +111,9 @@ function loadSystemStaff() {
   }).getSystemStaff();
 }
 
-// === 導覽與頁面切換 ===
+// ==========================================
+// 導覽與頁面切換
+// ==========================================
 function navTo(viewName) {
   if (!currentClient && viewName !== 'search') { alert("請先選取個案。"); return; }
   
@@ -128,9 +143,91 @@ function navTo(viewName) {
   }
 }
 
-// === ★★★ [MODIFIED] 列印功能與右上角姓名修正 ★★★ ===
+// ==========================================
+// ★★★ [NEW] 新增個案相關函式 (補上缺失的部分) ★★★
+// ==========================================
+
+// 自動判斷性別 (根據身分證字號)
+function autoDetectGender(input) {
+  const val = input.value.toUpperCase();
+  input.value = val; // 強制轉大寫
+  if (val.length >= 2) {
+    const secondChar = val.charAt(1);
+    // 身分證第二碼 1 為男，2 為女
+    if (secondChar === '1') {
+      // 這裡假設未來可能會在 UI 上顯示性別，目前僅做判斷邏輯
+      // console.log("Detected Male");
+    } else if (secondChar === '2') {
+      // console.log("Detected Female");
+    }
+  }
+}
+
+// 提交新個案資料
+function submitNewClient() {
+  const btn = document.getElementById('btnSubmitClient');
+  const originalText = btn.innerHTML;
+  
+  // 取得表單欄位值
+  const data = {
+    name: document.getElementById('addName').value.trim(),
+    dob: document.getElementById('addDob').value.trim(),
+    idNo: document.getElementById('addIdNo').value.trim(),
+    phone: document.getElementById('addPhone').value.trim(),
+    gender: '', // 稍後判斷
+    emerName: document.getElementById('addEmerName').value.trim(),
+    emerPhone: document.getElementById('addEmerPhone').value.trim(),
+    chronic: document.getElementById('addChronic').value.trim()
+  };
+
+  // 簡易驗證
+  if (!data.name || !data.dob || !data.idNo || !data.phone) {
+    alert("請填寫所有必填欄位 (*)！");
+    return;
+  }
+  
+  if (data.idNo.length < 2) {
+      alert("身分證字號格式錯誤");
+      return;
+  }
+  
+  // 自動判斷性別
+  const secondChar = data.idNo.charAt(1);
+  if (secondChar === '1') data.gender = '男';
+  else if (secondChar === '2') data.gender = '女';
+  else data.gender = '其他';
+
+  // UILoading 狀態
+  btn.disabled = true;
+  btn.innerHTML = '<span class="material-icons-outlined animate-spin">sync</span> 建立中...';
+
+  google.script.run
+    .withSuccessHandler(function(res) {
+      btn.disabled = false;
+      btn.innerHTML = originalText;
+      
+      if (res.success) {
+        alert("個案建立成功！");
+        document.getElementById('addClientForm').reset();
+        closeModal('addClientModal');
+        // 自動選取新個案並跳轉
+        selectClient(res.fullData);
+      } else {
+        alert("建立失敗：" + res.message);
+      }
+    })
+    .withFailureHandler(function(e) {
+      btn.disabled = false;
+      btn.innerHTML = originalText;
+      alert("系統錯誤：" + e.message);
+    })
+    .createNewClient(data);
+}
+
+// ==========================================
+// 列印功能
+// ==========================================
 function handlePrint() {
-  // 1. 設定日期
   const today = new Date();
   const dateStr = today.getFullYear() + "-" + 
                   String(today.getMonth() + 1).padStart(2, '0') + "-" + 
@@ -139,18 +236,14 @@ function handlePrint() {
   const dateEl = document.getElementById('print-date-display');
   if(dateEl) dateEl.innerText = dateStr;
 
-  // 2. 設定個案資訊 (右上角姓名)
   const infoEl = document.getElementById('print-patient-info');
   if (infoEl) {
       if (currentClient) {
-         // ★★★ 修改處：移除個案編號，只保留 姓名 - 生日 ★★★
          infoEl.innerText = `${currentClient['姓名']} - ${currentClient['生日']}`;
       } else {
          infoEl.innerText = "個案列表";
       }
   }
-
-  // 3. 呼叫列印 (請在瀏覽器列印視窗中，取消勾選「頁首及頁尾」以移除網址)
   window.print();
 }
 
@@ -165,13 +258,14 @@ function renderBasicInfo() {
     'display-id-number': '身分證字號',
     'display-phone': '電話',
     'display-emergency-name': '緊急聯絡人',
-    'display-emergency-phone': '緊急聯絡電話',
-    'display-notes': '病史備註'
+    'display-emergency-phone': '緊急聯絡人電話', // ★ 已修正：補上"人"字，與資料庫欄位一致
+    'display-notes': '慢性病或特殊疾病'       // ★ 已修正：改為正確的資料庫欄位名稱
   };
   
   for (const [domId, dbKey] of Object.entries(fieldMap)) {
     const el = document.getElementById(domId);
     if(el) {
+       // 如果是備註欄位且內容為空，則維持預設文字 (例如：尚無備註紀錄)
        if(domId === 'display-notes' && (!currentClient[dbKey] || currentClient[dbKey] === '')) continue;
        el.textContent = currentClient[dbKey] || '--';
     }
@@ -181,7 +275,6 @@ function renderBasicInfo() {
   if(statusEl && currentClient['狀態']) statusEl.textContent = currentClient['狀態'];
 }
 
-// === 搜尋與個案選取 ===
 function handleSearch() {
   const inputEl = document.getElementById('searchInput');
   const kw = inputEl.value.trim();
@@ -210,7 +303,9 @@ function selectClient(c) {
   navTo('basic');
 }
 
-// === 表單提交 ===
+// ==========================================
+// 表單提交 (治療、醫師、保養、追蹤)
+// ==========================================
 function submitForm(type) {
   if (!currentClient) { alert("系統錯誤：未選取個案，請重新搜尋。"); return; }
   
@@ -229,7 +324,7 @@ function submitForm(type) {
       objective: document.querySelector('#view-doctor textarea[name="客觀檢查"]').value, 
       diagnosis: document.querySelector('#view-doctor textarea[name="診斷"]').value, 
       plan: document.querySelector('#view-doctor textarea[name="治療計畫"]').value, 
-      nursing: document.getElementById('nursingRecord').value, 
+      nursingRecord: document.getElementById('nursingRecord').value, 
       remark: document.getElementById('doctorRemark').value 
     };
     if (!d.date || !d.doctor) { alert("請填寫日期與醫師"); if(btn){btn.disabled=false; btn.innerHTML=ot;} return; }
@@ -273,7 +368,9 @@ function submitForm(type) {
   }
 }
 
-// === 列表渲染函數 ===
+// ==========================================
+// 歷史列表載入函式
+// ==========================================
 function loadTrackingHistory() {
   const c = document.getElementById('trackingHistoryList'); c.innerHTML = '<div class="text-center py-6 text-slate-400">讀取中...</div>';
   google.script.run.withSuccessHandler(recs => {
@@ -347,7 +444,6 @@ function loadMaintenanceHistory() {
   }).getMaintenanceHistory(currentClient['個案編號']);
 }
 
-// === 醫師看診紀錄 ===
 function loadDoctorHistory() {
   const c = document.getElementById('doctorHistoryList'); c.innerHTML = '<div class="text-center py-10 text-slate-400">讀取中...</div>';
   google.script.run.withSuccessHandler(logs => {
@@ -400,7 +496,9 @@ function loadDoctorHistory() {
   }).getClientHistory(currentClient['個案編號'], 'Doctor_Consultation');
 }
 
-// === 總覽與其他 ===
+// ==========================================
+// 個案總覽函式
+// ==========================================
 function loadOverviewData() {
   const container = document.getElementById('overviewListContainer'); container.innerHTML = '<div class="text-center py-12 text-slate-400 flex flex-col items-center gap-2"><span class="material-icons-outlined animate-spin">sync</span><span>讀取個案歷程中...</span></div>';
   google.script.run.withSuccessHandler(data => { allOverviewRecords = data || []; renderOverviewList(); }).withFailureHandler(err => { container.innerHTML = `<div class="text-red-500 text-center py-10">載入失敗: ${err.message}</div>`; }).getCaseOverviewData(currentClient['個案編號']);
@@ -527,9 +625,14 @@ function exportOverviewToCSV() {
   const a = document.createElement("a"); a.href = URL.createObjectURL(b); a.download = `${currentClient['姓名']}_歷程.csv`; document.body.appendChild(a); a.click(); document.body.removeChild(a);
 }
 function printOverviewReport() { handlePrint(); } // 修改為呼叫新的 handlePrint
+
+// ==========================================
+// 工具函式與月曆
+// ==========================================
 function resetSearch() { currentClient = null; document.getElementById('topBarClientInfo').classList.add('hidden'); navTo('search'); }
 function closeModal(id) { document.getElementById(id).classList.add('hidden'); }
 function openModal(id) { document.getElementById(id).classList.remove('hidden'); }
+
 function renderTreatmentCalendar() {
   const c = document.getElementById('treatmentCalendar'); if(!c) return;
   const y = currentCalDate.getFullYear(); const m = currentCalDate.getMonth();
@@ -557,7 +660,10 @@ function selectDateFromCal(d) { const i = document.getElementById('filterDate');
 function resetTreatmentFilter() { document.getElementById('filterTherapist').value = ""; const i = document.getElementById('filterDate'); if(i._flatpickr) i._flatpickr.clear(); else i.value = ""; applyLogFilters(); isMonthPickerMode = false; currentCalDate = new Date(); renderTreatmentCalendar(); }
 function editClientInfo() { alert("編輯功能開發中..."); }
 function applyLogFilters() { const t=document.getElementById('filterTherapist').value; const d=document.getElementById('filterDate').value; renderTreatmentList(allTreatmentLogs.filter(l => (!t || l['執行治療師']===t) && (!d || l['治療日期']===d))); }
-// 影像功能 (維持)
+
+// ==========================================
+// 影像功能 (上傳與檢視)
+// ==========================================
 function loadClientImages() {
   const c = document.getElementById('imageGalleryContainer');
   const st = document.getElementById('img-stats-text');
@@ -573,12 +679,13 @@ function renderImageGallery(imgs) {
   if (!imgs || imgs.length === 0) { c.innerHTML = `<div class="col-span-full flex flex-col items-center justify-center py-24 bg-white border-2 border-dashed border-slate-200 rounded-[2.5rem] group hover:border-emerald-300 transition-colors"><div class="p-4 bg-slate-50 rounded-full mb-4 text-slate-300 group-hover:text-emerald-400 transition-colors"><span class="material-icons-outlined text-3xl">add_photo_alternate</span></div><p class="text-slate-400 font-bold mb-2">尚無影像紀錄</p><button onclick="openUploadModal()" class="text-emerald-500 font-bold text-sm hover:text-emerald-600 transition">立即上傳</button></div>`; return; }
   c.innerHTML = imgs.map(i => `<div class="group relative bg-white rounded-3xl shadow-sm border border-slate-100 overflow-hidden card-hover cursor-pointer" onclick="openLightbox('${i.id}', '${i.name}')"><div class="aspect-square bg-slate-50 relative overflow-hidden"><img src="${i.thumbnail}" loading="lazy" class="w-full h-full object-cover transition duration-500 group-hover:scale-105" alt="${i.name}" onerror="this.src='https://via.placeholder.com/400?text=Error'"><div class="absolute inset-0 bg-black/0 group-hover:bg-black/5 transition-all"></div></div><div class="p-4"><div class="flex justify-between items-start"><div class="text-xs font-bold text-slate-400 mb-1">${i.date}</div><span class="material-icons-outlined text-slate-300 text-sm group-hover:text-emerald-500 transition-colors z-10 hover:bg-slate-100 rounded" onclick="event.stopPropagation(); window.open('${i.url}', '_blank')">open_in_new</span></div><h4 class="text-sm font-bold text-slate-700 truncate" title="${i.name}">${i.name}</h4></div></div>`).join('');
 }
-let filesToUpload = [];
+
 function openUploadModal() {
   if (!currentClient) { alert("請先選擇個案"); return; }
   document.getElementById('uploadImageModal').classList.remove('hidden');
   document.getElementById('uploadInput').value = "";
   document.getElementById('previewList').innerHTML = "";
+  document.getElementById('fileRemark').value = ""; // 清空備註
   document.getElementById('uploadPreviewArea').classList.add('hidden');
   filesToUpload = [];
 }
@@ -592,6 +699,7 @@ function previewFiles(input) {
 }
 function startUpload() {
   if (filesToUpload.length === 0) { alert("請選擇檔案"); return; }
+  const remark = document.getElementById('fileRemark').value.trim(); // 取得備註
   const btn = document.getElementById('btnStartUpload');
   const ot = btn.innerHTML;
   let count = 0; const total = filesToUpload.length;
@@ -601,13 +709,19 @@ function startUpload() {
     const f = filesToUpload[idx]; const r = new FileReader();
     r.onload = function(e) {
       const content = e.target.result.split(',')[1];
-      google.script.run.withSuccessHandler(() => { count++; btn.innerHTML = `<span class="material-icons-outlined animate-spin mr-2 text-sm">sync</span> 上傳中 (${count}/${total})...`; next(idx + 1); }).uploadClientImage(currentClient['個案編號'], content, f.name, f.type);
+      // ★★★ 修正處：傳入 remark 參數 ★★★
+      google.script.run
+        .withSuccessHandler(() => { count++; btn.innerHTML = `<span class="material-icons-outlined animate-spin mr-2 text-sm">sync</span> 上傳中 (${count}/${total})...`; next(idx + 1); })
+        .uploadClientImage(currentClient['個案編號'], content, f.name, f.type, remark);
     };
     r.readAsDataURL(f);
   };
   next(0);
 }
-// === Lightbox ===
+
+// ==========================================
+// Lightbox 燈箱
+// ==========================================
 function openLightbox(id, name) {
     const modal = document.getElementById('imageLightbox');
     const img = document.getElementById('lightboxImage');

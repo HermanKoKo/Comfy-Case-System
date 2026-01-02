@@ -4,7 +4,12 @@
  * ==========================================
  */
 const CONFIG = {
+  // 原本的系統資料庫 (存放紀錄、設定、影像等)
   SPREADSHEET_ID: '1LMhlQGyXNXq9Teqm0_W0zU9NbQlVCHKLDL0mSOiDomc', 
+  
+  // ★ 新增：個案核心資料庫 (獨立存放 Client_Basic_Info)
+  CLIENT_DB_ID: '1SPLLacdq9RYV6Jfur-pZQiQwMqGuBFEZ5jaho_0WUK0',
+
   PARENT_FOLDER_ID: '1NIsNHALeSSVm60Yfjc9k-u30A42CuZw8',
   SHEETS: {
     CLIENT: 'Client_Basic_Info',
@@ -45,12 +50,41 @@ function normalizeHeader(header) {
   return String(header).replace(/\s+/g, '').trim().toLowerCase();
 }
 
-// 1. 搜尋功能
+/**
+ * ★ 關鍵核心：智慧分頁選取器
+ * 根據 Sheet 名稱自動判斷要連線到「原資料庫」還是「新個案資料庫」
+ */
+function getSheetHelper(sheetName) {
+  let ss;
+  // 如果請求的是個案基本資料，連線到新資料庫
+  if (sheetName === CONFIG.SHEETS.CLIENT) {
+    try {
+      ss = SpreadsheetApp.openById(CONFIG.CLIENT_DB_ID);
+    } catch (e) {
+      throw new Error("無法連接個案核心資料庫 (Client DB)，請檢查權限或ID。");
+    }
+  } else {
+    // 其他資料 (治療紀錄、系統設定等) 維持在原資料庫
+    ss = SpreadsheetApp.openById(CONFIG.SPREADSHEET_ID);
+  }
+
+  const sheet = ss.getSheetByName(sheetName);
+  if (!sheet) {
+    // 自動建立缺少的 Sheet (選擇性功能，避免報錯)
+    if (sheetName !== CONFIG.SHEETS.CLIENT) {
+       return ss.insertSheet(sheetName);
+    }
+    throw new Error("找不到工作表: " + sheetName);
+  }
+  return sheet;
+}
+
+// 1. 搜尋功能 (已修改：使用 helper 連接新資料庫)
 function searchClient(keyword) {
   try {
-    const ss = SpreadsheetApp.openById(CONFIG.SPREADSHEET_ID);
-    const sheet = ss.getSheetByName(CONFIG.SHEETS.CLIENT);
-    if (!sheet) return [];
+    // 使用 helper 自動取得正確的 Sheet (會在外部 DB 尋找)
+    const sheet = getSheetHelper(CONFIG.SHEETS.CLIENT);
+    
     const data = sheet.getDataRange().getDisplayValues(); 
     const results = [];
     const query = String(keyword).trim().toLowerCase();
@@ -67,8 +101,8 @@ function searchClient(keyword) {
       if (id.includes(query) || name.includes(query) || phone.includes(query)) {
         results.push({
           '個案編號': row[0], '姓名': row[1], '生日': row[2], '身分證字號': row[3],
-          '電話': row[4], '性別': row[5], '慢性病或特殊疾病': row[8], // 修正索引
-          'GoogleDrive資料夾連結': row[9], // ★ 修正：索引從 7 改為 9 (J欄)
+          '電話': row[4], '性別': row[5], '慢性病或特殊疾病': row[8], 
+          'GoogleDrive資料夾連結': row[9], // 索引 9 (J欄)
           '建立日期': row[10],
           '緊急聯絡人': row[6], 
           '緊急聯絡人電話': row[7] 
@@ -79,15 +113,18 @@ function searchClient(keyword) {
   } catch (e) { throw new Error(e.message); }
 }
 
-// 2. 通用資料儲存功能
+// 2. 通用資料儲存功能 (已修改：支援跨資料庫寫入)
 function saveData(sheetName, dataObj) {
   const lock = LockService.getScriptLock();
   try {
     lock.waitLock(10000); 
-    const ss = SpreadsheetApp.openById(CONFIG.SPREADSHEET_ID);
+    
+    // ★ 修改：使用 helper 取得 Sheet，無論它是本地還是外部
     const targetSheetName = sheetName || CONFIG.SHEETS.CLIENT;
-    const sheet = ss.getSheetByName(targetSheetName);
-    if (!sheet) throw new Error("找不到工作表 [" + targetSheetName + "]");
+    const sheet = getSheetHelper(targetSheetName);
+    
+    // 取得該 Sheet 所屬的 Spreadsheet 物件 (為了取得正確的 TimeZone)
+    const ss = sheet.getParent();
 
     const rawHeaders = sheet.getRange(1, 1, 1, sheet.getLastColumn()).getValues()[0];
     const headerMap = {}; 
@@ -121,15 +158,12 @@ function saveData(sheetName, dataObj) {
     return { success: true, message: "資料已新增" };
     
   } catch (e) { throw new Error(e.message); } finally { lock.releaseLock(); }
-}
-
-/**
+}/**
  * 取得系統人員與項目清單
  */
 function getSystemStaff() {
-  const ss = SpreadsheetApp.openById(CONFIG.SPREADSHEET_ID);
-  const sheet = ss.getSheetByName(CONFIG.SHEETS.SYSTEM);
-  if(!sheet) return { doctors:[], nurses:[], therapists:[], trackingTypes:[], maintItems:[], allStaff:[], treatmentItems:[] };
+  // 使用 helper 取得 System 分頁 (位於原資料庫)
+  const sheet = getSheetHelper(CONFIG.SHEETS.SYSTEM);
   
   const data = sheet.getDataRange().getValues();
   const rows = data.slice(1);
@@ -149,13 +183,16 @@ function getSystemStaff() {
  */
 function saveTrackingRecord(formObj) {
   try {
-    const ss = SpreadsheetApp.openById(CONFIG.SPREADSHEET_ID);
-    let sheet = ss.getSheetByName(CONFIG.SHEETS.TRACKING);
-    if (!sheet) {
-      sheet = ss.insertSheet(CONFIG.SHEETS.TRACKING);
+    // 使用 helper 取得 Tracking 分頁 (位於原資料庫)
+    const sheet = getSheetHelper(CONFIG.SHEETS.TRACKING);
+    // getSheetHelper 內建自動建立分頁功能，此處可直接使用
+    if (sheet.getLastRow() === 0) {
       sheet.appendRow(["追蹤ID", "個案編號", "追蹤日期", "追蹤人員", "追蹤項目", "追蹤內容", "建立時間"]);
     }
     
+    // 取得該分頁的 Spreadsheet 物件以獲取時區
+    const ss = sheet.getParent();
+
     if (!formObj.clientId) throw new Error("無個案編號");
 
     const now = new Date();
@@ -182,9 +219,8 @@ function saveTrackingRecord(formObj) {
 function getTrackingHistory(clientId) {
   try {
     if (!clientId) return [];
-    const ss = SpreadsheetApp.openById(CONFIG.SPREADSHEET_ID);
-    const sheet = ss.getSheetByName(CONFIG.SHEETS.TRACKING);
-    if (!sheet) return [];
+    const sheet = getSheetHelper(CONFIG.SHEETS.TRACKING);
+    const ss = sheet.getParent();
     
     const data = sheet.getDataRange().getValues();
     if (data.length <= 1) return [];
@@ -220,20 +256,18 @@ function getTrackingHistory(clientId) {
 }
 
 /**
- * 儲存醫師看診紀錄 (★ 修改：加入護理紀錄欄位)
+ * 儲存醫師看診紀錄
  */
 function saveDoctorConsultation(formData) {
   try {
-    const ss = SpreadsheetApp.openById(CONFIG.SPREADSHEET_ID);
-    const sheet = ss.getSheetByName(CONFIG.SHEETS.DOCTOR); 
+    const sheet = getSheetHelper(CONFIG.SHEETS.DOCTOR);
+    const ss = sheet.getParent();
     
     if (!formData.clientId) throw new Error("無個案編號");
 
     const recordId = "DOC" + new Date().getTime();
     const timestamp = Utilities.formatDate(new Date(), ss.getSpreadsheetTimeZone(), "yyyy/MM/dd HH:mm:ss");
     
-    // 依據您提供的 Sheet 結構 (J欄為護理紀錄)
-    // 順序：ID, ClientID, Date, Doctor, Nurse, S, O, A, P, NursingRecord(J), Remark(K), Link(L), Time(M)
     const rowData = [
       recordId,                   
       "'" + formData.clientId,    
@@ -244,10 +278,10 @@ function saveDoctorConsultation(formData) {
       formData.objective,         
       formData.diagnosis,         
       formData.plan,
-      formData.nursingRecord,     // ★ 新增：護理紀錄 (對應 J 欄)
-      formData.remark,            // 對應 K 欄
-      "",                         // 對應 L 欄
-      timestamp                   // 對應 M 欄
+      formData.nursingRecord,     // 護理紀錄 (J 欄)
+      formData.remark,            // K 欄
+      "",                         // L 欄
+      timestamp                   // M 欄
     ];
 
     sheet.appendRow(rowData);
@@ -256,21 +290,23 @@ function saveDoctorConsultation(formData) {
 }
 
 /**
- * 建立新個案
+ * 建立新個案 (★ 關鍵：寫入新資料庫)
  */
 function createNewClient(data) {
   try {
-    const ss = SpreadsheetApp.openById(CONFIG.SPREADSHEET_ID);
-    const sheet = ss.getSheetByName(CONFIG.SHEETS.CLIENT);
+    // 使用 helper 取得 Client 分頁 (位於新資料庫)
+    const sheet = getSheetHelper(CONFIG.SHEETS.CLIENT);
     
     const now = new Date();
     const datePart = Utilities.formatDate(now, "GMT+8", "yyyyMMdd");
+    
+    // 從新資料庫取得最後一行，確保 ID 生成不重複
     const lastRow = sheet.getLastRow();
     const suffix = (lastRow + 1).toString().padStart(3, '0');
     const clientId = "CF" + datePart + suffix;
 
     let folderUrl = "";
-    // 建立資料夾
+    // 建立資料夾 (保留在原設定的 Drive 資料夾中，不受影響)
     try { 
         const parentFolder = DriveApp.getFolderById(CONFIG.PARENT_FOLDER_ID);
         const folder = parentFolder.createFolder(clientId + "_" + data.name); 
@@ -279,8 +315,6 @@ function createNewClient(data) {
         folderUrl = "資料夾建立失敗"; 
     }
 
-    // 注意：這裡的欄位順序決定了 folderUrl 是第幾個
-    // 0:ID, 1:Name, 2:DoB, 3:IDNo, 4:Phone, 5:Gender, 6:EmerName, 7:EmerPhone, 8:Chronic, 9:FolderUrl, 10:Time
     const newRow = [
       clientId,           
       data.name,          
@@ -313,8 +347,7 @@ function createNewClient(data) {
 function getMaintenanceHistory(clientId) {
   try {
     if (!clientId) return [];
-    const ss = SpreadsheetApp.openById(CONFIG.SPREADSHEET_ID);
-    const sheet = ss.getSheetByName(CONFIG.SHEETS.MAINTENANCE);
+    const sheet = getSheetHelper(CONFIG.SHEETS.MAINTENANCE);
     const data = sheet.getDataRange().getValues();
     const headers = data[0];
     
@@ -339,14 +372,13 @@ function getMaintenanceHistory(clientId) {
 }
 
 /**
- * 通用歷史紀錄 (用於治療紀錄)
+ * 通用歷史紀錄 (用於治療紀錄等)
  */
 function getClientHistory(clientId, sheetName) {
   try {
     if (!clientId) return [];
-    const ss = SpreadsheetApp.openById(CONFIG.SPREADSHEET_ID);
-    const sheet = ss.getSheetByName(sheetName);
-    if (!sheet) return [];
+    // 使用 helper，自動適應資料庫位置
+    const sheet = getSheetHelper(sheetName);
     
     const data = sheet.getDataRange().getDisplayValues();
     if (data.length < 2) return [];
@@ -383,8 +415,7 @@ function getClientHistory(clientId, sheetName) {
  */
 function saveMaintenanceRecord(data) {
   try {
-    const ss = SpreadsheetApp.openById(CONFIG.SPREADSHEET_ID);
-    const sheet = ss.getSheetByName(CONFIG.SHEETS.MAINTENANCE);
+    const sheet = getSheetHelper(CONFIG.SHEETS.MAINTENANCE);
     
     if (!data.clientId) throw new Error("無個案編號");
 
@@ -405,24 +436,23 @@ function saveMaintenanceRecord(data) {
     sheet.appendRow(newRow);
     return { success: true, message: "保養紀錄儲存成功！" };
   } catch (e) { return { success: false, message: "儲存失敗：" + e.toString() }; }
-}
-
-/**
- * 取得個案總覽資料 (已修改：回傳完整詳細欄位)
+}/**
+ * 取得個案總覽資料 (已修改：支援跨資料庫聚合)
  */
 function getCaseOverviewData(clientId) {
   try {
     if (!clientId) return [];
-    const ss = SpreadsheetApp.openById(CONFIG.SPREADSHEET_ID);
+    
+    // 注意：原本這裡是開啟一個 ss，現在改為分別取得各個 Sheet
+    // 因為這些 Sheet 可能分佈在不同的檔案中 (雖然目前只有 Client 在外部，但這樣寫最具擴充性)
+    
     const result = [];
     const targetId = String(clientId).trim();
     
     // 1. 醫師看診 (Doctor)
-    const docSheet = ss.getSheetByName(CONFIG.SHEETS.DOCTOR);
-    if (docSheet) {
+    try {
+      const docSheet = getSheetHelper(CONFIG.SHEETS.DOCTOR);
       const data = docSheet.getDataRange().getValues();
-      // 假設欄位順序固定，若有變動需調整索引
-      // A:ID, B:CaseID, C:Date, D:Doc, E:Nurse, F:S, G:O, H:A, I:P, J:NurseRec, K:Remark
       const idx = data[0].map(normalizeHeader).indexOf(normalizeHeader("個案編號"));
       const targetCol = idx > -1 ? idx : 1; 
 
@@ -433,27 +463,25 @@ function getCaseOverviewData(clientId) {
             date: formatDateForJSON(row[2]),
             category: 'doctor', 
             categoryName: '醫師看診',
-            // 詳細欄位
             doctor: row[3],
             nurse: row[4],
             s: row[5],
             o: row[6],
             a: row[7],
             p: row[8],
-            nursingRecord: row[9], // J欄
-            remark: row[10]        // K欄
+            nursingRecord: row[9],
+            remark: row[10]
           });
         }
       });
-    }
+    } catch (e) { console.log("讀取醫師看診失敗或是空表: " + e.toString()); }
 
     // 2. 保養項目 (Maintenance)
-    const maintSheet = ss.getSheetByName(CONFIG.SHEETS.MAINTENANCE);
-    if (maintSheet) {
+    try {
+      const maintSheet = getSheetHelper(CONFIG.SHEETS.MAINTENANCE);
       const data = maintSheet.getDataRange().getValues();
       const idx = data[0].map(normalizeHeader).indexOf(normalizeHeader("個案編號"));
       const targetCol = idx > -1 ? idx : 1;
-      // A:ID, B:CaseID, C:Date, D:Staff, E:Item, F:BP, G:SpO2, H:HR, I:Temp, J:Remark
       
       data.slice(1).forEach(row => {
         if (String(row[targetCol]).replace(/^'/, '').trim() === targetId) {
@@ -462,7 +490,6 @@ function getCaseOverviewData(clientId) {
             date: formatDateForJSON(row[2]),
             category: 'maintenance', 
             categoryName: '保養項目',
-            // 詳細欄位
             staff: row[3],
             item: row[4],
             bp: row[5],
@@ -473,15 +500,14 @@ function getCaseOverviewData(clientId) {
           });
         }
       });
-    }
+    } catch (e) { console.log("讀取保養項目失敗: " + e.toString()); }
 
     // 3. 個管追蹤 (Tracking)
-    const trackSheet = ss.getSheetByName(CONFIG.SHEETS.TRACKING);
-    if (trackSheet) {
+    try {
+      const trackSheet = getSheetHelper(CONFIG.SHEETS.TRACKING);
       const data = trackSheet.getDataRange().getValues();
       const idx = data[0].map(normalizeHeader).indexOf(normalizeHeader("個案編號"));
       const targetCol = idx > -1 ? idx : 1;
-      // A:ID, B:CaseID, C:Date, D:Staff, E:Type, F:Content
 
       data.slice(1).forEach(row => {
         if (String(row[targetCol]).replace(/^'/, '').trim() === targetId) {
@@ -490,30 +516,28 @@ function getCaseOverviewData(clientId) {
             date: formatDateForJSON(row[2]),
             category: 'tracking', 
             categoryName: '個管追蹤',
-            // 詳細欄位
             staff: row[3],
             type: row[4],
             content: row[5]
           });
         }
       });
-    }
+    } catch (e) { console.log("讀取個管追蹤失敗: " + e.toString()); }
 
     // 4. 治療紀錄 (Treatment)
-    const treatSheet = ss.getSheetByName(CONFIG.SHEETS.TREATMENT);
-    if (treatSheet) {
+    try {
+      const treatSheet = getSheetHelper(CONFIG.SHEETS.TREATMENT);
       const data = treatSheet.getDataRange().getValues();
       const headers = data[0].map(normalizeHeader);
       let idxId = headers.indexOf(normalizeHeader("個案編號"));
       if (idxId === -1) idxId = 1; 
       
-      // 依據欄位名稱動態抓取索引 (避免欄位移動導致錯誤)
       const idxDate = headers.indexOf(normalizeHeader("治療日期"));
       const idxStaff = headers.indexOf(normalizeHeader("執行治療師"));
       const idxItem = headers.indexOf(normalizeHeader("治療項目"));
       const idxComplaint = headers.indexOf(normalizeHeader("當日主訴"));
       const idxContent = headers.indexOf(normalizeHeader("治療內容"));
-      const idxNext = headers.indexOf(normalizeHeader("備註/下次治療")); // 需確認您的欄位名稱是否包含斜線或空格
+      const idxNext = headers.indexOf(normalizeHeader("備註/下次治療"));
       
       data.slice(1).forEach(row => {
         if (String(row[idxId]).replace(/^'/, '').trim() === targetId) {
@@ -522,16 +546,15 @@ function getCaseOverviewData(clientId) {
             date: formatDateForJSON(row[idxDate]),
             category: 'treatment', 
             categoryName: '治療紀錄',
-            // 詳細欄位
             staff: row[idxStaff],
             item: (idxItem > -1) ? row[idxItem] : "",
             complaint: (idxComplaint > -1) ? row[idxComplaint] : "",
             content: (idxContent > -1) ? row[idxContent] : "",
-            nextPlan: (idxNext > -1) ? row[idxNext] : "" // 若找不到則留空
+            nextPlan: (idxNext > -1) ? row[idxNext] : "" 
           });
         }
       });
-    }
+    } catch (e) { console.log("讀取治療紀錄失敗: " + e.toString()); }
 
     // 排序：新到舊
     return result.sort((a, b) => new Date(b.date) - new Date(a.date));
@@ -539,53 +562,45 @@ function getCaseOverviewData(clientId) {
   } catch (e) { throw new Error("取得總覽資料失敗: " + e.message); }
 }
 
-// 影像功能 - 修改版：從 Sheet 讀取，以便顯示備註
+// 影像功能 - 修改版：從 Sheet 讀取
 function getClientImages(clientId) {
   try {
-    const ss = SpreadsheetApp.openById(CONFIG.SPREADSHEET_ID);
-    const sheet = ss.getSheetByName(CONFIG.SHEETS.IMAGE); // 連接到 Image_Gallery
-    if (!sheet) return { success: false, message: "找不到影像資料表" };
-
+    // 使用 helper 取得 Image Sheet (位於原資料庫)
+    const sheet = getSheetHelper(CONFIG.SHEETS.IMAGE); 
+    
     const data = sheet.getDataRange().getDisplayValues();
     const imageList = [];
     
-    // 欄位定義: 0:影像ID, 1:個案編號, 2:上傳日期, 3:檔案名稱, 4:GoogleDrive檔案連結, 5:備註
-    // 從第 2 行開始 (索引 1)，略過標題
     for (let i = 1; i < data.length; i++) {
       const row = data[i];
-      // 比對個案編號
       if (String(row[1]).replace(/^'/, '').trim() === String(clientId).trim()) {
         const fileUrl = row[4];
         let fileId = "";
         
-        // 從 URL 提取 File ID
         const idMatch = fileUrl.match(/[-\w]{25,}/);
         if (idMatch) fileId = idMatch[0];
 
         imageList.push({
-          id: row[0],      // 影像ID
-          name: row[3],    // 檔案名稱
-          url: fileUrl,    // Google Drive 連結
-          thumbnail: fileId ? "https://lh3.googleusercontent.com/d/" + fileId + "=s400" : "", // 縮圖
-          date: row[2],    // 上傳日期
-          remark: row[5]   // ★ 新增：備註 (F欄)
+          id: row[0],
+          name: row[3],
+          url: fileUrl,
+          thumbnail: fileId ? "https://lh3.googleusercontent.com/d/" + fileId + "=s400" : "",
+          date: row[2],
+          remark: row[5]
         });
       }
     }
     
-    // 依日期排序 (新到舊)
     return { success: true, images: imageList.sort((a,b)=>b.date.localeCompare(a.date)) };
 
   } catch (e) { return { success: false, message: "讀取影像失敗: " + e.toString() }; }
 }
 
-// 上傳影像 - 修改版：新增備註參數並寫入 Sheet
+// 上傳影像 - 修改版：從新資料庫查 Folder，寫入舊資料庫
 function uploadClientImage(clientId, fileData, fileName, mimeType, remark) {
   try {
-    const ss = SpreadsheetApp.openById(CONFIG.SPREADSHEET_ID);
-    
-    // 1. 先取得資料夾位置 (從 Client 資料表)
-    const clientSheet = ss.getSheetByName(CONFIG.SHEETS.CLIENT);
+    // 1. 先取得資料夾位置 (★ 關鍵：必須去新的 Client DB 找)
+    const clientSheet = getSheetHelper(CONFIG.SHEETS.CLIENT);
     const clientData = clientSheet.getDataRange().getDisplayValues();
     let folderUrl = "";
     
@@ -607,15 +622,15 @@ function uploadClientImage(clientId, fileData, fileName, mimeType, remark) {
     const file = folder.createFile(blob);
     const fileUrl = file.getUrl();
     
-    // 3. 寫入資料到 Image_Gallery Sheet
-    let imgSheet = ss.getSheetByName(CONFIG.SHEETS.IMAGE);
-    if (!imgSheet) {
-      // 若無工作表則建立
-      imgSheet = ss.insertSheet(CONFIG.SHEETS.IMAGE);
+    // 3. 寫入資料到 Image_Gallery Sheet (★ 寫回原資料庫)
+    let imgSheet = getSheetHelper(CONFIG.SHEETS.IMAGE);
+    const ss = imgSheet.getParent(); // 取得原資料庫的 Spreadsheet 物件以獲取時區
+
+    if (imgSheet.getLastRow() === 0) {
       imgSheet.appendRow(["影像ID", "個案編號", "上傳日期", "檔案名稱", "GoogleDrive檔案連結", "備註"]);
     }
 
-    const uniqueImgId = "IMG" + new Date().getTime(); // 簡單的 ID 生成
+    const uniqueImgId = "IMG" + new Date().getTime();
     const nowStr = Utilities.formatDate(new Date(), ss.getSpreadsheetTimeZone(), "yyyy-MM-dd HH:mm");
     
     imgSheet.appendRow([
@@ -624,7 +639,7 @@ function uploadClientImage(clientId, fileData, fileName, mimeType, remark) {
       nowStr,
       fileName,
       fileUrl,
-      remark || "" // ★ 寫入備註
+      remark || ""
     ]);
 
     return { success: true, message: "上傳成功" };
