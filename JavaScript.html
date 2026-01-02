@@ -179,7 +179,6 @@ function submitForm(type) {
       objective: document.querySelector('#view-doctor textarea[name="客觀檢查"]').value, 
       diagnosis: document.querySelector('#view-doctor textarea[name="診斷"]').value, 
       plan: document.querySelector('#view-doctor textarea[name="治療計畫"]').value, 
-      // ★★★ 新增：傳送護理紀錄 ★★★
       nursingRecord: document.getElementById('nursingRecord').value,
       remark: document.getElementById('doctorRemark').value 
     };
@@ -223,7 +222,9 @@ function submitForm(type) {
     if (!d.trackDate || !d.trackStaff || !d.trackType || !d.content) { alert("請完整填寫追蹤資料"); if(btn){btn.disabled=false; btn.innerHTML=ot;} return; }
     google.script.run.withSuccessHandler(res => { if(btn){btn.disabled=false; btn.innerHTML=ot;} if (res.success) { alert(res.message); document.getElementById('trackContent').value = ""; loadTrackingHistory(); } else { alert(res.message); } }).saveTrackingRecord(d);
   }
-}// === 列表渲染函數 ===
+}
+
+// === 列表渲染函數 ===
 function loadTrackingHistory() {
   const c = document.getElementById('trackingHistoryList'); c.innerHTML = '<div class="text-center py-6 text-slate-400">讀取中...</div>';
   google.script.run.withSuccessHandler(recs => {
@@ -267,51 +268,138 @@ function renderTreatmentList(logs) {
     </div>`).join('');
 }
 
+// ★★★ 修改重點：緊湊版保養紀錄 (含備註顯示 & 優化排版) ★★★
 function loadMaintenanceHistory() {
-  const c = document.getElementById('maintenanceHistoryList'); c.innerHTML = '<div class="text-center py-10 text-slate-400">紀錄載入中...</div>';
+  const c = document.getElementById('maintenanceHistoryList'); 
+  c.innerHTML = '<div class="text-center py-10 text-slate-400">紀錄載入中...</div>';
+  
   google.script.run.withSuccessHandler(logs => {
-    if(!logs || !logs.length) { c.innerHTML = '<div class="bg-white/50 border-2 border-dashed border-slate-200 rounded-[2.5rem] p-12 text-center text-slate-300">尚無歷史紀錄</div>'; return; }
-    c.innerHTML = logs.map(l => `<div class="bg-white p-6 rounded-[2rem] shadow-sm border border-slate-100 card-hover mb-4 flex flex-col md:flex-row gap-4 items-center"><div class="w-full md:w-auto flex items-center gap-4 border-b md:border-b-0 md:border-r border-slate-100 pb-4 md:pb-0 md:pr-6"><div class="text-center min-w-[60px]"><div class="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Date</div><div class="text-sm font-black text-slate-700 font-mono">${l['保養日期']||'--'}</div></div><div class="flex-1"><span class="px-2.5 py-1 bg-orange-50 text-orange-600 text-[11px] font-bold rounded-lg mb-1 inline-block">${l['保養項目']||'一般'}</span><div class="text-xs font-bold text-slate-400">人員：${l['執行人員']||'--'}</div></div></div><div class="w-full grid grid-cols-4 gap-2 text-center"><div class="p-2 rounded-xl bg-slate-50"><div class="text-[9px] font-bold text-slate-400 mb-1">BP</div><div class="text-sm font-black text-slate-700">${l['血壓']||'-'}</div></div><div class="p-2 rounded-xl bg-slate-50"><div class="text-[9px] font-bold text-slate-400 mb-1">SpO2</div><div class="text-sm font-black text-slate-700">${l['血氧']||'-'}</div></div><div class="p-2 rounded-xl bg-slate-50"><div class="text-[9px] font-bold text-slate-400 mb-1">HR</div><div class="text-sm font-black text-slate-700">${l['心律']||'-'}</div></div><div class="p-2 rounded-xl bg-slate-50"><div class="text-[9px] font-bold text-slate-400 mb-1">Temp</div><div class="text-sm font-black text-slate-700">${l['體溫']||'-'}</div></div></div></div>`).join('');
+    if(!logs || !logs.length) { 
+      c.innerHTML = '<div class="bg-white/50 border-2 border-dashed border-slate-200 rounded-[2.5rem] p-12 text-center text-slate-300">尚無歷史紀錄</div>'; 
+      return; 
+    }
+    
+    c.innerHTML = logs.map(l => `
+      <div class="bg-white p-4 rounded-[2rem] shadow-sm border border-slate-100 card-hover mb-3 flex flex-col gap-3 group relative overflow-hidden">
+          <!-- 裝飾線條 -->
+          <div class="absolute left-0 top-0 bottom-0 w-1 bg-orange-400 opacity-80"></div>
+          
+          <!-- 第一部分：標題列 (日期、項目、人員) -->
+          <div class="flex flex-wrap justify-between items-center border-b border-slate-50 pb-2 pl-3">
+              <div class="flex items-center gap-3">
+                  <span class="text-sm font-black text-slate-700 font-mono tracking-tight">${l['保養日期']||'--'}</span>
+                  <span class="px-2.5 py-0.5 bg-orange-50 text-orange-600 text-xs font-bold rounded-lg border border-orange-100">
+                    ${l['保養項目']||'一般'}
+                  </span>
+              </div>
+              <div class="text-xs font-bold text-slate-400 flex items-center gap-1 bg-slate-50 px-2 py-1 rounded-lg">
+                  <span class="material-icons-outlined text-[14px]">badge</span>
+                  ${l['執行人員']||'--'}
+              </div>
+          </div>
+
+          <!-- 第二部分：生理數值 Grid (BP, SpO2, HR, Temp) -->
+          <div class="pl-3 grid grid-cols-2 md:grid-cols-4 gap-2">
+              <div class="p-2 rounded-xl bg-slate-50 border border-slate-100 flex flex-col items-center justify-center">
+                  <span class="text-[10px] font-bold text-slate-400 uppercase tracking-wider">BP</span>
+                  <span class="text-sm font-black text-slate-700">${l['血壓']||'-'}</span>
+              </div>
+              <div class="p-2 rounded-xl bg-slate-50 border border-slate-100 flex flex-col items-center justify-center">
+                  <span class="text-[10px] font-bold text-slate-400 uppercase tracking-wider">SpO2</span>
+                  <span class="text-sm font-black text-slate-700">${l['血氧']||'-'}</span>
+              </div>
+              <div class="p-2 rounded-xl bg-slate-50 border border-slate-100 flex flex-col items-center justify-center">
+                  <span class="text-[10px] font-bold text-slate-400 uppercase tracking-wider">HR</span>
+                  <span class="text-sm font-black text-slate-700">${l['心律']||'-'}</span>
+              </div>
+              <div class="p-2 rounded-xl bg-slate-50 border border-slate-100 flex flex-col items-center justify-center">
+                  <span class="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Temp</span>
+                  <span class="text-sm font-black text-slate-700">${l['體溫']||'-'}</span>
+              </div>
+          </div>
+
+          <!-- 第三部分：備註 (有內容才顯示) -->
+          ${l['備註'] && l['備註'] !== '--' ? `
+          <div class="pl-3 mt-1">
+              <div class="text-xs text-slate-600 bg-orange-50/50 p-3 rounded-xl border border-orange-100 flex gap-2 items-start">
+                  <span class="font-bold text-orange-400 shrink-0 text-[10px] pt-0.5">NOTE</span>
+                  <span class="leading-relaxed whitespace-pre-wrap">${l['備註']}</span>
+              </div>
+          </div>` : ''}
+          
+      </div>`).join('');
   }).getMaintenanceHistory(currentClient['個案編號']);
 }
 
-// ★★★ 修改重點：顯示護理紀錄 ★★★
+// ★★★ 修改重點：緊湊版歷史紀錄樣式 ★★★
 function loadDoctorHistory() {
-  const c = document.getElementById('doctorHistoryList'); c.innerHTML = '<div class="text-center py-10 text-slate-400">讀取中...</div>';
+  const c = document.getElementById('doctorHistoryList'); 
+  c.innerHTML = '<div class="text-center py-10 text-slate-400">讀取中...</div>';
+  
   google.script.run.withSuccessHandler(logs => {
-    if(!logs || !logs.length) { c.innerHTML = '<div class="py-12 text-center text-slate-300 bg-white rounded-[2rem] border border-slate-100">尚無看診紀錄</div>'; return; }
+    if(!logs || !logs.length) { 
+      c.innerHTML = '<div class="py-12 text-center text-slate-300 bg-white rounded-[2rem] border border-slate-100">尚無看診紀錄</div>'; 
+      return; 
+    }
     
+    // 修改後的 HTML 結構：減少 padding (p-5), 減少 gap (gap-3), 緊湊化標題列
     c.innerHTML = logs.map(l => `
-      <div class="bg-white border border-slate-100 rounded-[2.5rem] p-8 shadow-sm mb-6 card-hover relative overflow-hidden">
-          <div class="flex justify-between items-center mb-6 pb-4 border-b border-slate-50">
-              <span class="text-xs font-bold bg-emerald-50 text-emerald-600 px-4 py-2 rounded-full font-mono">${l['看診日期']||'--'}</span>
-              <div class="text-sm font-bold text-slate-500 flex items-center gap-4">
-                  <div class="flex items-center gap-1"><span class="material-icons-outlined text-base">face</span> ${l['看診醫師']||'--'}</div>
-                  <div class="flex items-center gap-1"><span class="material-icons-outlined text-base">person_outline</span> ${l['護理師']||'--'}</div>
+      <div class="bg-white border border-slate-100 rounded-[2rem] p-5 shadow-sm mb-4 card-hover relative overflow-hidden group">
+          <!-- 標題列：日期與人員 -->
+          <div class="flex justify-between items-center mb-3 pb-3 border-b border-slate-50">
+              <span class="text-xs font-bold bg-emerald-50 text-emerald-600 px-3 py-1 rounded-full font-mono">${l['看診日期']||'--'}</span>
+              <div class="text-xs font-bold text-slate-500 flex items-center gap-3">
+                  <div class="flex items-center gap-1"><span class="material-icons-outlined text-sm">face</span> ${l['看診醫師']||'--'}</div>
+                  <div class="flex items-center gap-1"><span class="material-icons-outlined text-sm">person_outline</span> ${l['護理師']||'--'}</div>
               </div>
           </div>
           
-          <div class="grid grid-cols-1 md:grid-cols-2 gap-6 text-sm">
-              <div class="bg-blue-50/40 p-5 rounded-[1.5rem] border border-blue-50/50"><div class="flex items-center gap-2 mb-2 text-blue-600 font-black"><span class="w-6 h-6 rounded-full bg-blue-100 flex items-center justify-center text-xs">S</span> 主訴</div><div class="text-slate-600 leading-relaxed">${l['S_主訴']||'--'}</div></div>
-              <div class="bg-indigo-50/40 p-5 rounded-[1.5rem] border border-indigo-50/50"><div class="flex items-center gap-2 mb-2 text-indigo-600 font-black"><span class="w-6 h-6 rounded-full bg-indigo-100 flex items-center justify-center text-xs">O</span> 檢查</div><div class="text-slate-600 leading-relaxed">${l['O_客觀檢查']||'--'}</div></div>
-              <div class="bg-amber-50/40 p-5 rounded-[1.5rem] border border-amber-50/50"><div class="flex items-center gap-2 mb-2 text-amber-600 font-black"><span class="w-6 h-6 rounded-full bg-amber-100 flex items-center justify-center text-xs">A</span> 診斷</div><div class="text-slate-600 leading-relaxed">${l['A_診斷']||'--'}</div></div>
-              <div class="bg-emerald-50/40 p-5 rounded-[1.5rem] border border-emerald-50/50"><div class="flex items-center gap-2 mb-2 text-emerald-600 font-black"><span class="w-6 h-6 rounded-full bg-emerald-100 flex items-center justify-center text-xs">P</span> 計畫</div><div class="text-slate-600 leading-relaxed">${l['P_治療計劃']||'--'}</div></div>
+          <!-- SOAP Grid：間距縮小為 gap-3 -->
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-3 text-sm">
+              <div class="bg-blue-50/40 p-3 rounded-2xl border border-blue-50/50">
+                  <div class="flex items-center gap-1.5 mb-1 text-blue-600 font-black text-xs">
+                      <span class="w-5 h-5 rounded-full bg-blue-100 flex items-center justify-center text-[10px]">S</span> 主訴
+                  </div>
+                  <div class="text-slate-700 leading-snug pl-1">${l['S_主訴']||'--'}</div>
+              </div>
+              
+              <div class="bg-indigo-50/40 p-3 rounded-2xl border border-indigo-50/50">
+                  <div class="flex items-center gap-1.5 mb-1 text-indigo-600 font-black text-xs">
+                      <span class="w-5 h-5 rounded-full bg-indigo-100 flex items-center justify-center text-[10px]">O</span> 檢查
+                  </div>
+                  <div class="text-slate-700 leading-snug pl-1">${l['O_客觀檢查']||'--'}</div>
+              </div>
+              
+              <div class="bg-amber-50/40 p-3 rounded-2xl border border-amber-50/50">
+                  <div class="flex items-center gap-1.5 mb-1 text-amber-600 font-black text-xs">
+                      <span class="w-5 h-5 rounded-full bg-amber-100 flex items-center justify-center text-[10px]">A</span> 診斷
+                  </div>
+                  <div class="text-slate-700 leading-snug pl-1">${l['A_診斷']||'--'}</div>
+              </div>
+              
+              <div class="bg-emerald-50/40 p-3 rounded-2xl border border-emerald-50/50">
+                  <div class="flex items-center gap-1.5 mb-1 text-emerald-600 font-black text-xs">
+                      <span class="w-5 h-5 rounded-full bg-emerald-100 flex items-center justify-center text-[10px]">P</span> 計畫
+                  </div>
+                  <div class="text-slate-700 leading-snug pl-1">${l['P_治療計劃']||'--'}</div>
+              </div>
           </div>
           
-          <!-- 新增：顯示護理紀錄 -->
+          <!-- 護理紀錄：緊湊版 -->
           ${l['護理紀錄'] && l['護理紀錄'] !== '--' ? `
-            <div class="mt-6 bg-rose-50/50 p-5 rounded-[1.5rem] text-sm border border-rose-100">
-               <div class="flex items-center gap-2 mb-2 text-rose-600 font-black">
-                  <span class="w-6 h-6 rounded-full bg-rose-100 flex items-center justify-center text-xs">N</span>
+            <div class="mt-3 bg-rose-50/50 p-3 rounded-2xl text-sm border border-rose-100">
+               <div class="flex items-center gap-1.5 mb-1 text-rose-600 font-black text-xs">
+                  <span class="w-5 h-5 rounded-full bg-rose-100 flex items-center justify-center text-[10px]">N</span>
                   護理紀錄
                </div>
-               <div class="text-slate-600 leading-relaxed whitespace-pre-wrap">${l['護理紀錄']}</div>
+               <div class="text-slate-700 leading-snug whitespace-pre-wrap pl-1">${l['護理紀錄']}</div>
             </div>` : ''}
 
-          <!-- 備註 -->
+          <!-- 備註：緊湊版 -->
           ${l['備註'] && l['備註'] !== '--' ? `
-            <div class="mt-6 bg-slate-50 p-4 rounded-2xl text-xs text-slate-500 border border-slate-100 flex gap-2">
-                <span class="font-bold shrink-0">Note:</span>${l['備註']}
+            <div class="mt-3 bg-slate-50 p-2.5 rounded-xl text-xs text-slate-500 border border-slate-100 flex gap-2 items-start">
+                <span class="font-bold shrink-0 bg-slate-200 px-1.5 rounded text-[10px] text-slate-600">Note</span>
+                <span class="leading-snug">${l['備註']}</span>
             </div>` : ''}
       </div>`).join('');
   }).getClientHistory(currentClient['個案編號'], 'Doctor_Consultation');
