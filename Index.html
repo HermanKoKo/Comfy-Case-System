@@ -183,7 +183,7 @@
         </div>
       </div>
 
-      <!-- 治療紀錄視圖 (修改區域) -->
+      <!-- 治療紀錄視圖 -->
       <div id="view-treatment" class="hidden max-w-6xl mx-auto space-y-6">
          <div class="grid grid-cols-1 lg:grid-cols-3 gap-4 no-print">
             <!-- 左側：月曆與篩選 -->
@@ -218,7 +218,9 @@
                     </div>
                   </div>
                </div>
-            </div><!-- 右側：新增表單 -->
+            </div>
+            
+            <!-- 右側：新增表單 -->
             <div class="lg:col-span-2">
                <form id="treatmentForm" class="bg-white p-4 rounded-[2.5rem] shadow-sm border-t-4 border-emerald-500 border-x border-b border-slate-100 h-full flex flex-col gap-2">
                  
@@ -235,7 +237,6 @@
                  
                  <input type="hidden" name="個案編號" class="auto-fill-id">
                  
-                 <!-- ★★★ 修改重點：改為 3 欄位佈局，加入治療項目 ★★★ -->
                  <div class="grid grid-cols-1 md:grid-cols-3 gap-2">
                     <!-- 1. 治療日期 -->
                     <div class="flex items-center gap-2">
@@ -254,13 +255,12 @@
                       </div>
                     </div>
 
-                    <!-- 3. 治療項目 (新增) -->
+                    <!-- 3. 治療項目 -->
                     <div class="flex items-center gap-2">
                       <label class="text-xs font-bold text-slate-400 shrink-0">治療項目</label>
                       <div class="relative w-full">
                         <select id="inputTreatmentItem" class="w-full px-3 py-2.5 bg-slate-50 border border-slate-100 rounded-2xl outline-none focus:border-emerald-500 transition-all cursor-pointer appearance-none font-bold text-slate-700 text-sm">
                            <option value="" disabled selected>請選擇項目</option>
-                           <!-- 選項將由 JS 動態填入 -->
                         </select>
                         <span class="material-icons-outlined absolute right-2 top-3 text-slate-400 pointer-events-none text-sm">expand_more</span>
                       </div>
@@ -433,9 +433,7 @@
             </div>
           </div>
         </div>
-      </div>
-
-      <!-- 醫師看診視圖 -->
+      </div><!-- 醫師看診視圖 (修改區域) -->
       <div id="view-doctor" class="hidden max-w-5xl mx-auto space-y-4">
         <div class="bg-white rounded-[2.5rem] shadow-sm border border-slate-100 overflow-hidden no-print">
           <div class="px-6 py-3 bg-slate-50 border-b border-slate-100 flex justify-between items-center">
@@ -458,13 +456,33 @@
               <div><label class="text-sm font-bold text-slate-400 block mb-1">看診醫師</label><select id="selectDoctor" class="w-full px-4 py-2 bg-slate-50 border border-slate-100 rounded-2xl focus:border-emerald-500 outline-none transition-all"></select></div>
               <div><label class="text-sm font-bold text-slate-400 block mb-1">護理師</label><select id="selectNurse" class="w-full px-4 py-2 bg-slate-50 border border-slate-100 rounded-2xl focus:border-emerald-500 outline-none transition-all"></select></div>
             </div>
+            
             <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+              <!-- SOAP 區塊 -->
               <div class="space-y-1"><div class="flex items-center gap-2"><span class="bg-blue-100 text-blue-600 text-[10px] font-bold px-2 py-0.5 rounded">S</span><label class="text-sm font-bold">主訴</label></div><textarea name="主訴" rows="3" class="w-full px-4 py-2 bg-slate-50 border border-slate-100 rounded-2xl focus:border-emerald-500 outline-none transition-all resize-none"></textarea></div>
               <div class="space-y-1"><div class="flex items-center gap-2"><span class="bg-indigo-100 text-indigo-600 text-[10px] font-bold px-2 py-0.5 rounded">O</span><label class="text-sm font-bold">客觀檢查</label></div><textarea name="客觀檢查" rows="3" class="w-full px-4 py-2 bg-slate-50 border border-slate-100 rounded-2xl focus:border-emerald-500 outline-none transition-all resize-none"></textarea></div>
               <div class="space-y-1"><div class="flex items-center gap-2"><span class="bg-amber-100 text-amber-600 text-[10px] font-bold px-2 py-0.5 rounded">A</span><label class="text-sm font-bold">診斷</label></div><textarea name="診斷" rows="3" class="w-full px-4 py-2 bg-slate-50 border border-slate-100 rounded-2xl focus:border-emerald-500 outline-none transition-all resize-none"></textarea></div>
               <div class="space-y-1"><div class="flex items-center gap-2"><span class="bg-emerald-100 text-emerald-600 text-[10px] font-bold px-2 py-0.5 rounded">P</span><label class="text-sm font-bold">治療計畫</label></div><textarea name="治療計畫" rows="3" class="w-full px-4 py-2 bg-slate-50 border border-slate-100 rounded-2xl focus:border-emerald-500 outline-none transition-all resize-none"></textarea></div>
-              <div class="md:col-span-2 space-y-1"><div class="flex items-center gap-2"><span class="bg-slate-100 text-slate-600 text-[10px] font-bold px-2 py-0.5 rounded">Note</span><label class="text-sm font-bold">備註</label></div><textarea id="doctorRemark" rows="2" class="w-full px-4 py-2 bg-slate-50 border border-slate-100 rounded-2xl focus:border-emerald-500 outline-none transition-all resize-none"></textarea></div>
+              
+              <!-- ★★★ 新增：護理紀錄 (插入在 SOAP 之後，備註之前) ★★★ -->
+              <div class="md:col-span-2 space-y-1">
+                  <div class="flex items-center gap-2">
+                      <span class="bg-rose-100 text-rose-600 text-[10px] font-bold px-2 py-0.5 rounded">Nursing</span>
+                      <label class="text-sm font-bold">護理紀錄</label>
+                  </div>
+                  <textarea id="nursingRecord" rows="2" class="w-full px-4 py-2 bg-slate-50 border border-slate-100 rounded-2xl focus:border-emerald-500 outline-none transition-all resize-none"></textarea>
+              </div>
+
+              <!-- 備註 -->
+              <div class="md:col-span-2 space-y-1">
+                  <div class="flex items-center gap-2">
+                      <span class="bg-slate-100 text-slate-600 text-[10px] font-bold px-2 py-0.5 rounded">Note</span>
+                      <label class="text-sm font-bold">備註</label>
+                  </div>
+                  <textarea id="doctorRemark" rows="2" class="w-full px-4 py-2 bg-slate-50 border border-slate-100 rounded-2xl focus:border-emerald-500 outline-none transition-all resize-none"></textarea>
+              </div>
             </div>
+            
             <div class="flex justify-end pt-3 border-t border-slate-50">
                <button type="button" onclick="submitForm('doctor')" class="bg-emerald-500 hover:bg-emerald-600 text-white px-8 py-3 rounded-2xl font-black shadow-lg transition-all active:scale-95">儲存看診紀錄</button>
             </div>
@@ -599,6 +617,7 @@
               <div id="previewList" class="max-h-32 overflow-y-auto custom-scrollbar space-y-2"></div>
            </div>
            
+           <!-- ★★★ 新增：備註輸入框 (依據您的需求新增) ★★★ -->
            <div class="space-y-1">
               <label for="fileRemark" class="text-sm font-bold text-slate-500 ml-1">備註 (選填)</label>
               <input type="text" id="fileRemark" placeholder="請輸入關於此影像的說明..." 
@@ -656,7 +675,6 @@
         return; 
       }
       
-      // ★★★ 修改重點：在歷史紀錄中顯示治療項目 ★★★
       c.innerHTML = logs.map(l => `
         <div class="bg-white p-5 rounded-[2rem] shadow-sm border border-slate-100 card-hover relative overflow-hidden group">
             <div class="absolute top-0 left-0 w-1.5 h-full bg-emerald-500"></div>
@@ -665,7 +683,6 @@
                     <span class="text-xs font-bold text-slate-500 font-mono bg-slate-100 px-2 py-1 rounded-lg">${l['治療日期']}</span>
                     
                     <div class="flex items-center gap-2">
-                        <!-- 新增：治療項目 Badge -->
                         ${l['治療項目'] ? `<span class="px-2 py-0.5 rounded text-[10px] font-bold bg-blue-50 text-blue-600 border border-blue-100">${l['治療項目']}</span>` : ''}
                         
                         <div class="flex items-center gap-1 text-sm font-bold text-emerald-600">

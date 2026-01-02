@@ -125,7 +125,6 @@ function saveData(sheetName, dataObj) {
 
 /**
  * 取得系統人員與項目清單
- * ★ 修改：新增讀取 Column G (Index 6) 作為治療項目 (treatmentItems)
  */
 function getSystemStaff() {
   const ss = SpreadsheetApp.openById(CONFIG.SPREADSHEET_ID);
@@ -141,7 +140,7 @@ function getSystemStaff() {
     trackingTypes: rows.map(r => r[3]).filter(String),
     maintItems: rows.map(r => r[4]).filter(String),
     allStaff: rows.map(r => r[5]).filter(String),
-    treatmentItems: rows.map(r => r[6]).filter(String) // ★ 新增：G欄 (Index 6) 治療項目
+    treatmentItems: rows.map(r => r[6]).filter(String)
   };
 }
 
@@ -221,7 +220,7 @@ function getTrackingHistory(clientId) {
 }
 
 /**
- * 儲存醫師看診紀錄
+ * 儲存醫師看診紀錄 (★ 修改：加入護理紀錄欄位)
  */
 function saveDoctorConsultation(formData) {
   try {
@@ -233,6 +232,8 @@ function saveDoctorConsultation(formData) {
     const recordId = "DOC" + new Date().getTime();
     const timestamp = Utilities.formatDate(new Date(), ss.getSpreadsheetTimeZone(), "yyyy/MM/dd HH:mm:ss");
     
+    // 依據您提供的 Sheet 結構 (J欄為護理紀錄)
+    // 順序：ID, ClientID, Date, Doctor, Nurse, S, O, A, P, NursingRecord(J), Remark(K), Link(L), Time(M)
     const rowData = [
       recordId,                   
       "'" + formData.clientId,    
@@ -242,10 +243,11 @@ function saveDoctorConsultation(formData) {
       formData.complaint,         
       formData.objective,         
       formData.diagnosis,         
-      formData.plan,              
-      formData.remark,            
-      "",                         
-      timestamp                   
+      formData.plan,
+      formData.nursingRecord,     // ★ 新增：護理紀錄 (對應 J 欄)
+      formData.remark,            // 對應 K 欄
+      "",                         // 對應 L 欄
+      timestamp                   // 對應 M 欄
     ];
 
     sheet.appendRow(rowData);
@@ -407,7 +409,6 @@ function saveMaintenanceRecord(data) {
 
 /**
  * 取得個案總覽資料
- * ★ 修改：Treatment_Logs 新增讀取「治療項目」並整合至總覽顯示
  */
 function getCaseOverviewData(clientId) {
   try {
@@ -476,7 +477,6 @@ function getCaseOverviewData(clientId) {
       });
     }
 
-    // ★ 修改：治療紀錄部分
     const treatSheet = ss.getSheetByName(CONFIG.SHEETS.TREATMENT);
     if (treatSheet) {
       const data = treatSheet.getDataRange().getValues();
@@ -486,17 +486,16 @@ function getCaseOverviewData(clientId) {
       const idxDate = headers.indexOf(normalizeHeader("治療日期"));
       const idxStaff = headers.indexOf(normalizeHeader("執行治療師"));
       const idxContent = headers.indexOf(normalizeHeader("治療內容"));
-      const idxItem = headers.indexOf(normalizeHeader("治療項目")); // ★ 新增：取得治療項目索引
+      const idxItem = headers.indexOf(normalizeHeader("治療項目"));
       
       data.slice(1).forEach(row => {
         if (String(row[idxId]).replace(/^'/, '').trim() === targetId) {
-          const itemVal = (idxItem > -1 && row[idxItem]) ? row[idxItem] : ""; // 取得項目值
+          const itemVal = (idxItem > -1 && row[idxItem]) ? row[idxItem] : "";
           result.push({
             id: 'T-' + formatDateForJSON(row[idxDate]), 
             date: formatDateForJSON(row[idxDate]),
             category: 'treatment', categoryName: '治療紀錄',
             title: "物理治療", 
-            // ★ 修改：在副標題中加入治療項目
             subtitle: (itemVal ? itemVal + " | " : "") + "治療師：" + (row[idxStaff] || '--'),
             detail: row[idxContent], staff: row[idxStaff]
           });
