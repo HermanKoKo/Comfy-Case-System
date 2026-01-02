@@ -143,6 +143,15 @@ function navTo(viewName) {
   }
 }
 
+// ------------------------------------------------------------------
+// [修復] 補上缺失的 loadClientImages 以解決 ReferenceError
+// ------------------------------------------------------------------
+function loadClientImages() {
+  // 若後端尚未設定影像功能，此處保留空函式或顯示提示，防止報錯
+  console.log("影像載入功能尚未實作或未包含在此版本中");
+  // 若有需要，可在此呼叫後端: google.script.run...getImages(currentClient['個案編號']);
+}
+
 // ==========================================
 // 新增個案相關函式
 // ==========================================
@@ -355,9 +364,7 @@ function submitForm(type) {
     if (!d.trackDate || !d.trackStaff || !d.trackType || !d.content) { alert("請完整填寫追蹤資料"); if(btn){btn.disabled=false; btn.innerHTML=ot;} return; }
     google.script.run.withSuccessHandler(res => { if(btn){btn.disabled=false; btn.innerHTML=ot;} if (res.success) { alert(res.message); document.getElementById('trackContent').value = ""; loadTrackingHistory(); } else { alert(res.message); } }).saveTrackingRecord(d);
   }
-}
-
-// ==========================================
+}// ==========================================
 // 歷史列表載入與渲染 (加入列印優化類別)
 // ==========================================
 function loadTrackingHistory() {
@@ -385,12 +392,49 @@ function loadTrackingHistory() {
 
 function loadTreatmentHistory() {
   const c = document.getElementById('historyListContainer'); c.innerHTML = '<div class="text-center py-6 text-slate-400">讀取中...</div>';
-  google.script.run.withSuccessHandler(logs => { allTreatmentLogs = logs || []; applyLogFilters(); renderTreatmentCalendar(); }).getClientHistory(currentClient['個案編號'], 'Treatment_Logs');
+  google.script.run.withSuccessHandler(logs => { 
+    allTreatmentLogs = logs || []; 
+    // [修復重點] 確保這兩個函式存在並被執行
+    applyLogFilters(); 
+    renderTreatmentCalendar(); 
+  }).getClientHistory(currentClient['個案編號'], 'Treatment_Logs');
 }
+
+// ------------------------------------------------------------------
+// [修復] 補上缺失的 applyLogFilters 與 renderTreatmentCalendar
+// ------------------------------------------------------------------
+function applyLogFilters() {
+  const filterDate = document.getElementById('filterDate')?.value;
+  const filterTherapist = document.getElementById('filterTherapist')?.value;
+  
+  let filtered = allTreatmentLogs;
+  
+  if (filterDate) {
+    filtered = filtered.filter(log => log['治療日期'] === filterDate);
+  }
+  
+  if (filterTherapist) {
+    filtered = filtered.filter(log => log['執行治療師'] === filterTherapist);
+  }
+  
+  renderTreatmentList(filtered);
+}
+
+function renderTreatmentCalendar() {
+  // 這裡主要是用來更新 Flatpickr 上的標記點 (Dots)
+  // 或是當切換月份時確保列表正確
+  const fp = document.querySelector("#filterDate")?._flatpickr;
+  if(fp) {
+    fp.redraw();
+  }
+  // 確保列表是最新的篩選狀態
+  applyLogFilters();
+}
+// ------------------------------------------------------------------
 
 function renderTreatmentList(logs) {
   const c = document.getElementById('historyListContainer');
-  if(!logs.length) { c.innerHTML = '<div class="text-center py-10 text-slate-300 bg-slate-50 rounded-2xl">無相關紀錄</div>'; return; }
+  if(!logs || !logs.length) { c.innerHTML = '<div class="text-center py-10 text-slate-300 bg-slate-50 rounded-2xl">無相關紀錄</div>'; return; }
   c.innerHTML = logs.map(l => `
     <div class="bg-white p-6 rounded-[2rem] shadow-sm border border-slate-100 card-hover mb-4 relative overflow-hidden print:break-inside-avoid print:mb-4 print:border print:border-slate-300">
       <div class="absolute top-0 left-0 w-full h-1 bg-emerald-500 print:hidden"></div>
@@ -612,12 +656,7 @@ function getFilteredOverviewData() {
   const s = document.getElementById('overviewStartDate').value; const e = document.getElementById('overviewEndDate').value;
   return allOverviewRecords.filter(i => { if (currentOverviewCategory !== 'all' && i.category !== currentOverviewCategory) return false; if (s && i.date < s) return false; if (e && i.date > e) return false; return true; });
 }
-function exportOverviewToCSV() {
-  const d = getFilteredOverviewData(); if (!d.length) { alert("無資料"); return; }
-  const r = d.map(i => [`"${i.date}"`, `"${i.categoryName}"`, `"${(i.title+' '+i.subtitle).replace(/"/g,'""')}"`, `"${(i.detail||'').replace(/"/g,'""')}"`, `"${i.staff||''}"`].join(','));
-  const b = new Blob(["\uFEFF日期,類別,標題,內容,人員\n" + r.join("\n")], { type: "text/csv;charset=utf-8;" });
-  const a = document.createElement("a"); a.href = URL.createObjectURL(b); a.download = `${currentClient['姓名']}_歷程.csv`; document.body.appendChild(a); a.click(); document.body.removeChild(a);
-}
+
 function printOverviewReport() { handlePrint(); } 
 
 // ==========================================
