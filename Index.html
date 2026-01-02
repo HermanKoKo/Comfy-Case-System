@@ -11,31 +11,65 @@
   <link href="https://fonts.googleapis.com/icon?family=Material+Icons+Outlined" rel="stylesheet">
   <?!= include('Stylesheet'); ?>
   
-  <!-- 強制縮小治療月曆樣式的 CSS (保持不變) -->
   <style>
-    #treatmentCalendar .cal-day {
-        height: 2rem !important;
-        line-height: 2rem !important;
-        font-size: 0.85rem !important;
-        margin-bottom: 2px !important;
-    }
-    #treatmentCalendar .cal-header {
-        margin-bottom: 0.5rem !important;
-        padding-top: 0 !important;
-    }
-    #treatmentCalendar .cal-weekday {
-        font-size: 0.75rem !important;
-        padding-bottom: 0.25rem !important;
-    }
-    #treatmentCalendar .cal-month-grid {
-        gap: 4px !important;
-    }
-    #treatmentCalendar .cal-month-item {
-        padding: 0.5rem 0 !important;
+    /* 強制縮小治療月曆樣式的 CSS (保持不變) */
+    #treatmentCalendar .cal-day { height: 2rem !important; line-height: 2rem !important; font-size: 0.85rem !important; margin-bottom: 2px !important; }
+    #treatmentCalendar .cal-header { margin-bottom: 0.5rem !important; padding-top: 0 !important; }
+    #treatmentCalendar .cal-weekday { font-size: 0.75rem !important; padding-bottom: 0.25rem !important; }
+    #treatmentCalendar .cal-month-grid { gap: 4px !important; }
+    #treatmentCalendar .cal-month-item { padding: 0.5rem 0 !important; }
+
+    /* ★★★ 列印專用樣式優化 ★★★ */
+    @media print {
+      @page { margin: 1cm; size: A4; }
+      body, main { height: auto !important; overflow: visible !important; background-color: white !important; }
+      
+      /* 隱藏不需要的元素 */
+      .no-print, button, .material-icons-outlined { display: none !important; }
+      /* 保留特定 icon (如 checkbox) 可視情況調整，這裡統一隱藏裝飾性 icon 以求簡潔 */
+      
+      /* 卡片樣式重置：去除陰影、圓角、背景色，改為黑白線條 */
+      .card-hover, .bg-white, .rounded-\[2rem\], .rounded-\[2\.5rem\], .shadow-sm {
+        box-shadow: none !important;
+        border-radius: 4px !important;
+        background-color: white !important;
+        border: 1px solid #ddd !important;
+        margin-bottom: 10px !important;
+        padding: 10px !important;
+        transform: none !important;
+      }
+      
+      /* 防止內容被切斷 */
+      .card-hover, .group, div { break-inside: avoid !important; }
+      
+      /* 文字顏色強制加深 */
+      .text-slate-400, .text-slate-500, .text-slate-600 { color: #333 !important; }
+      .text-slate-300 { color: #999 !important; }
+      
+      /* 移除裝飾性色塊背景，改為細框線 */
+      [class*="bg-"][class*="-50"] {
+        background-color: transparent !important;
+        border: 1px solid #eee !important;
+        color: #000 !important;
+      }
+      
+      /* 標籤樣式簡化 */
+      span.rounded-full, span.rounded-lg {
+        border: 1px solid #666 !important;
+        background: none !important;
+        color: #000 !important;
+        padding: 2px 6px !important;
+      }
+
+      /* 隱藏列印頁首的網址/日期 (瀏覽器設定)，顯示自訂頁首 */
+      #print-header { display: flex !important; border-bottom: 2px solid #000 !important; margin-bottom: 15px !important; }
+      
+      /* 確保列表容器不限高 */
+      #overviewListContainer, #historyListContainer { min-height: 0 !important; height: auto !important; }
     }
   </style>
 </head>
-<body class="bg-[#f8fafc] font-sans text-slate-900 antialiased h-screen overflow-hidden flex">
+<body class="bg-[#f8fafc] font-sans text-slate-900 antialiased h-screen overflow-hidden flex print:h-auto print:overflow-visible">
 
   <!-- 列印專用頁首 -->
   <div id="print-header" class="hidden print:flex flex-row justify-between items-end border-b-2 border-slate-800 pb-2 mb-4 w-full bg-white">
@@ -98,9 +132,7 @@
           <p class="text-slate-500">請先搜尋個案以開始作業，或點擊左下角新增個案。</p>
         </div>
         <div class="w-full relative group">
-          <!-- ★★★ 修改處：移除 onkeyup，改用 oninput 並呼叫 handleSearchDebounced ★★★ -->
           <input type="text" id="searchInput" oninput="handleSearchDebounced(this.value)" placeholder="輸入姓名或電話..." class="w-full px-6 py-3 bg-white border-2 border-slate-100 rounded-3xl shadow-xl focus:border-emerald-500 outline-none transition text-lg">
-          
           <button onclick="handleSearch()" class="absolute right-3 top-1/2 -translate-y-1/2 bg-emerald-500 text-white p-2.5 rounded-2xl shadow-lg hover:bg-emerald-600 transition">
             <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
           </button>
