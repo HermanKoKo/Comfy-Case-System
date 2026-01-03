@@ -84,7 +84,9 @@ function loadSystemStaff() {
     setOptions('trackStaff', staff.allStaff, '請選擇人員');
     setOptions('trackType', staff.trackingTypes || [], '請選擇項目');
     
-    // 已移除 filterTherapist，無需設定選項
+    // ★ 修改處：設定新增個案用的「負責治療師」選單
+    setOptions('addTherapist', staff.therapists, '請選擇負責治療師');
+    
   }).getSystemStaff();
 }
 
@@ -159,6 +161,8 @@ function submitNewClient() {
     gender: '', 
     emerName: document.getElementById('addEmerName').value.trim(),
     emerPhone: document.getElementById('addEmerPhone').value.trim(),
+    // ★ 修改處：加入負責治療師
+    therapist: document.getElementById('addTherapist').value.trim(),
     chronic: document.getElementById('addChronic').value.trim()
   };
 
@@ -216,6 +220,8 @@ function renderBasicInfo() {
     'display-phone': '電話',
     'display-emergency-name': '緊急聯絡人',
     'display-emergency-phone': '緊急聯絡人電話',
+    // ★ 修改處：新增負責治療師的對應
+    'display-therapist': '負責治療師',
     'display-notes': '慢性病或特殊疾病'
   };
   for (const [domId, dbKey] of Object.entries(fieldMap)) {

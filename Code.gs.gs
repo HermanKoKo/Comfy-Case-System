@@ -102,12 +102,19 @@ function searchClient(keyword) {
       // 比對邏輯：只要 ID、姓名或電話包含關鍵字即可 (支援模糊搜尋)
       if (id.includes(query) || name.includes(query) || phone.includes(query)) {
         results.push({
-          '個案編號': row[0], '姓名': row[1], '生日': row[2], '身分證字號': row[3],
-          '電話': row[4], '性別': row[5], '慢性病或特殊疾病': row[8], 
-          'GoogleDrive資料夾連結': row[9], // 索引 9 (J欄)
-          '建立日期': row[10],
+          '個案編號': row[0], 
+          '姓名': row[1], 
+          '生日': row[2], 
+          '身分證字號': row[3],
+          '電話': row[4], 
+          '性別': row[5], 
           '緊急聯絡人': row[6], 
-          '緊急聯絡人電話': row[7] 
+          '緊急聯絡人電話': row[7],
+          // ★ 修改處：新增「負責治療師」(I欄, Index 8)，後續欄位索引順延
+          '負責治療師': row[8],
+          '慢性病或特殊疾病': row[9], // 原本 Index 8 -> 變 9
+          'GoogleDrive資料夾連結': row[10], // 原本 Index 9 -> 變 10
+          '建立日期': row[11] // 原本 Index 10 -> 變 11
         });
       }
     }
@@ -174,7 +181,7 @@ function getSystemStaff() {
   return {
     doctors: rows.map(r => r[0]).filter(String),
     nurses: rows.map(r => r[1]).filter(String),
-    therapists: rows.map(r => r[2]).filter(String),
+    therapists: rows.map(r => r[2]).filter(String), // C欄 = Index 2
     trackingTypes: rows.map(r => r[3]).filter(String),
     maintItems: rows.map(r => r[4]).filter(String),
     allStaff: rows.map(r => r[5]).filter(String),
@@ -328,9 +335,11 @@ function createNewClient(data) {
       data.gender,        
       data.emerName,      
       "'" + data.emerPhone,
-      data.chronic,       
-      folderUrl,          
-      now                 
+      // ★ 修改處：插入「負責治療師」(I欄)，後續欄位順延
+      data.therapist || "",
+      data.chronic,       // 變 J
+      folderUrl,          // 變 K
+      now                 // 變 L
     ];
 
     sheet.appendRow(newRow);
@@ -338,7 +347,10 @@ function createNewClient(data) {
     const fullData = {
         '個案編號': clientId, '姓名': data.name, '生日': data.dob, '身分證字號': data.idNo,
         '電話': data.phone, '性別': data.gender, '緊急聯絡人': data.emerName, 
-        '緊急聯絡人電話': data.emerPhone, '慢性病或特殊疾病': data.chronic
+        '緊急聯絡人電話': data.emerPhone, 
+        // ★ 修改處：回傳物件也加上治療師
+        '負責治療師': data.therapist,
+        '慢性病或特殊疾病': data.chronic
     };
 
     return { success: true, clientId: clientId, fullData: fullData };
@@ -609,7 +621,11 @@ function uploadClientImage(clientId, fileData, fileName, mimeType, remark) {
     
     for (let i = 1; i < clientData.length; i++) {
       if (String(clientData[i][0]).replace(/^'/, '') === String(clientId)) { 
-          folderUrl = clientData[i][9]; 
+          folderUrl = clientData[i][9]; // 這裡原本索引是9，因為我們插入了治療師，這裡是否需要調整?
+          // ★ 修正：由於前面 searchClient 我們把 Drive 連結改成 10，所以這裡也要改成 10
+          // 但原始代碼這邊原本寫 row[9]，現在資料結構變了，治療師(8), 慢性病(9), Drive(10)。
+          // 所以這裡要改為 10
+          folderUrl = clientData[i][10]; 
           break; 
       }
     }

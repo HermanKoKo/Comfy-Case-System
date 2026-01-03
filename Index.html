@@ -184,14 +184,20 @@
             </div>
           </div>
 
-          <div class="grid grid-cols-1 md:grid-cols-2 border-t border-slate-50 print:grid-cols-2 print:border-slate-200">
+          <!-- ★ 修改處：將「負責治療師」加入此區塊 (3欄佈局) -->
+          <div class="grid grid-cols-1 md:grid-cols-3 border-t border-slate-50 print:grid-cols-3 print:border-slate-200">
             <div class="p-5 border-b md:border-b-0 md:border-r border-slate-50 print:p-2 print:border-slate-200">
               <label class="block text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">緊急聯絡人</label>
               <div id="display-emergency-name" class="text-lg font-bold text-slate-700 print:text-sm">--</div>
             </div>
-            <div class="p-5 print:p-2">
+            <div class="p-5 border-b md:border-b-0 md:border-r border-slate-50 print:p-2 print:border-slate-200">
               <label class="block text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">緊急聯絡人電話</label>
               <div id="display-emergency-phone" class="text-lg font-bold text-slate-700 print:text-sm">--</div>
+            </div>
+             <!-- 新增顯示：負責治療師 -->
+             <div class="p-5 print:p-2">
+              <label class="block text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">負責治療師</label>
+              <div id="display-therapist" class="text-lg font-bold text-emerald-600 print:text-sm">--</div>
             </div>
           </div>
 
@@ -565,6 +571,18 @@
                  <label class="w-28 shrink-0 text-sm font-bold text-slate-500 text-right">聯絡電話 <span class="text-red-400">*</span></label>
                  <input type="text" id="addPhone" required class="flex-1 px-4 py-2.5 bg-slate-50 border border-slate-100 rounded-xl outline-none focus:bg-white focus:border-emerald-500 transition-all">
               </div>
+
+              <!-- ★ 修改處：新增「負責治療師」選單 -->
+              <div class="flex items-center gap-3">
+                 <label class="w-28 shrink-0 text-sm font-bold text-slate-500 text-right">負責治療師</label>
+                 <div class="relative flex-1">
+                    <select id="addTherapist" class="w-full px-4 py-2.5 bg-slate-50 border border-slate-100 rounded-xl outline-none focus:bg-white focus:border-emerald-500 transition-all appearance-none cursor-pointer">
+                       <option value="" disabled selected>載入中...</option>
+                    </select>
+                    <span class="material-icons-outlined absolute right-3 top-3 text-slate-400 pointer-events-none text-sm">expand_more</span>
+                 </div>
+              </div>
+
               <div class="flex items-center gap-3">
                  <label class="w-28 shrink-0 text-sm font-bold text-slate-500 text-right">緊急聯絡人</label>
                  <input type="text" id="addEmerName" class="flex-1 px-4 py-2.5 bg-slate-50 border border-slate-100 rounded-xl outline-none focus:bg-white focus:border-emerald-500 transition-all">
