@@ -184,7 +184,6 @@
             </div>
           </div>
 
-          <!-- ★ 修改處：將「負責治療師」加入此區塊 (3欄佈局) -->
           <div class="grid grid-cols-1 md:grid-cols-3 border-t border-slate-50 print:grid-cols-3 print:border-slate-200">
             <div class="p-5 border-b md:border-b-0 md:border-r border-slate-50 print:p-2 print:border-slate-200">
               <label class="block text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">緊急聯絡人</label>
@@ -194,7 +193,7 @@
               <label class="block text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">緊急聯絡人電話</label>
               <div id="display-emergency-phone" class="text-lg font-bold text-slate-700 print:text-sm">--</div>
             </div>
-             <!-- 新增顯示：負責治療師 -->
+             <!-- 顯示：負責治療師 -->
              <div class="p-5 print:p-2">
               <label class="block text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">負責治療師</label>
               <div id="display-therapist" class="text-lg font-bold text-emerald-600 print:text-sm">--</div>
@@ -553,7 +552,7 @@
            <button onclick="closeModal('addClientModal')" class="text-slate-300 hover:text-slate-500 transition text-3xl leading-none">&times;</button>
         </div>
         <form id="addClientForm" class="p-6 space-y-4 max-h-[80vh] overflow-y-auto custom-scrollbar">
-           <!-- 表單內容保持不變 -->
+           <!-- ★ 第一排：姓名、生日 -->
            <div class="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-4">
               <div class="flex items-center gap-3">
                  <label class="w-28 shrink-0 text-sm font-bold text-slate-500 text-right">姓名 <span class="text-red-400">*</span></label>
@@ -563,6 +562,10 @@
                  <label class="w-28 shrink-0 text-sm font-bold text-slate-500 text-right">生日 <span class="text-red-400">*</span></label>
                  <input type="text" id="addDob" required maxlength="8" placeholder="西元出生年月日8碼" oninput="this.value = this.value.replace(/[^0-9]/g, '')" class="flex-1 px-4 py-2.5 bg-slate-50 border border-slate-100 rounded-xl outline-none focus:bg-white focus:border-emerald-500 transition-all">
               </div>
+           </div>
+
+           <!-- ★ 第二排：身分證、電話 -->
+           <div class="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-4">
               <div class="flex items-center gap-3">
                  <label class="w-28 shrink-0 text-sm font-bold text-slate-500 text-right">身分證字號 <span class="text-red-400">*</span></label>
                  <input type="text" id="addIdNo" required oninput="autoDetectGender(this)" class="flex-1 px-4 py-2.5 bg-slate-50 border border-slate-100 rounded-xl outline-none focus:bg-white focus:border-emerald-500 transition-all">
@@ -571,18 +574,10 @@
                  <label class="w-28 shrink-0 text-sm font-bold text-slate-500 text-right">聯絡電話 <span class="text-red-400">*</span></label>
                  <input type="text" id="addPhone" required class="flex-1 px-4 py-2.5 bg-slate-50 border border-slate-100 rounded-xl outline-none focus:bg-white focus:border-emerald-500 transition-all">
               </div>
+           </div>
 
-              <!-- ★ 修改處：新增「負責治療師」選單 -->
-              <div class="flex items-center gap-3">
-                 <label class="w-28 shrink-0 text-sm font-bold text-slate-500 text-right">負責治療師</label>
-                 <div class="relative flex-1">
-                    <select id="addTherapist" class="w-full px-4 py-2.5 bg-slate-50 border border-slate-100 rounded-xl outline-none focus:bg-white focus:border-emerald-500 transition-all appearance-none cursor-pointer">
-                       <option value="" disabled selected>載入中...</option>
-                    </select>
-                    <span class="material-icons-outlined absolute right-3 top-3 text-slate-400 pointer-events-none text-sm">expand_more</span>
-                 </div>
-              </div>
-
+           <!-- ★ 第三排：緊急聯絡人、緊急聯絡電話 (已上移) -->
+           <div class="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-4">
               <div class="flex items-center gap-3">
                  <label class="w-28 shrink-0 text-sm font-bold text-slate-500 text-right">緊急聯絡人</label>
                  <input type="text" id="addEmerName" class="flex-1 px-4 py-2.5 bg-slate-50 border border-slate-100 rounded-xl outline-none focus:bg-white focus:border-emerald-500 transition-all">
@@ -591,11 +586,25 @@
                  <label class="w-28 shrink-0 text-sm font-bold text-slate-500 text-right">緊急聯絡電話</label>
                  <input type="text" id="addEmerPhone" class="flex-1 px-4 py-2.5 bg-slate-50 border border-slate-100 rounded-xl outline-none focus:bg-white focus:border-emerald-500 transition-all">
               </div>
-              <div class="col-span-1 md:col-span-2 space-y-1">
-                 <label class="text-xs font-bold text-slate-400 ml-1 block">慢性病或特殊疾病</label>
-                 <textarea id="addChronic" rows="3" class="w-full px-4 py-3 bg-slate-50 border border-slate-100 rounded-xl outline-none focus:bg-white focus:border-emerald-500 transition-all resize-none"></textarea>
+           </div>
+
+           <!-- ★ 第四排：負責治療師 (已下移) -->
+           <div class="flex items-center gap-3">
+              <label class="w-28 shrink-0 text-sm font-bold text-slate-500 text-right">負責治療師</label>
+              <div class="relative flex-1">
+                 <select id="addTherapist" class="w-full px-4 py-2.5 bg-slate-50 border border-slate-100 rounded-xl outline-none focus:bg-white focus:border-emerald-500 transition-all appearance-none cursor-pointer">
+                    <option value="" disabled selected>載入中...</option>
+                 </select>
+                 <span class="material-icons-outlined absolute right-3 top-3 text-slate-400 pointer-events-none text-sm">expand_more</span>
               </div>
            </div>
+
+           <!-- ★ 第五排：慢性病 -->
+           <div>
+              <label class="text-xs font-bold text-slate-400 ml-1 block mb-1">慢性病或特殊疾病</label>
+              <textarea id="addChronic" rows="3" class="w-full px-4 py-3 bg-slate-50 border border-slate-100 rounded-xl outline-none focus:bg-white focus:border-emerald-500 transition-all resize-none"></textarea>
+           </div>
+
            <div class="pt-2 sticky bottom-0 bg-white pb-1">
               <button type="button" id="btnSubmitClient" onclick="submitNewClient()" class="w-full bg-emerald-500 hover:bg-emerald-600 text-white font-bold py-3.5 rounded-xl shadow-lg shadow-emerald-500/20 transition-all active:scale-[0.98] tracking-wide text-lg">
                  建立個案資料
