@@ -496,14 +496,17 @@ function loadMaintenanceHistory() {
   }).getMaintenanceHistory(currentClient['個案編號']);
 }
 
+// ==========================================
+// ★★★ 修改重點：調整看診紀錄樣式更緊湊 ★★★
+// ==========================================
 function loadDoctorHistory() {
   const c = document.getElementById('doctorHistoryList'); c.innerHTML = '<div class="text-center py-10 text-slate-400">讀取中...</div>';
   google.script.run.withSuccessHandler(logs => {
     if(!logs || !logs.length) { c.innerHTML = '<div class="py-12 text-center text-slate-300 bg-white rounded-[2rem] border border-slate-100">尚無看診紀錄</div>'; return; }
     
     c.innerHTML = logs.map(l => `
-      <div class="bg-white border border-slate-100 rounded-[2.5rem] p-8 shadow-sm mb-6 card-hover relative overflow-hidden print:break-inside-avoid print:mb-4 print:border print:border-slate-300 print:p-4">
-        <div class="flex justify-between items-center mb-6 pb-4 border-b border-slate-50 print:mb-2 print:pb-2 print:border-slate-300">
+      <div class="bg-white border border-slate-100 rounded-[2.5rem] p-4 shadow-sm mb-3 card-hover relative overflow-hidden print:break-inside-avoid print:mb-4 print:border print:border-slate-300 print:p-4">
+        <div class="flex justify-between items-center mb-3 pb-2 border-b border-slate-50 print:mb-2 print:pb-2 print:border-slate-300">
           <span class="text-xs font-bold bg-emerald-50 text-emerald-600 px-4 py-2 rounded-full font-mono print:bg-white print:text-black print:border print:border-slate-300">${l['看診日期']||'--'}</span>
           <div class="text-sm font-bold text-slate-500 flex items-center gap-4 print:text-black">
             <div class="flex items-center gap-1">
@@ -515,32 +518,32 @@ function loadDoctorHistory() {
           </div>
         </div>
         
-        <div class="soap-grid-container grid grid-cols-1 md:grid-cols-2 gap-6 text-sm print:gap-2">
-          <div class="bg-blue-50/40 p-5 rounded-[1.5rem] border border-blue-50/50 print:bg-white print:border-slate-300 print:p-2">
-             <div class="flex items-center gap-2 mb-2 text-blue-600 font-black print:text-black"><span class="w-6 h-6 rounded-full bg-blue-100 flex items-center justify-center text-xs print:border print:border-black print:bg-white">S</span> 主訴</div>
-             <div class="text-slate-600 leading-relaxed print:text-black">${l['S_主訴']||'--'}</div>
+        <div class="soap-grid-container grid grid-cols-1 md:grid-cols-2 gap-2 text-sm print:gap-2">
+          <div class="bg-blue-50/40 p-2 rounded-[1.5rem] border border-blue-50/50 print:bg-white print:border-slate-300 print:p-2">
+             <div class="flex items-center gap-2 mb-1 text-blue-600 font-black print:text-black"><span class="w-6 h-6 rounded-full bg-blue-100 flex items-center justify-center text-xs print:border print:border-black print:bg-white">S</span> 主訴</div>
+             <div class="text-slate-600 leading-relaxed pl-1 print:text-black">${l['S_主訴']||'--'}</div>
           </div>
-          <div class="bg-indigo-50/40 p-5 rounded-[1.5rem] border border-indigo-50/50 print:bg-white print:border-slate-300 print:p-2">
-             <div class="flex items-center gap-2 mb-2 text-indigo-600 font-black print:text-black"><span class="w-6 h-6 rounded-full bg-indigo-100 flex items-center justify-center text-xs print:border print:border-black print:bg-white">O</span> 檢查</div>
-             <div class="text-slate-600 leading-relaxed print:text-black">${l['O_客觀檢查']||'--'}</div>
+          <div class="bg-indigo-50/40 p-2 rounded-[1.5rem] border border-indigo-50/50 print:bg-white print:border-slate-300 print:p-2">
+             <div class="flex items-center gap-2 mb-1 text-indigo-600 font-black print:text-black"><span class="w-6 h-6 rounded-full bg-indigo-100 flex items-center justify-center text-xs print:border print:border-black print:bg-white">O</span> 檢查</div>
+             <div class="text-slate-600 leading-relaxed pl-1 print:text-black">${l['O_客觀檢查']||'--'}</div>
           </div>
-          <div class="bg-amber-50/40 p-5 rounded-[1.5rem] border border-amber-50/50 print:bg-white print:border-slate-300 print:p-2">
-             <div class="flex items-center gap-2 mb-2 text-amber-600 font-black print:text-black"><span class="w-6 h-6 rounded-full bg-amber-100 flex items-center justify-center text-xs print:border print:border-black print:bg-white">A</span> 診斷</div>
-             <div class="text-slate-600 leading-relaxed print:text-black">${l['A_診斷']||'--'}</div>
+          <div class="bg-amber-50/40 p-2 rounded-[1.5rem] border border-amber-50/50 print:bg-white print:border-slate-300 print:p-2">
+             <div class="flex items-center gap-2 mb-1 text-amber-600 font-black print:text-black"><span class="w-6 h-6 rounded-full bg-amber-100 flex items-center justify-center text-xs print:border print:border-black print:bg-white">A</span> 診斷</div>
+             <div class="text-slate-600 leading-relaxed pl-1 print:text-black">${l['A_診斷']||'--'}</div>
           </div>
-          <div class="bg-emerald-50/40 p-5 rounded-[1.5rem] border border-emerald-50/50 print:bg-white print:border-slate-300 print:p-2">
-             <div class="flex items-center gap-2 mb-2 text-emerald-600 font-black print:text-black"><span class="w-6 h-6 rounded-full bg-emerald-100 flex items-center justify-center text-xs print:border print:border-black print:bg-white">P</span> 計畫</div>
-             <div class="text-slate-600 leading-relaxed print:text-black">${l['P_治療計劃']||'--'}</div>
+          <div class="bg-emerald-50/40 p-2 rounded-[1.5rem] border border-emerald-50/50 print:bg-white print:border-slate-300 print:p-2">
+             <div class="flex items-center gap-2 mb-1 text-emerald-600 font-black print:text-black"><span class="w-6 h-6 rounded-full bg-emerald-100 flex items-center justify-center text-xs print:border print:border-black print:bg-white">P</span> 計畫</div>
+             <div class="text-slate-600 leading-relaxed pl-1 print:text-black">${l['P_治療計劃']||'--'}</div>
           </div>
           
           ${l['護理紀錄'] && l['護理紀錄']!=='--' ? `
-          <div class="md:col-span-2 bg-rose-50/40 p-5 rounded-[1.5rem] border border-rose-50/50 print:bg-white print:border-slate-300 print:p-2">
-              <div class="flex items-center gap-2 mb-2 text-rose-600 font-black print:text-black"><span class="w-6 h-6 rounded-full bg-rose-100 flex items-center justify-center text-xs print:border print:border-black print:bg-white">N</span> 護理紀錄</div>
-              <div class="text-slate-600 leading-relaxed print:text-black">${l['護理紀錄']}</div>
+          <div class="md:col-span-2 bg-rose-50/40 p-2 rounded-[1.5rem] border border-rose-50/50 print:bg-white print:border-slate-300 print:p-2">
+              <div class="flex items-center gap-2 mb-1 text-rose-600 font-black print:text-black"><span class="w-6 h-6 rounded-full bg-rose-100 flex items-center justify-center text-xs print:border print:border-black print:bg-white">N</span> 護理紀錄</div>
+              <div class="text-slate-600 leading-relaxed pl-1 print:text-black">${l['護理紀錄']}</div>
           </div>` : ''}
 
           ${l['備註'] && l['備註']!=='--' ? `
-          <div class="md:col-span-2 bg-slate-50 p-4 rounded-2xl text-xs text-slate-500 border border-slate-100 flex gap-2 print:bg-white print:border-slate-300 print:p-2">
+          <div class="md:col-span-2 bg-slate-50 p-2 rounded-2xl text-xs text-slate-500 border border-slate-100 flex gap-2 print:bg-white print:border-slate-300 print:p-2">
               <span class="font-bold shrink-0 print:text-black">Note:</span><span class="print:text-black">${l['備註']}</span>
           </div>` : ''}
         </div>
