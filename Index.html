@@ -11,12 +11,13 @@
   <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
   <script src="https://cdn.jsdelivr.net/npm/flatpickr/dist/l10n/zh-tw.js"></script>
 
-  <!-- 全域 Flatpickr 設定 (保留，用於其他地方的日期選擇器) -->
+  <!-- 全域 Flatpickr 設定 -->
   <script>
     document.addEventListener("DOMContentLoaded", function() {
       if (typeof flatpickr !== "undefined") {
         flatpickr.setDefaults({
           locale: "zh_tw",
+          // ★★★ 修正處：設定為自動置中，避免靠左或靠右超出邊界
           position: "auto center",
           disableMobile: "true"
         });
@@ -28,12 +29,11 @@
   <?!= include('Stylesheet'); ?>
   
   <style>
-    /* 移除已不再使用的治療月曆樣式 */
-    
     /* 其他通用樣式保持不變 */
-    .flatpickr-calendar { z-index: 9999 !important; }
+    /* ★★★ 修正處：確保月曆浮在最上層，壓過所有卡片和側邊欄 */
+    .flatpickr-calendar { z-index: 99999 !important; }
 
-    /* 列印樣式 (保持之前的優化) */
+    /* 列印樣式 */
     @media print {
       @page { margin: 1cm; size: A4; }
       body, main { height: auto !important; overflow: visible !important; background-color: white !important; }
@@ -73,6 +73,13 @@
     .animate-bounce-in {
       animation: bounce-in 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
     }
+
+    /* 針對嵌入式 (static) 月曆的樣式微調 (保留以防萬一) */
+    .flatpickr-calendar.static {
+        margin-top: 5px !important; 
+        box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05) !important;
+        z-index: 9999 !important;
+    }
   </style>
 </head>
 <body class="bg-[#f8fafc] font-sans text-slate-900 antialiased h-screen overflow-hidden flex print:h-auto print:overflow-visible">
@@ -91,7 +98,7 @@
     </div>
   </div>
 
-  <!-- Sidebar (列印時隱藏) -->
+  <!-- Sidebar -->
   <aside id="sidebar" class="w-64 bg-[#1e293b] text-white flex flex-col flex-shrink-0 z-20 shadow-xl no-print">
     <div class="p-5">
       <h1 class="text-xl font-bold tracking-tight flex items-center gap-2">
@@ -122,7 +129,6 @@
   <main id="main-content" class="flex-1 flex flex-col h-screen overflow-hidden print:h-auto print:overflow-visible">
     <header class="bg-white border-b border-slate-200 px-6 py-3 flex justify-between items-center flex-shrink-0 shadow-sm z-10 no-print">
       <h2 id="pageTitle" class="text-lg font-bold text-slate-800">首頁</h2>
-      
       <div id="topBarClientInfo" class="hidden flex items-center gap-2 bg-slate-50 pl-4 pr-1 py-1 rounded-full border border-slate-100 shadow-sm">
         <span id="headerClientName" class="font-bold text-emerald-600 text-sm">--</span>
         <span id="headerClientDob" class="text-xs text-slate-500 font-mono bg-white px-3 py-1 rounded-full shadow-sm">--</span>
@@ -131,7 +137,7 @@
 
     <div id="contentArea" class="flex-1 overflow-y-auto p-5 custom-scrollbar print:p-0 print:overflow-visible scroll-smooth">
       
-      <!-- 搜尋頁面 (列印時隱藏) -->
+      <!-- 搜尋頁面 -->
       <div id="view-search" class="max-w-md mx-auto flex flex-col items-center justify-center min-h-[70vh] space-y-6 no-print">
         <div class="text-center space-y-3">
           <h3 class="text-3xl font-black text-slate-800 tracking-tight">歡迎使用<br>康飛個案系統</h3>
@@ -202,7 +208,6 @@
               <label class="block text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">緊急聯絡人電話</label>
               <div id="display-emergency-phone" class="text-lg font-bold text-slate-700 print:text-sm">--</div>
             </div>
-             <!-- 顯示：負責治療師 -->
              <div class="p-5 print:p-2">
               <label class="block text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">負責治療師</label>
               <div id="display-therapist" class="text-lg font-bold text-emerald-600 print:text-sm">--</div>
@@ -228,13 +233,11 @@
                  <p id="img-stats-text" class="text-xs font-bold text-slate-400">共 0 張影像紀錄</p>
               </div>
            </div>
-           
            <button onclick="openUploadModal()" class="flex items-center gap-2 bg-white border border-slate-200 hover:border-emerald-500 hover:text-emerald-600 text-slate-600 px-4 py-2 rounded-xl font-bold transition shadow-sm active:scale-95 text-sm">
               <span class="material-icons-outlined text-lg">cloud_upload</span>
               上傳檔案
            </button>
         </div>
-
         <div id="imageGalleryContainer" class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 min-h-[400px]">
            <div class="col-span-full flex flex-col items-center justify-center py-20 text-slate-300 print:hidden">
               <span class="material-icons-outlined text-4xl animate-spin mb-3">sync</span>
@@ -243,12 +246,9 @@
         </div>
       </div>
 
-      <!-- 治療紀錄視圖 (已修改：移除左側選單，展開表單) -->
+      <!-- 治療紀錄視圖 -->
       <div id="view-treatment" class="hidden max-w-6xl mx-auto space-y-6">
          <div class="grid grid-cols-1 lg:grid-cols-12 gap-4 no-print">
-            <!-- 已移除左側篩選區塊 -->
-            
-            <!-- 右側：新增表單 (現改為滿版 col-span-12) -->
             <div class="lg:col-span-12">
                <form id="treatmentForm" class="bg-white p-4 rounded-[2.5rem] shadow-sm border-t-4 border-emerald-500 border-x border-b border-slate-100 h-full flex flex-col gap-2">
                  <div class="flex items-center justify-between">
@@ -280,10 +280,8 @@
                     <div class="flex items-center gap-2">
                       <label class="text-xs font-bold text-slate-400 shrink-0">治療項目</label>
                       <div class="relative w-full">
-                        <!-- ★ 關鍵修改：確保 id 為 inputTreatmentItem，前端腳本將自動填入選項 -->
                         <select id="inputTreatmentItem" class="w-full px-3 py-2.5 bg-slate-50 border border-slate-100 rounded-2xl outline-none focus:border-emerald-500 transition-all cursor-pointer appearance-none font-bold text-slate-700 text-sm">
                            <option value="" disabled selected>請選擇項目</option>
-                           <!-- 選項將由 loadTreatmentItems() 自動插入 -->
                         </select>
                         <span class="material-icons-outlined absolute right-2 top-3 text-slate-400 pointer-events-none text-sm">expand_more</span>
                       </div>

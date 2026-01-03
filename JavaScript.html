@@ -16,8 +16,16 @@ let allCalendarEvents = []; // 仍保留此變數以支援 Flatpickr 的彩色�
 
 function setupEnhancedFlatpickr(selector, options = {}) {
   const defaults = {
-    locale: "zh_tw", dateFormat: "Y-m-d", disableMobile: true, allowInput: true, static: true,
-    // 移除原本複雜的自製 header 邏輯，改回 Flatpickr 原生或簡單設定
+    locale: "zh_tw", 
+    dateFormat: "Y-m-d", 
+    disableMobile: true, 
+    allowInput: true, 
+    
+    // ★★★ 關鍵修正：務必設為 false，讓月曆浮動於最上層，徹底解決被卡片容器裁切的問題 ★★★
+    static: false, 
+    
+    // 設定為 'auto center'，讓它自動判斷並置中 (配合 Index.html 的全域設定)
+    position: "auto center",
     
     // ★★★ 根據 allCalendarEvents 動態加入彩色圓點 ★★★
     onDayCreate: function(dObj, dStr, fp, dayElem) {
