@@ -262,6 +262,8 @@
                  </div>
                  
                  <input type="hidden" name="個案編號" class="auto-fill-id">
+                 <!-- ★ 修改：新增隱藏的編輯 ID 欄位 -->
+                 <input type="hidden" id="edit_id_treatment" name="record_id" value="">
                  
                  <div class="grid grid-cols-1 md:grid-cols-3 gap-2">
                     <div class="flex items-center gap-2">
@@ -299,6 +301,14 @@
                    <label class="text-xs font-bold text-slate-400 ml-1">備註 / 下次治療</label>
                    <textarea id="inputNextPlan" class="w-full px-5 py-2.5 bg-slate-50 border border-slate-100 rounded-2xl outline-none focus:border-emerald-500 transition-all h-14 resize-none"></textarea>
                  </div>
+                 
+                 <!-- ★ 修改：新增取消編輯按鈕 (預設隱藏) -->
+                 <div id="edit-cancel-treatment" class="hidden mb-1">
+                    <button type="button" onclick="cancelEdit('treatment')" class="w-full bg-slate-400 hover:bg-slate-500 text-white font-bold py-2 rounded-2xl transition shadow-sm border border-slate-400">
+                        取消編輯模式
+                    </button>
+                 </div>
+
                  <button type="button" onclick="submitForm('treatment')" class="w-full bg-emerald-500 hover:bg-emerald-600 text-white font-black py-3 rounded-2xl shadow-lg shadow-emerald-500/20 transition-all active:scale-[0.98]">
                    儲存治療紀錄
                  </button>
@@ -330,6 +340,9 @@
           </div>
           <form id="maintenanceForm" class="p-5 space-y-3">
             <input type="hidden" name="個案編號" class="auto-fill-id">
+            <!-- ★ 修改：新增隱藏的編輯 ID 欄位 -->
+            <input type="hidden" id="edit_id_maintenance" name="record_id" value="">
+
             <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
               <div class="space-y-1">
                 <label class="text-sm font-bold text-slate-400 block ml-1">日期</label>
@@ -373,7 +386,11 @@
                <label class="text-sm font-bold text-slate-400 block ml-1">備註</label>
                <textarea name="備註" rows="3" class="w-full px-4 py-2 bg-white border border-slate-200 rounded-3xl focus:border-orange-500 outline-none transition-all resize-none" placeholder="請輸入保養相關備註..."></textarea>
             </div>
-            <div class="flex justify-end items-center pt-2">
+            <div class="flex justify-end items-center pt-2 gap-4">
+              <!-- ★ 修改：新增取消編輯按鈕 -->
+              <div id="edit-cancel-maintenance" class="hidden">
+                  <button type="button" onclick="cancelEdit('maintenance')" class="text-slate-400 font-bold hover:text-slate-600 underline transition">取消編輯</button>
+              </div>
               <button type="button" onclick="submitForm('maintenance')" class="bg-gradient-to-r from-orange-400 to-orange-600 hover:from-orange-500 hover:to-orange-700 text-white px-8 py-3 rounded-2xl font-black shadow-lg shadow-orange-500/30 transition-all active:scale-95">
                 儲存紀錄
               </button>
@@ -405,6 +422,9 @@
             <h3 class="text-lg font-bold text-violet-600 mb-3 border-b border-violet-50 pb-2">新增紀錄</h3>
             <form id="trackingForm" onsubmit="event.preventDefault(); submitForm('tracking');">
               <input type="hidden" name="個案編號" class="auto-fill-id">
+              <!-- ★ 修改：新增隱藏的編輯 ID 欄位 -->
+              <input type="hidden" id="edit_id_tracking" name="record_id" value="">
+
               <div class="mb-2 space-y-1">
                 <label class="block text-sm font-bold text-slate-400 ml-1">追蹤日期</label>
                 <input type="text" id="trackDate" name="trackDate" required
@@ -429,6 +449,14 @@
                 <textarea id="trackContent" name="content" rows="5" required placeholder="請輸入追蹤情形、個案回饋或備註..."
                           class="w-full px-4 py-2 bg-slate-50 border border-slate-200 rounded-2xl outline-none focus:border-violet-500 transition-all resize-none"></textarea>
               </div>
+
+              <!-- ★ 修改：新增取消編輯按鈕 -->
+              <div id="edit-cancel-tracking" class="hidden mb-2">
+                   <button type="button" onclick="cancelEdit('tracking')" class="w-full bg-slate-400 hover:bg-slate-500 text-white font-bold py-2 rounded-2xl transition shadow-sm border border-slate-400">
+                        取消編輯模式
+                   </button>
+              </div>
+
               <button type="submit" 
                       class="w-full text-white bg-violet-600 hover:bg-violet-700 font-bold rounded-2xl px-5 py-3 text-center transition-all shadow-lg shadow-violet-500/20 active:scale-95">
                 儲存追蹤紀錄
@@ -464,6 +492,9 @@
           </div>
           <form id="doctorForm" class="p-5 space-y-3">
             <input type="hidden" name="個案編號" class="auto-fill-id">
+            <!-- ★ 修改：新增隱藏的編輯 ID 欄位 -->
+            <input type="hidden" id="edit_id_doctor" name="record_id" value="">
+
             <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
               <div>
                 <label class="text-sm font-bold text-slate-400 block mb-1">日期</label>
@@ -496,7 +527,11 @@
               </div>
             </div>
             
-            <div class="flex justify-end pt-3 border-t border-slate-50">
+            <div class="flex justify-end pt-3 border-t border-slate-50 gap-4">
+               <!-- ★ 修改：新增取消編輯按鈕 -->
+               <div id="edit-cancel-doctor" class="hidden self-center">
+                  <button type="button" onclick="cancelEdit('doctor')" class="text-slate-400 font-bold hover:text-slate-600 underline transition">取消編輯</button>
+               </div>
                <button type="button" onclick="submitForm('doctor')" class="bg-emerald-500 hover:bg-emerald-600 text-white px-8 py-3 rounded-2xl font-black shadow-lg transition-all active:scale-95">儲存看診紀錄</button>
             </div>
           </form>
@@ -680,6 +715,7 @@
   
   <!-- Script Override -->
   <script>
+    // ★ 修改：renderTreatmentList 加入編輯按鈕邏輯
     function renderTreatmentList(logs) {
       const c = document.getElementById('historyListContainer');
       const countBadge = document.getElementById('treatmentHistoryCount');
@@ -693,12 +729,21 @@
         return; 
       }
       
-      c.innerHTML = logs.map(l => `
+      c.innerHTML = logs.map(l => {
+        // ★ 建立安全的資料字串，供編輯函式使用
+        const dataStr = encodeURIComponent(JSON.stringify(l));
+        return `
         <div class="bg-white p-5 rounded-[2rem] shadow-sm border border-slate-100 card-hover relative overflow-hidden group print:break-inside-avoid print:border print:border-slate-200 print:shadow-none print:rounded-none">
             <div class="absolute top-0 left-0 w-1.5 h-full bg-emerald-500 print:hidden"></div>
             <div class="pl-2">
                 <div class="flex justify-between items-center mb-3">
-                    <span class="text-xs font-bold text-slate-500 font-mono bg-slate-100 px-2 py-1 rounded-lg print:bg-white print:border print:border-slate-200">${l['治療日期']}</span>
+                    <div class="flex items-center gap-2">
+                        <span class="text-xs font-bold text-slate-500 font-mono bg-slate-100 px-2 py-1 rounded-lg print:bg-white print:border print:border-slate-200">${l['治療日期']}</span>
+                        <!-- ★★★ 新增編輯按鈕 ★★★ -->
+                        <button onclick="startEdit('treatment', JSON.parse(decodeURIComponent('${dataStr}')))" class="text-slate-400 hover:text-emerald-500 transition px-2 print:hidden" title="編輯紀錄">
+                            <span class="material-icons-outlined text-sm">edit</span>
+                        </button>
+                    </div>
                     
                     <div class="flex items-center gap-2">
                         ${l['治療項目'] ? `<span class="px-2 py-0.5 rounded text-[10px] font-bold bg-blue-50 text-blue-600 border border-blue-100">${l['治療項目']}</span>` : ''}
@@ -732,7 +777,8 @@
                     </div>` : ''}
                 </div>
             </div>
-        </div>`).join('');
+        </div>`;
+      }).join('');
     }
     
     // ==========================================

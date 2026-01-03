@@ -736,3 +736,155 @@ function getTreatmentItemsFromSystem() {
   
   return items;
 }
+
+/**
+ * ==========================================
+ * 資料更新專用邏輯 (修正版：自動偵測 ID 欄位)
+ * ==========================================
+ */
+function updateRecord(type, formData) {
+  const lock = LockService.getScriptLock();
+  if (!lock.tryLock(10000)) {
+    return { success: false, message: "系統忙碌中，請稍後再試" };
+  }
+
+  try {
+    let sheetName = "";
+    // 取得前端傳來的 ID (轉成字串並去除空白)
+    let targetId = String(formData.record_id).trim(); 
+    
+    // 1. 根據類型決定 Sheet 名稱與預期 ID 標題
+    let expectedIdHeader = "紀錄id"; // 預設
+    
+    if (type === 'treatment') {
+       sheetName = CONFIG.SHEETS.TREATMENT;
+       expectedIdHeader = "紀錄id";
+    }
+    else if (type === 'doctor') {
+       sheetName = CONFIG.SHEETS.DOCTOR;
+       expectedIdHeader = "紀錄id"; // 通常看診紀錄 ID 也在這，若您標題不同請在此修改
+    }
+    else if (type === 'maintenance') {
+       sheetName = CONFIG.SHEETS.MAINTENANCE;
+       expectedIdHeader = "紀錄id"; // 或是 "影像ID"、"保養ID"，視您標題而定
+    }
+    else if (type === 'tracking') {
+       sheetName = CONFIG.SHEETS.TRACKING;
+       expectedIdHeader = "追蹤ID";
+    }
+    else {
+       throw new Error("未知的編輯類型");
+    }
+
+    // 2. 取得 Sheet 與資料
+    const sheet = getSheetHelper(sheetName);
+    const data = sheet.getDataRange().getValues();
+    
+    if (data.length < 2) return { success: false, message: "資料表為空" };
+
+    const headers = data[0]; // 第一列標題
+    let idColIndex = -1;
+
+    // ★★★ 關鍵修正：自動尋找 ID 在哪一欄 ★★★
+    // 先嘗試找標題完全符合的
+    for (let c = 0; c < headers.length; c++) {
+      if (normalizeHeader(headers[c]) === normalizeHeader(expectedIdHeader)) {
+        idColIndex = c;
+        break;
+      }
+    }
+    
+    // 如果找不到標題，且是醫師/追蹤/保養 (通常 ID 在第一欄)，則預設為 0
+    if (idColIndex === -1) {
+       if (type !== 'treatment') {
+          idColIndex = 0; 
+       } else {
+          // 治療紀錄通常依賴 header，若找不到很危險，嘗試找包含 "ID" 的欄位
+          for (let c = 0; c < headers.length; c++) {
+            if (String(headers[c]).toLowerCase().includes("id")) {
+               idColIndex = c;
+               break;
+            }
+          }
+          // 真的找不到，報錯
+          if (idColIndex === -1) throw new Error(`在工作表 ${sheetName} 中找不到「${expectedIdHeader}」欄位，無法定位資料。`);
+       }
+    }
+
+    // 3. 尋找對應 ID 的列
+    let rowIndex = -1;
+    for (let i = 1; i < data.length; i++) {
+      // 比對時轉字串並 trim，增加容錯
+      if (String(data[i][idColIndex]).trim() === targetId) {
+        rowIndex = i + 1; // 轉為實際列號 (1-based)
+        break;
+      }
+    }
+
+    if (rowIndex === -1) {
+      return { success: false, message: `找不到該筆資料 (ID: ${targetId})，可能已被刪除或 ID 欄位判斷錯誤。` };
+    }
+
+    // 4. 執行更新 (欄位名稱對應)
+    // 為了精確更新，我們再次利用 header 找欄位索引
+    const getCol = (name) => {
+       for(let k=0; k<headers.length; k++) {
+         if(normalizeHeader(headers[k]) === normalizeHeader(name)) return k + 1;
+       }
+       return -1;
+    };
+
+    if (type === 'treatment') {
+       // 更新治療紀錄：使用動態欄位搜尋
+       const colDate = getCol("治療日期");
+       const colTherapist = getCol("執行治療師");
+       const colItem = getCol("治療項目");
+       const colComplaint = getCol("當日主訴");
+       const colContent = getCol("治療內容");
+       const colNext = getCol("備註/下次治療");
+
+       if (colDate > 0) sheet.getRange(rowIndex, colDate).setValue(formData.date);
+       if (colTherapist > 0) sheet.getRange(rowIndex, colTherapist).setValue(formData.therapist);
+       if (colItem > 0) sheet.getRange(rowIndex, colItem).setValue(formData.item);
+       if (colComplaint > 0) sheet.getRange(rowIndex, colComplaint).setValue(formData.complaint);
+       if (colContent > 0) sheet.getRange(rowIndex, colContent).setValue(formData.content);
+       if (colNext > 0) sheet.getRange(rowIndex, colNext).setValue(formData.nextPlan);
+    } 
+    else if (type === 'doctor') {
+       // 醫師看診通常欄位固定，但也可用動態搜尋保險
+       // 這裡維持索引更新，但您可以改成 getCol 方式更安全
+       sheet.getRange(rowIndex, 3).setValue(formData.date);
+       sheet.getRange(rowIndex, 4).setValue(formData.doctor);
+       sheet.getRange(rowIndex, 5).setValue(formData.nurse);
+       sheet.getRange(rowIndex, 6).setValue(formData.complaint);
+       sheet.getRange(rowIndex, 7).setValue(formData.objective);
+       sheet.getRange(rowIndex, 8).setValue(formData.diagnosis);
+       sheet.getRange(rowIndex, 9).setValue(formData.plan);
+       sheet.getRange(rowIndex, 10).setValue(formData.nursingRecord);
+       sheet.getRange(rowIndex, 11).setValue(formData.remark);
+    } 
+    else if (type === 'maintenance') {
+       sheet.getRange(rowIndex, 3).setValue(formData.date);
+       sheet.getRange(rowIndex, 4).setValue(formData.staff);
+       sheet.getRange(rowIndex, 5).setValue(formData.item);
+       sheet.getRange(rowIndex, 6).setValue(formData.bp);
+       sheet.getRange(rowIndex, 7).setValue(formData.spo2);
+       sheet.getRange(rowIndex, 8).setValue(formData.hr);
+       sheet.getRange(rowIndex, 9).setValue(formData.temp);
+       sheet.getRange(rowIndex, 10).setValue(formData.remark);
+    } 
+    else if (type === 'tracking') {
+       sheet.getRange(rowIndex, 3).setValue(formData.trackDate);
+       sheet.getRange(rowIndex, 4).setValue(formData.trackStaff);
+       sheet.getRange(rowIndex, 5).setValue(formData.trackType);
+       sheet.getRange(rowIndex, 6).setValue(formData.content);
+    }
+
+    return { success: true, message: "資料更新成功！" };
+
+  } catch (e) {
+    return { success: false, message: "更新失敗: " + e.toString() };
+  } finally {
+    lock.releaseLock();
+  }
+}

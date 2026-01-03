@@ -8,7 +8,7 @@ let allOverviewRecords = [];
 let currentOverviewCategory = 'all'; 
 let filesToUpload = []; 
 let searchTimer = null;
-let allCalendarEvents = []; // 仍保留此變數以支援 Flatpickr 的彩色點點功能
+let allCalendarEvents = []; 
 
 // ==========================================
 // 初始化與 UI 設定
@@ -20,41 +20,27 @@ function setupEnhancedFlatpickr(selector, options = {}) {
     dateFormat: "Y-m-d", 
     disableMobile: true, 
     allowInput: true, 
-    
-    // ★★★ 關鍵修正：務必設為 false，讓月曆浮動於最上層，徹底解決被卡片容器裁切的問題 ★★★
     static: false, 
-    
-    // 設定為 'auto center'，讓它自動判斷並置中 (配合 Index.html 的全域設定)
     position: "auto center",
-    
-    // ★★★ 根據 allCalendarEvents 動態加入彩色圓點 ★★★
     onDayCreate: function(dObj, dStr, fp, dayElem) {
       if (!dayElem || !dayElem.dateObj) return;
       const dateKey = dayElem.dateObj.toISOString().split('T')[0];
-      
-      // 找出這一天所有的事件
       const dayEvents = allCalendarEvents.filter(e => e.date === dateKey);
       
       if (dayEvents.length > 0) {
-        // 建立點點容器
         const dotsContainer = document.createElement('div');
         dotsContainer.className = 'dots-container';
-        
-        // 檢查有哪些類別，避免重複顯示同一種顏色的點
         const categories = [...new Set(dayEvents.map(e => e.category))];
         
         categories.forEach(cat => {
           const dot = document.createElement('div');
           dot.className = 'cal-dot';
-          // 根據類別加上對應的顏色 class
           if (cat === 'treatment') dot.classList.add('dot-treatment');
           else if (cat === 'maintenance') dot.classList.add('dot-maintenance');
           else if (cat === 'doctor') dot.classList.add('dot-doctor');
           else if (cat === 'tracking') dot.classList.add('dot-tracking');
-          
           dotsContainer.appendChild(dot);
         });
-        
         dayElem.appendChild(dotsContainer);
       }
     }
@@ -62,12 +48,9 @@ function setupEnhancedFlatpickr(selector, options = {}) {
   return flatpickr(selector, { ...defaults, ...options });
 }
 
-// 頁面載入完成後執行
 window.onload = function() {
   const today = new Date().toISOString().split('T')[0];
   document.querySelectorAll('#treatmentDate, #maintenanceDate, #doctorConsultDate, #trackDate').forEach(el => el.value = today);
-  
-  // 初始化所有日期選擇器
   setupEnhancedFlatpickr('input[type="date"], #trackDate');
   
   const overviewConfig = { onChange: function() { renderOverviewList(); } };
@@ -75,7 +58,7 @@ window.onload = function() {
   setupEnhancedFlatpickr('#overviewEndDate', overviewConfig);
   
   loadSystemStaff();
-  loadTreatmentItems(); // ★ 新增：額外確保治療項目被載入 (雙重保險)
+  loadTreatmentItems();
 };
 
 function loadSystemStaff() {
@@ -92,23 +75,15 @@ function loadSystemStaff() {
     setOptions('selectMaintItem', staff.maintItems, '請選擇項目');
     setOptions('trackStaff', staff.allStaff, '請選擇人員');
     setOptions('trackType', staff.trackingTypes || [], '請選擇項目');
-    
-    // ★ 修改處：設定新增個案用的「負責治療師」選單
     setOptions('addTherapist', staff.therapists, '請選擇負責治療師');
-    
-    // ★ 修改處：設定治療紀錄用的「治療項目」選單 (從 System 分頁 G 欄)
     setOptions('inputTreatmentItem', staff.treatmentItems, '請選擇項目');
-    
   }).getSystemStaff();
 }
 
-// ★ 新增函式：專門負責載入治療項目 (若 getSystemStaff 已包含，此為備援)
 function loadTreatmentItems() {
-  google.script.run
-    .withSuccessHandler(function(items) {
-      // 只有當上面的 loadSystemStaff 尚未填充或失敗時才執行
+  google.script.run.withSuccessHandler(function(items) {
       var select = document.getElementById("inputTreatmentItem");
-      if (select && select.options.length <= 1) { // 假設只有預設選項
+      if (select && select.options.length <= 1) {
           select.innerHTML = '<option value="" disabled selected>請選擇項目</option>';
           items.forEach(function(item) {
             var option = document.createElement("option");
@@ -116,10 +91,8 @@ function loadTreatmentItems() {
             option.textContent = item;
             select.appendChild(option);
           });
-          console.log("治療項目載入完成 (獨立函式)", items);
       }
-    })
-    .getTreatmentItemsFromSystem(); 
+    }).getTreatmentItemsFromSystem(); 
 }
 
 // ==========================================
@@ -144,13 +117,11 @@ function navTo(viewName) {
   document.getElementById('pageTitle').textContent = titles[viewName] || '康飛運醫';
   
   if (currentClient) {
-    // 進入有紀錄的頁面時，若尚未載入總覽資料，則背景載入一次，確保日期選擇器有彩色點點
     if (['treatment', 'maintenance', 'doctor', 'tracking', 'overview'].includes(viewName)) {
         if (allCalendarEvents.length === 0) {
-            fetchCalendarData(); // 背景載入所有資料
+            fetchCalendarData();
         }
     }
-
     if(viewName === 'basic') renderBasicInfo();
     if(viewName === 'doctor') loadDoctorHistory();
     if(viewName === 'treatment') loadTreatmentHistory();
@@ -161,11 +132,9 @@ function navTo(viewName) {
   }
 }
 
-// 背景載入所有日曆資料 (用於在 Flatpickr 上顯示點點)
 function fetchCalendarData() {
     google.script.run.withSuccessHandler(data => {
         allCalendarEvents = data || [];
-        // 資料載入後，若要即時更新已開啟的 Flatpickr 點點，可能需要 redraw，但這裡從簡，下次開啟即生效
     }).getCaseOverviewData(currentClient['個案編號']);
 }
 
@@ -193,7 +162,6 @@ function submitNewClient() {
     gender: '', 
     emerName: document.getElementById('addEmerName').value.trim(),
     emerPhone: document.getElementById('addEmerPhone').value.trim(),
-    // ★ 修改處：加入負責治療師
     therapist: document.getElementById('addTherapist').value.trim(),
     chronic: document.getElementById('addChronic').value.trim()
   };
@@ -252,7 +220,6 @@ function renderBasicInfo() {
     'display-phone': '電話',
     'display-emergency-name': '緊急聯絡人',
     'display-emergency-phone': '緊急聯絡人電話',
-    // ★ 修改處：新增負責治療師的對應
     'display-therapist': '負責治療師',
     'display-notes': '慢性病或特殊疾病'
   };
@@ -315,7 +282,6 @@ function handleSearch(keyword) {
 
 function selectClient(c) {
   currentClient = c;
-  // ★ 切換個案時，清空舊的日曆事件，並觸發重新載入
   allCalendarEvents = [];
   
   document.getElementById('topBarClientInfo').classList.remove('hidden');
@@ -323,50 +289,231 @@ function selectClient(c) {
   document.getElementById('headerClientDob').textContent = c['生日'];
   document.querySelectorAll('.auto-fill-id').forEach(el => el.value = c['個案編號']);
   
-  // 1. 自動將個案的「負責治療師」帶入治療紀錄頁面的下拉選單
   const therapistSelect = document.getElementById('inputTherapist');
   if (therapistSelect) {
-      // 如果個案有設定負責治療師，就會被選取；否則維持預設(空白或請選擇)
       therapistSelect.value = c['負責治療師'] || ""; 
   }
-
-  // 2. ★ 新增修改：治療項目預設為 "1600"
   const itemSelect = document.getElementById('inputTreatmentItem');
   if (itemSelect) {
       itemSelect.value = "1600";
   }
-
-  // 3. 預設跳轉頁面為 "treatment" (治療紀錄)
   navTo('treatment');
 }
 
 // ==========================================
-// 表單提交
+// ★★★ 編輯功能相關函式 (修復 ID 判斷) ★★★
+// ==========================================
+
+/**
+ * 智慧尋找 ID 的輔助函式
+ * 用來解決 Google Sheets 標題大小寫不一致的問題 (例如 紀錄id vs 紀錄ID)
+ */
+function findIdFromData(data) {
+    if (!data) return "";
+    
+    // 1. 常見的 ID 欄位名稱 (精確比對)
+    const candidates = ['紀錄id', '紀錄ID', '追蹤ID', '追蹤id', '影像ID', '影像id', 'id', 'ID', 'Id', 'RecordId', 'record_id'];
+    for (const key of candidates) {
+        if (data[key] !== undefined && data[key] !== "") return data[key];
+    }
+    
+    // 2. 模糊比對 (忽略大小寫與空白)
+    const keys = Object.keys(data);
+    for (const key of keys) {
+        const cleanKey = key.replace(/\s+/g, '').toLowerCase();
+        // 只要欄位名稱包含 'id' 且不是 '個案編號' 這種，通常就是主鍵
+        if (cleanKey === '紀錄id' || cleanKey === '追蹤id' || cleanKey === '影像id' || cleanKey === 'id') {
+            return data[key];
+        }
+    }
+    
+    // 3. 如果資料是陣列 (Array) 且有值，假設第一欄是 ID (某些舊函式可能回傳陣列)
+    if (Array.isArray(data) && data.length > 0) return data[0];
+    
+    return "";
+}
+
+/**
+ * 啟動編輯模式
+ */
+function startEdit(type, data) {
+  console.log("Start Edit Data:", data); // 除錯用：在 Console 顯示傳入的資料
+
+  // ★ 1. 使用智慧搜尋取得 ID
+  let id = findIdFromData(data);
+  
+  if (!id) {
+     alert("系統錯誤：無法讀取此筆紀錄的 ID。請確認資料庫中是否有「紀錄id」或「追蹤ID」欄位。");
+     console.error("ID not found in object:", data);
+     return;
+  }
+  
+  // 設定隱藏欄位
+  const idField = document.getElementById('edit_id_' + type);
+  if (idField) idField.value = id;
+
+  // 2. 顯示取消按鈕 & 改變提交按鈕文字
+  const cancelDiv = document.getElementById('edit-cancel-' + type);
+  if (cancelDiv) cancelDiv.classList.remove('hidden');
+
+  const submitBtn = getSubmitBtn(type);
+  if (submitBtn) {
+    if (!submitBtn.hasAttribute('data-original-text')) {
+       submitBtn.setAttribute('data-original-text', submitBtn.innerHTML);
+    }
+    submitBtn.innerHTML = '<span class="material-icons-outlined text-lg mr-1">update</span> 確認更新修改';
+    submitBtn.classList.remove('bg-emerald-500', 'hover:bg-emerald-600', 'bg-violet-600', 'hover:bg-violet-700', 'bg-gradient-to-r', 'from-orange-400', 'to-orange-600', 'hover:from-orange-500', 'hover:to-orange-700');
+    submitBtn.classList.add('bg-amber-500', 'hover:bg-amber-600', 'text-white');
+  }
+
+  // 3. 回填資料 & 捲動
+  try {
+    if (type === 'treatment') {
+        if(document.getElementById('treatmentDate')._flatpickr)
+        document.getElementById('treatmentDate')._flatpickr.setDate(data['治療日期'] || data['date']);
+        
+        document.getElementById('inputTherapist').value = data['執行治療師'] || data['therapist'] || "";
+        document.getElementById('inputTreatmentItem').value = data['治療項目'] || data['item'] || "";
+        document.getElementById('inputComplaint').value = data['當日主訴'] || data['complaint'] || "";
+        document.getElementById('inputContent').value = data['治療內容'] || data['content'] || "";
+        document.getElementById('inputNextPlan').value = data['備註/下次治療'] || data['nextPlan'] || "";
+        
+        document.getElementById('view-treatment').scrollIntoView({ behavior: 'smooth' });
+    } 
+    else if (type === 'doctor') {
+        if(document.getElementById('doctorConsultDate')._flatpickr)
+        document.getElementById('doctorConsultDate')._flatpickr.setDate(data['看診日期']);
+        
+        document.getElementById('selectDoctor').value = data['看診醫師'] || "";
+        document.getElementById('selectNurse').value = data['護理師'] || "";
+        document.querySelector('#view-doctor textarea[name="主訴"]').value = data['S_主訴'] || "";
+        document.querySelector('#view-doctor textarea[name="客觀檢查"]').value = data['O_客觀檢查'] || "";
+        document.querySelector('#view-doctor textarea[name="診斷"]').value = data['A_診斷'] || "";
+        document.querySelector('#view-doctor textarea[name="治療計畫"]').value = data['P_治療計劃'] || "";
+        document.getElementById('nursingRecord').value = data['護理紀錄'] || "";
+        document.getElementById('doctorRemark').value = data['備註'] || "";
+        document.getElementById('view-doctor').scrollIntoView({ behavior: 'smooth' });
+    }
+    else if (type === 'maintenance') {
+        if(document.getElementById('maintenanceDate')._flatpickr)
+        document.getElementById('maintenanceDate')._flatpickr.setDate(data['保養日期']);
+        
+        document.getElementById('selectMaintStaff').value = data['執行人員'] || "";
+        document.getElementById('selectMaintItem').value = data['保養項目'] || "";
+        const f = document.getElementById('maintenanceForm');
+        f.querySelector('input[name="血壓"]').value = data['血壓'] || "";
+        f.querySelector('input[name="血氧"]').value = data['血氧'] || "";
+        f.querySelector('input[name="心律"]').value = data['心律'] || "";
+        f.querySelector('input[name="體溫"]').value = data['體溫'] || "";
+        f.querySelector('textarea[name="備註"]').value = data['備註'] || "";
+        document.getElementById('view-maintenance').scrollIntoView({ behavior: 'smooth' });
+    }
+    else if (type === 'tracking') {
+        if(document.getElementById('trackDate')._flatpickr)
+        document.getElementById('trackDate')._flatpickr.setDate(data.date || data['追蹤日期']);
+        
+        document.getElementById('trackStaff').value = data.staff || data['追蹤人員'] || "";
+        document.getElementById('trackType').value = data.type || data['追蹤項目'] || "";
+        document.getElementById('trackContent').value = data.content || data['追蹤內容'] || "";
+        document.getElementById('view-tracking').scrollIntoView({ behavior: 'smooth' });
+    }
+  } catch(e) {
+      console.error("Error populating form:", e);
+  }
+}
+
+/**
+ * 取消編輯模式
+ */
+function cancelEdit(type) {
+  document.getElementById('edit_id_' + type).value = "";
+  document.getElementById('edit-cancel-' + type).classList.add('hidden');
+  
+  if(type === 'tracking') {
+      document.getElementById('trackingForm').reset();
+  } else {
+      document.getElementById(type + 'Form').reset();
+  }
+  
+  const today = new Date();
+  if(type === 'treatment' && document.getElementById('treatmentDate')._flatpickr) document.getElementById('treatmentDate')._flatpickr.setDate(today);
+  if(type === 'doctor' && document.getElementById('doctorConsultDate')._flatpickr) document.getElementById('doctorConsultDate')._flatpickr.setDate(today);
+  if(type === 'maintenance' && document.getElementById('maintenanceDate')._flatpickr) document.getElementById('maintenanceDate')._flatpickr.setDate(today);
+  if(type === 'tracking' && document.getElementById('trackDate')._flatpickr) document.getElementById('trackDate')._flatpickr.setDate(today);
+
+  // 還原個案編號
+  document.querySelectorAll('.auto-fill-id').forEach(el => el.value = currentClient ? currentClient['個案編號'] : "");
+
+  const submitBtn = getSubmitBtn(type);
+  if (submitBtn) {
+    if (submitBtn.hasAttribute('data-original-text')) {
+       submitBtn.innerHTML = submitBtn.getAttribute('data-original-text');
+    } else {
+       submitBtn.innerHTML = "儲存紀錄"; 
+    }
+    submitBtn.classList.remove('bg-amber-500', 'hover:bg-amber-600', 'text-white');
+    
+    if(type === 'tracking') {
+        submitBtn.classList.add('bg-violet-600', 'hover:bg-violet-700', 'text-white');
+    } else if(type === 'maintenance') {
+        submitBtn.classList.add('bg-gradient-to-r', 'from-orange-400', 'to-orange-600', 'hover:from-orange-500', 'hover:to-orange-700', 'text-white');
+    } else {
+        submitBtn.classList.add('bg-emerald-500', 'hover:bg-emerald-600', 'text-white');
+    }
+  }
+}
+
+function getSubmitBtn(type) {
+  if (type === 'tracking') return document.querySelector('#trackingForm button[type="submit"]');
+  if (type === 'maintenance') return document.querySelector('#maintenanceForm button[onclick*="submitForm"]');
+  if (type === 'doctor') return document.querySelector('#doctorForm button[onclick*="submitForm"]');
+  if (type === 'treatment') return document.querySelector('#treatmentForm button[onclick*="submitForm"]');
+  return null;
+}
+
+// ==========================================
+// 表單提交 (★ 修改版：支援編輯模式)
 // ==========================================
 function submitForm(type) {
   if (!currentClient) { alert("系統錯誤：未選取個案，請重新搜尋。"); return; }
   
   const clientId = currentClient['個案編號'];
-  const btn = type === 'tracking' ? document.querySelector('#trackingForm button[type="submit"]') : event.target;
+  const editIdField = document.getElementById('edit_id_' + type);
+  const editId = editIdField ? editIdField.value : "";
+  const isEdit = (editId && editId !== "");
+
+  let btn = null;
+  if(type === 'tracking') btn = document.querySelector('#trackingForm button[type="submit"]');
+  else if(event && event.target) btn = event.target;
+  const safeBtn = getSubmitBtn(type);
+  if(safeBtn) btn = safeBtn;
+
   const ot = btn ? btn.innerHTML : "儲存"; 
-  if(btn) { btn.disabled = true; btn.innerHTML = '<span class="material-icons-outlined animate-spin">sync</span> 儲存中...'; }
+  if(btn) { btn.disabled = true; btn.innerHTML = '<span class="material-icons-outlined animate-spin">sync</span> 處理中...'; }
   
-  // 儲存成功後的回調處理：重新載入日曆資料
   const onSuccess = (res, formId, reloadFunc) => {
       btn.disabled = false; 
       btn.innerHTML = ot;
       if (res.success) { 
           alert(res.message); 
-          if(formId) document.getElementById(formId).reset(); 
+          if (isEdit) {
+             cancelEdit(type);
+          } else {
+             if(formId) document.getElementById(formId).reset(); 
+             document.querySelectorAll('.auto-fill-id').forEach(el => el.value = clientId);
+          }
           if(reloadFunc) reloadFunc(); 
-          fetchCalendarData(); // ★ 重新抓取資料以更新月曆點點
+          fetchCalendarData(); 
       } else { 
           alert(res.message); 
       }
   };
 
+  let d = {};
+
   if (type === 'doctor') {
-    const d = { 
+    d = { 
+      record_id: editId, 
       clientId: clientId,
       date: document.getElementById('doctorConsultDate').value, 
       doctor: document.getElementById('selectDoctor').value, 
@@ -379,22 +526,30 @@ function submitForm(type) {
       remark: document.getElementById('doctorRemark').value 
     };
     if (!d.date || !d.doctor) { alert("請填寫日期與醫師"); if(btn){btn.disabled=false; btn.innerHTML=ot;} return; }
-    google.script.run.withSuccessHandler(res => onSuccess(res, 'doctorForm', loadDoctorHistory)).saveDoctorConsultation(d);
-  } else if (type === 'treatment') {
-    const d = { 
+  } 
+  else if (type === 'treatment') {
+    d = { 
+      record_id: editId,
       '個案編號': clientId,
       '治療日期': document.getElementById('treatmentDate').value, 
       '執行治療師': document.getElementById('inputTherapist').value, 
-      '治療項目': document.getElementById('inputTreatmentItem').value, // ★ 修改：抓取治療項目
+      '治療項目': document.getElementById('inputTreatmentItem').value,
       '當日主訴': document.getElementById('inputComplaint').value, 
       '治療內容': document.getElementById('inputContent').value, 
-      '備註/下次治療': document.getElementById('inputNextPlan').value 
+      '備註/下次治療': document.getElementById('inputNextPlan').value,
+      date: document.getElementById('treatmentDate').value,
+      therapist: document.getElementById('inputTherapist').value,
+      item: document.getElementById('inputTreatmentItem').value,
+      complaint: document.getElementById('inputComplaint').value,
+      content: document.getElementById('inputContent').value,
+      nextPlan: document.getElementById('inputNextPlan').value
     };
     if (!d['治療日期'] || !d['執行治療師']) { alert("請填寫日期與治療師"); if(btn){btn.disabled=false; btn.innerHTML=ot;} return; }
-    google.script.run.withSuccessHandler(res => onSuccess(res, 'treatmentForm', loadTreatmentHistory)).saveData('Treatment_Logs', d);
-  } else if (type === 'maintenance') {
+  } 
+  else if (type === 'maintenance') {
     const f = document.getElementById('maintenanceForm');
-    const d = { 
+    d = { 
+      record_id: editId,
       clientId: clientId,
       date: document.getElementById('maintenanceDate').value, 
       staff: document.getElementById('selectMaintStaff').value, 
@@ -406,9 +561,10 @@ function submitForm(type) {
       remark: f.querySelector('textarea[name="備註"]').value 
     };
     if (!d.date || !d.staff || !d.item) { alert("請完整填寫必填欄位"); if(btn){btn.disabled=false; btn.innerHTML=ot;} return; }
-    google.script.run.withSuccessHandler(res => onSuccess(res, 'maintenanceForm', loadMaintenanceHistory)).saveMaintenanceRecord(d);
-  } else if (type === 'tracking') {
-    const d = { 
+  } 
+  else if (type === 'tracking') {
+    d = { 
+      record_id: editId,
       clientId: clientId,
       trackDate: document.getElementById('trackDate').value, 
       trackStaff: document.getElementById('trackStaff').value, 
@@ -416,22 +572,39 @@ function submitForm(type) {
       content: document.getElementById('trackContent').value 
     };
     if (!d.trackDate || !d.trackStaff || !d.trackType || !d.content) { alert("請完整填寫追蹤資料"); if(btn){btn.disabled=false; btn.innerHTML=ot;} return; }
-    google.script.run.withSuccessHandler(res => { 
-        document.getElementById('trackContent').value = ""; 
-        onSuccess(res, null, loadTrackingHistory);
-    }).saveTrackingRecord(d);
+  }
+
+  if (isEdit) {
+     google.script.run
+       .withSuccessHandler(res => onSuccess(res, null, getReloadFunc(type)))
+       .updateRecord(type, d);
+  } else {
+     if (type === 'doctor') google.script.run.withSuccessHandler(res => onSuccess(res, 'doctorForm', loadDoctorHistory)).saveDoctorConsultation(d);
+     else if (type === 'treatment') google.script.run.withSuccessHandler(res => onSuccess(res, 'treatmentForm', loadTreatmentHistory)).saveData('Treatment_Logs', d); 
+     else if (type === 'maintenance') google.script.run.withSuccessHandler(res => onSuccess(res, 'maintenanceForm', loadMaintenanceHistory)).saveMaintenanceRecord(d);
+     else if (type === 'tracking') google.script.run.withSuccessHandler(res => { document.getElementById('trackContent').value = ""; onSuccess(res, null, loadTrackingHistory); }).saveTrackingRecord(d);
   }
 }
 
+function getReloadFunc(type) {
+    if(type === 'treatment') return loadTreatmentHistory;
+    if(type === 'doctor') return loadDoctorHistory;
+    if(type === 'maintenance') return loadMaintenanceHistory;
+    if(type === 'tracking') return loadTrackingHistory;
+    return null;
+}
+
 // ==========================================
-// 歷史列表載入與渲染
+// 歷史列表載入與渲染 (★ 修改版：加入編輯按鈕)
 // ==========================================
-// ★★★ 修改重點：調整追蹤紀錄樣式更緊湊 ★★★
+
 function loadTrackingHistory() {
   const c = document.getElementById('trackingHistoryList'); c.innerHTML = '<div class="text-center py-6 text-slate-400">讀取中...</div>';
   google.script.run.withSuccessHandler(recs => {
     if (!recs || !recs.length) { c.innerHTML = `<div class="text-center text-slate-400 py-12 bg-white rounded-[2rem] border border-slate-100"><span class="material-icons-outlined text-4xl mb-2 text-slate-300">history_edu</span><p>尚無任何追蹤紀錄</p></div>`; return; }
-    c.innerHTML = recs.map(r => `
+    c.innerHTML = recs.map(r => {
+      const dataStr = encodeURIComponent(JSON.stringify(r));
+      return `
       <div class="bg-white p-3 rounded-[1.5rem] border border-slate-100 shadow-sm card-hover mb-2 relative overflow-hidden group print:break-inside-avoid print:mb-4 print:border print:border-slate-300">
         <div class="absolute left-0 top-0 bottom-0 w-1.5 bg-violet-500 opacity-80 print:hidden"></div>
         <div class="pl-2">
@@ -441,12 +614,16 @@ function loadTrackingHistory() {
               <div class="text-slate-500 text-xs font-bold flex items-center bg-slate-50 px-2 py-1 rounded-lg print:bg-white">
                 <span class="material-icons-outlined text-[14px] mr-1 text-slate-400 print:hidden">person</span>${r.staff||'--'}
               </div>
+              <button onclick="startEdit('tracking', JSON.parse(decodeURIComponent('${dataStr}')))" class="text-slate-300 hover:text-violet-500 transition print:hidden" title="編輯">
+                  <span class="material-icons-outlined text-sm">edit</span>
+              </button>
             </div>
             <span class="text-slate-400 text-xs font-mono print:text-black">${r.date}</span>
           </div>
           <div class="text-slate-700 text-sm leading-relaxed whitespace-pre-line bg-slate-50/50 p-2 rounded-xl print:bg-white print:p-0">${r.content}</div>
         </div>
-      </div>`).join('');
+      </div>`;
+    }).join('');
   }).getTrackingHistory(currentClient['個案編號']);
 }
 
@@ -454,28 +631,32 @@ function loadTreatmentHistory() {
   const c = document.getElementById('historyListContainer'); c.innerHTML = '<div class="text-center py-6 text-slate-400">讀取中...</div>';
   google.script.run.withSuccessHandler(logs => { 
       allTreatmentLogs = logs || []; 
-      renderTreatmentList(allTreatmentLogs); // ★ 修改：直接渲染列表，不再經過 filter
+      renderTreatmentList(allTreatmentLogs); 
   }).getClientHistory(currentClient['個案編號'], 'Treatment_Logs');
 }
 
 function renderTreatmentList(logs) {
   const c = document.getElementById('historyListContainer');
   const countBadge = document.getElementById('treatmentHistoryCount');
-  
-  if(countBadge) {
-     countBadge.textContent = `共 ${logs ? logs.length : 0} 次`;
-  }
+  if(countBadge) countBadge.textContent = `共 ${logs ? logs.length : 0} 次`;
 
   if(!logs || !logs.length) { 
     c.innerHTML = '<div class="text-center py-10 text-slate-300 bg-slate-50 rounded-2xl">無相關紀錄</div>'; 
     return; 
   }
   
-  c.innerHTML = logs.map(l => `
+  c.innerHTML = logs.map(l => {
+    const dataStr = encodeURIComponent(JSON.stringify(l));
+    return `
     <div class="bg-white p-6 rounded-[2rem] shadow-sm border border-slate-100 card-hover mb-4 relative overflow-hidden group print:break-inside-avoid print:mb-4 print:border print:border-slate-300">
       <div class="absolute top-0 left-0 w-full h-1 bg-emerald-500 print:hidden"></div>
       <div class="flex justify-between items-center mb-3">
-        <span class="text-xs font-bold text-slate-400 font-mono bg-slate-50 px-2 py-1 rounded-lg print:bg-white print:text-black print:border print:border-slate-300">${l['治療日期']}</span>
+        <div class="flex items-center gap-2">
+            <span class="text-xs font-bold text-slate-400 font-mono bg-slate-50 px-2 py-1 rounded-lg print:bg-white print:text-black print:border print:border-slate-300">${l['治療日期']}</span>
+            <button onclick="startEdit('treatment', JSON.parse(decodeURIComponent('${dataStr}')))" class="text-slate-400 hover:text-emerald-500 transition px-2 print:hidden" title="編輯">
+                <span class="material-icons-outlined text-sm">edit</span>
+            </button>
+        </div>
         
         <div class="flex items-center gap-2">
             ${l['治療項目'] ? `<span class="px-2 py-0.5 rounded text-[10px] font-bold bg-blue-50 text-blue-600 border border-blue-100 print:text-black">${l['治療項目']}</span>` : ''}
@@ -494,15 +675,23 @@ function renderTreatmentList(logs) {
         
         ${l['備註/下次治療']?`<div class="mt-2 text-xs text-slate-600 bg-amber-50 p-3 rounded-xl border border-amber-100 print:bg-white print:border-slate-300"><span class="font-bold text-amber-500 block mb-1 flex items-center gap-1 print:text-black"><span class="material-icons-outlined text-[12px] print:hidden">flag</span> Next Plan</span>${l['備註/下次治療']}</div>`:''}
       </div>
-    </div>`).join('');
+    </div>`;
+  }).join('');
 }
 
 function loadMaintenanceHistory() {
   const c = document.getElementById('maintenanceHistoryList'); c.innerHTML = '<div class="text-center py-10 text-slate-400">紀錄載入中...</div>';
   google.script.run.withSuccessHandler(logs => {
     if(!logs || !logs.length) { c.innerHTML = '<div class="bg-white/50 border-2 border-dashed border-slate-200 rounded-[2.5rem] p-12 text-center text-slate-300">尚無歷史紀錄</div>'; return; }
-    c.innerHTML = logs.map(l => `
-      <div class="bg-white p-6 rounded-[2rem] shadow-sm border border-slate-100 card-hover mb-4 flex flex-col md:flex-row gap-4 items-center print:break-inside-avoid print:mb-4 print:border print:border-slate-300">
+    
+    c.innerHTML = logs.map(l => {
+      const dataStr = encodeURIComponent(JSON.stringify(l));
+      return `
+      <div class="bg-white p-6 rounded-[2rem] shadow-sm border border-slate-100 card-hover mb-4 flex flex-col md:flex-row gap-4 items-center print:break-inside-avoid print:mb-4 print:border print:border-slate-300 relative group">
+        <button onclick="startEdit('maintenance', JSON.parse(decodeURIComponent('${dataStr}')))" class="absolute top-4 right-4 text-slate-300 hover:text-orange-500 transition print:hidden" title="編輯">
+            <span class="material-icons-outlined text-sm">edit</span>
+        </button>
+
         <div class="w-full md:w-auto flex flex-col gap-1 border-b md:border-b-0 md:border-r border-slate-100 pb-4 md:pb-0 md:pr-6 min-w-[140px] print:border-r print:border-slate-300">
           <div class="text-sm font-mono text-slate-500 tracking-tight print:text-black">${l['保養日期']||'--'}</div>
           <span class="px-2.5 py-1 bg-orange-50 text-orange-600 text-[11px] font-bold rounded-lg w-fit mt-1 print:bg-white print:text-black print:border print:border-slate-300">${l['保養項目']||'一般'}</span>
@@ -516,7 +705,8 @@ function loadMaintenanceHistory() {
           <div class="p-2 rounded-xl bg-slate-50 print:bg-white print:border print:border-slate-300"><div class="text-[9px] font-bold text-slate-400 mb-1 print:text-black">HR</div><div class="text-sm font-black text-slate-700 print:text-black">${l['心律']||'-'}</div></div>
           <div class="p-2 rounded-xl bg-slate-50 print:bg-white print:border print:border-slate-300"><div class="text-[9px] font-bold text-slate-400 mb-1 print:text-black">Temp</div><div class="text-sm font-black text-slate-700 print:text-black">${l['體溫']||'-'}</div></div>
         </div>
-      </div>`).join('');
+      </div>`;
+    }).join('');
   }).getMaintenanceHistory(currentClient['個案編號']);
 }
 
@@ -525,10 +715,17 @@ function loadDoctorHistory() {
   google.script.run.withSuccessHandler(logs => {
     if(!logs || !logs.length) { c.innerHTML = '<div class="py-12 text-center text-slate-300 bg-white rounded-[2rem] border border-slate-100">尚無看診紀錄</div>'; return; }
     
-    c.innerHTML = logs.map(l => `
-      <div class="bg-white border border-slate-100 rounded-[2.5rem] p-4 shadow-sm mb-3 card-hover relative overflow-hidden print:break-inside-avoid print:mb-4 print:border print:border-slate-300 print:p-4">
+    c.innerHTML = logs.map(l => {
+      const dataStr = encodeURIComponent(JSON.stringify(l));
+      return `
+      <div class="bg-white border border-slate-100 rounded-[2.5rem] p-4 shadow-sm mb-3 card-hover relative overflow-hidden print:break-inside-avoid print:mb-4 print:border print:border-slate-300 print:p-4 group">
         <div class="flex justify-between items-center mb-3 pb-2 border-b border-slate-50 print:mb-2 print:pb-2 print:border-slate-300">
-          <span class="text-xs font-bold bg-emerald-50 text-emerald-600 px-4 py-2 rounded-full font-mono print:bg-white print:text-black print:border print:border-slate-300">${l['看診日期']||'--'}</span>
+          <div class="flex items-center gap-3">
+              <span class="text-xs font-bold bg-emerald-50 text-emerald-600 px-4 py-2 rounded-full font-mono print:bg-white print:text-black print:border print:border-slate-300">${l['看診日期']||'--'}</span>
+              <button onclick="startEdit('doctor', JSON.parse(decodeURIComponent('${dataStr}')))" class="text-slate-300 hover:text-emerald-500 transition print:hidden" title="編輯">
+                  <span class="material-icons-outlined text-sm">edit</span>
+              </button>
+          </div>
           <div class="text-sm font-bold text-slate-500 flex items-center gap-4 print:text-black">
             <div class="flex items-center gap-1">
               <span class="material-icons-outlined text-base text-slate-400 print:hidden">person</span> ${l['看診醫師']||'--'}
@@ -568,7 +765,8 @@ function loadDoctorHistory() {
               <span class="font-bold shrink-0 print:text-black">Note:</span><span class="print:text-black">${l['備註']}</span>
           </div>` : ''}
         </div>
-      </div>`).join('');
+      </div>`;
+    }).join('');
   }).getClientHistory(currentClient['個案編號'], 'Doctor_Consultation');
 }
 
@@ -579,7 +777,6 @@ function loadOverviewData() {
   const container = document.getElementById('overviewListContainer'); container.innerHTML = '<div class="text-center py-12 text-slate-400 flex flex-col items-center gap-2"><span class="material-icons-outlined animate-spin">sync</span><span>讀取個案歷程中...</span></div>';
   google.script.run.withSuccessHandler(data => { 
       allOverviewRecords = data || []; 
-      // ★ 同時更新日曆事件資料 (因為總覽資料結構已經正規化，可以直接轉換)
       allCalendarEvents = data || []; 
       renderOverviewList(); 
   }).withFailureHandler(err => { container.innerHTML = `<div class="text-red-500 text-center py-10">載入失敗: ${err.message}</div>`; }).getCaseOverviewData(currentClient['個案編號']);
@@ -597,7 +794,6 @@ function renderOverviewList() {
   }
   
   c.innerHTML = f.map(i => {
-    // 共同的 class 字串，方便重複使用
     const cardClass = "bg-white border border-slate-100 rounded-[2rem] p-5 shadow-sm mb-4 card-hover relative overflow-hidden group print:break-inside-avoid print:mb-4 print:border-slate-300 print:p-3";
     const headerClass = "flex justify-between items-center mb-3 pb-2 border-b border-slate-50 pl-3 print:mb-1 print:pb-1 print:border-slate-300";
     const badgeClass = "text-xs font-bold px-3 py-1 rounded-full font-mono print:bg-white print:text-black print:border print:border-slate-300";
@@ -691,32 +887,16 @@ function renderOverviewList() {
   }).join('');
 }
 
-function setOverviewCategory(cat) {
-  currentOverviewCategory = cat;
-  ['all', 'doctor', 'maintenance', 'tracking', 'treatment'].forEach(b => {
-    const el = document.getElementById('filter-btn-' + b);
-    if(b === cat) { el.className = "px-4 py-2 rounded-xl text-sm font-bold bg-slate-800 text-white shadow-md transform scale-105 transition-all"; }
-    else { el.className = "px-4 py-2 rounded-xl text-sm font-bold text-slate-500 hover:bg-white hover:text-slate-700 transition-all"; }
-  });
-  renderOverviewList();
-}
-function getFilteredOverviewData() {
-  const s = document.getElementById('overviewStartDate').value; const e = document.getElementById('overviewEndDate').value;
-  return allOverviewRecords.filter(i => { if (currentOverviewCategory !== 'all' && i.category !== currentOverviewCategory) return false; if (s && i.date < s) return false; if (e && i.date > e) return false; return true; });
-}
-
 function printOverviewReport() { handlePrint(); } 
 
 // ==========================================
 // ★★★ 新增：影像載入與上傳邏輯 ★★★
 // ==========================================
 
-// 1. 載入並渲染影像 (包含空資料處理)
 function loadClientImages() {
   const container = document.getElementById('imageGalleryContainer');
   const countText = document.getElementById('img-stats-text');
 
-  // Loading State
   container.innerHTML = '<div class="col-span-full flex flex-col items-center justify-center py-20 text-slate-300"><span class="material-icons-outlined text-4xl animate-spin mb-3">sync</span><p>讀取影像中...</p></div>';
   if(countText) countText.textContent = '讀取中...';
 
@@ -731,7 +911,6 @@ function loadClientImages() {
      const images = res.images;
      if (countText) countText.textContent = '共 ' + images.length + ' 張影像紀錄';
 
-     // ★ 修改處：若無資料，顯示特定樣式
      if (images.length === 0) {
         container.innerHTML = `
           <div class="col-span-full flex flex-col items-center justify-center py-24 bg-white rounded-[2.5rem] border border-slate-100">
@@ -744,7 +923,6 @@ function loadClientImages() {
         return;
      }
 
-     // 渲染圖片
      container.innerHTML = images.map(img => `
         <div class="group relative bg-white rounded-3xl shadow-sm border border-slate-100 overflow-hidden aspect-square cursor-pointer hover:shadow-md transition-all" onclick="openLightbox('${img.id}', '${img.name}')">
             <img src="${img.thumbnail}" alt="${img.name}" class="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110">
@@ -758,12 +936,10 @@ function loadClientImages() {
   }).getClientImages(clientId);
 }
 
-// 2. 檔案預覽 (供上傳 Modal 使用)
 function previewFiles(input) {
   const container = document.getElementById('previewList');
   const previewArea = document.getElementById('uploadPreviewArea');
   
-  // 清空舊陣列，重新加入新選擇的檔案
   filesToUpload = Array.from(input.files);
   container.innerHTML = '';
   
@@ -791,7 +967,6 @@ function previewFiles(input) {
   }
 }
 
-// 3. 開始上傳
 function startUpload() {
   if (filesToUpload.length === 0) { alert("請先選擇檔案"); return; }
   const btn = document.getElementById('btnStartUpload');
@@ -802,23 +977,18 @@ function startUpload() {
   btn.innerHTML = '<span class="material-icons-outlined animate-spin mr-2">sync</span>上傳中...';
   
   let successCount = 0;
-  let processCount = 0;
-
-  // 簡單的序列上傳處理
+  
   const processNext = (idx) => {
       if (idx >= filesToUpload.length) {
-         // 全部完成
          alert(`上傳完成！成功 ${successCount} / ${filesToUpload.length}`);
          btn.disabled = false; 
          btn.innerHTML = originalText;
          closeModal('uploadImageModal');
-         // 清空狀態
          document.getElementById('uploadInput').value = '';
          document.getElementById('fileRemark').value = '';
          document.getElementById('previewList').innerHTML = '';
          document.getElementById('uploadPreviewArea').classList.add('hidden');
          filesToUpload = [];
-         // 重新載入列表
          loadClientImages();
          return;
       }
@@ -826,7 +996,7 @@ function startUpload() {
       const file = filesToUpload[idx];
       const reader = new FileReader();
       reader.onload = function(e) {
-          const content = e.target.result.split(',')[1]; // 去除 base64 header
+          const content = e.target.result.split(',')[1]; 
           google.script.run.withSuccessHandler(res => {
              if(res.success) successCount++;
              processNext(idx + 1);
@@ -841,7 +1011,6 @@ function startUpload() {
   processNext(0);
 }
 
-// 4. 開啟上傳 Modal 時清空狀態
 function openUploadModal() {
   if (!currentClient) { alert("請先選取個案"); return; }
   document.getElementById('uploadInput').value = '';
@@ -901,10 +1070,9 @@ window.addEventListener('scroll', function() {
   const btn = document.getElementById('btnBackToTop');
   if (!btn) return;
   
-  // 當捲動超過 300px 時顯示按鈕，否則隱藏
   if (window.scrollY > 300) {
     btn.classList.remove('hidden');
-    btn.classList.add('animate-bounce-in'); // 簡單的淡入效果(若有設定動畫)
+    btn.classList.add('animate-bounce-in'); 
   } else {
     btn.classList.add('hidden');
   }
@@ -913,8 +1081,7 @@ window.addEventListener('scroll', function() {
 function scrollToTop() {
   window.scrollTo({
     top: 0,
-    behavior: 'smooth' // 平滑捲動效果
+    behavior: 'smooth' 
   });
 }
-
 </script>
