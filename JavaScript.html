@@ -314,7 +314,22 @@ function selectClient(c) {
   document.getElementById('headerClientName').textContent = c['姓名'];
   document.getElementById('headerClientDob').textContent = c['生日'];
   document.querySelectorAll('.auto-fill-id').forEach(el => el.value = c['個案編號']);
-  navTo('basic');
+  
+  // 1. 自動將個案的「負責治療師」帶入治療紀錄頁面的下拉選單
+  const therapistSelect = document.getElementById('inputTherapist');
+  if (therapistSelect) {
+      // 如果個案有設定負責治療師，就會被選取；否則維持預設(空白或請選擇)
+      therapistSelect.value = c['負責治療師'] || ""; 
+  }
+
+  // 2. ★ 新增修改：治療項目預設為 "1600"
+  const itemSelect = document.getElementById('inputTreatmentItem');
+  if (itemSelect) {
+      itemSelect.value = "1600";
+  }
+
+  // 3. 預設跳轉頁面為 "treatment" (治療紀錄)
+  navTo('treatment');
 }
 
 // ==========================================
