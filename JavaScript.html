@@ -403,15 +403,16 @@ function submitForm(type) {
 // ==========================================
 // 歷史列表載入與渲染
 // ==========================================
+// ★★★ 修改重點：調整追蹤紀錄樣式更緊湊 ★★★
 function loadTrackingHistory() {
   const c = document.getElementById('trackingHistoryList'); c.innerHTML = '<div class="text-center py-6 text-slate-400">讀取中...</div>';
   google.script.run.withSuccessHandler(recs => {
     if (!recs || !recs.length) { c.innerHTML = `<div class="text-center text-slate-400 py-12 bg-white rounded-[2rem] border border-slate-100"><span class="material-icons-outlined text-4xl mb-2 text-slate-300">history_edu</span><p>尚無任何追蹤紀錄</p></div>`; return; }
     c.innerHTML = recs.map(r => `
-      <div class="bg-white p-6 rounded-[1.5rem] border border-slate-100 shadow-sm card-hover mb-4 relative overflow-hidden group print:break-inside-avoid print:mb-4 print:border print:border-slate-300">
+      <div class="bg-white p-3 rounded-[1.5rem] border border-slate-100 shadow-sm card-hover mb-2 relative overflow-hidden group print:break-inside-avoid print:mb-4 print:border print:border-slate-300">
         <div class="absolute left-0 top-0 bottom-0 w-1.5 bg-violet-500 opacity-80 print:hidden"></div>
         <div class="pl-2">
-          <div class="flex justify-between items-start mb-3">
+          <div class="flex justify-between items-start mb-1">
             <div class="flex items-center gap-2">
               <span class="bg-violet-50 text-violet-700 text-xs font-bold px-3 py-1 rounded-full border border-violet-100 print:border-slate-300 print:text-black">${r.type}</span>
               <div class="text-slate-500 text-xs font-bold flex items-center bg-slate-50 px-2 py-1 rounded-lg print:bg-white">
@@ -420,7 +421,7 @@ function loadTrackingHistory() {
             </div>
             <span class="text-slate-400 text-xs font-mono print:text-black">${r.date}</span>
           </div>
-          <div class="text-slate-700 text-sm leading-relaxed whitespace-pre-line bg-slate-50/50 p-3 rounded-xl print:bg-white print:p-0">${r.content}</div>
+          <div class="text-slate-700 text-sm leading-relaxed whitespace-pre-line bg-slate-50/50 p-2 rounded-xl print:bg-white print:p-0">${r.content}</div>
         </div>
       </div>`).join('');
   }).getTrackingHistory(currentClient['個案編號']);
@@ -496,9 +497,6 @@ function loadMaintenanceHistory() {
   }).getMaintenanceHistory(currentClient['個案編號']);
 }
 
-// ==========================================
-// ★★★ 修改重點：調整看診紀錄樣式更緊湊 ★★★
-// ==========================================
 function loadDoctorHistory() {
   const c = document.getElementById('doctorHistoryList'); c.innerHTML = '<div class="text-center py-10 text-slate-400">讀取中...</div>';
   google.script.run.withSuccessHandler(logs => {
