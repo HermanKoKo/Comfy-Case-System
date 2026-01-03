@@ -6,11 +6,9 @@ let currentClient = null;
 let allTreatmentLogs = [];
 let allOverviewRecords = []; 
 let currentOverviewCategory = 'all'; 
-let currentCalDate = new Date();
-let isMonthPickerMode = false; 
 let filesToUpload = []; 
 let searchTimer = null;
-let allCalendarEvents = []; // ★★★ 新增：儲存所有類別的日期事件 ★★★
+let allCalendarEvents = []; // 仍保留此變數以支援 Flatpickr 的彩色點點功能
 
 // ==========================================
 // 初始化與 UI 設定
@@ -19,35 +17,9 @@ let allCalendarEvents = []; // ★★★ 新增：儲存所有類別的日期事
 function setupEnhancedFlatpickr(selector, options = {}) {
   const defaults = {
     locale: "zh_tw", dateFormat: "Y-m-d", disableMobile: true, allowInput: true, static: true,
-    onReady: function(selectedDates, dateStr, instance) {
-      const customHeader = document.createElement("div");
-      customHeader.className = "custom-fp-header";
-      customHeader.innerHTML = `<div class="custom-fp-nav-btn prev-btn"><span class="material-icons-outlined text-sm">chevron_left</span></div><div class="custom-fp-title"><span class="curr-year-month">--</span><span class="material-icons-outlined text-xs text-slate-300">expand_more</span></div><div class="custom-fp-nav-btn next-btn"><span class="material-icons-outlined text-sm">chevron_right</span></div>`;
-      instance.calendarContainer.insertBefore(customHeader, instance.calendarContainer.firstChild);
-      const monthGrid = document.createElement("div");
-      monthGrid.className = "custom-fp-month-grid";
-      monthGrid.style.display = "none"; 
-      const monthNames = ["1月", "2月", "3月", "4月", "5月", "6月", "7月", "8月", "9月", "10月", "11月", "12月"];
-      monthNames.forEach((mName, idx) => {
-        const item = document.createElement("div");
-        item.className = "custom-fp-month-item";
-        item.textContent = mName;
-        item.onclick = (e) => { e.stopPropagation(); instance.changeMonth(idx, false); monthGrid.style.display = "none"; instance.innerContainer.style.display = "block"; updateHeader(instance, customHeader, monthGrid); };
-        monthGrid.appendChild(item);
-      });
-      instance.calendarContainer.appendChild(monthGrid);
-      const titleBtn = customHeader.querySelector('.custom-fp-title');
-      const prevBtn = customHeader.querySelector('.prev-btn');
-      const nextBtn = customHeader.querySelector('.next-btn');
-      titleBtn.onclick = (e) => { e.stopPropagation(); const isGridVisible = monthGrid.style.display !== "none"; if(isGridVisible) { monthGrid.style.display = "none"; instance.innerContainer.style.display = "block"; } else { monthGrid.style.display = "grid"; instance.innerContainer.style.display = "none"; renderMonthGridDots(instance, monthGrid); } updateHeader(instance, customHeader, monthGrid); };
-      prevBtn.onclick = (e) => { e.stopPropagation(); if(monthGrid.style.display !== "none") { instance.changeYear(instance.currentYear - 1); renderMonthGridDots(instance, monthGrid); } else { instance.changeMonth(-1); } updateHeader(instance, customHeader, monthGrid); };
-      nextBtn.onclick = (e) => { e.stopPropagation(); if(monthGrid.style.display !== "none") { instance.changeYear(instance.currentYear + 1); renderMonthGridDots(instance, monthGrid); } else { instance.changeMonth(1); } updateHeader(instance, customHeader, monthGrid); };
-      updateHeader(instance, customHeader, monthGrid);
-    },
-    onMonthChange: function(sd, ds, instance) { updateHeader(instance, instance.calendarContainer.querySelector(".custom-fp-header"), instance.calendarContainer.querySelector(".custom-fp-month-grid")); },
-    onYearChange: function(sd, ds, instance) { const grid = instance.calendarContainer.querySelector(".custom-fp-month-grid"); updateHeader(instance, instance.calendarContainer.querySelector(".custom-fp-header"), grid); if(grid && grid.style.display !== "none") renderMonthGridDots(instance, grid); },
+    // 移除原本複雜的自製 header 邏輯，改回 Flatpickr 原生或簡單設定
     
-    // ★★★ 修改處：根據 allCalendarEvents 動態加入彩色圓點 ★★★
+    // ★★★ 根據 allCalendarEvents 動態加入彩色圓點 ★★★
     onDayCreate: function(dObj, dStr, fp, dayElem) {
       if (!dayElem || !dayElem.dateObj) return;
       const dateKey = dayElem.dateObj.toISOString().split('T')[0];
@@ -82,37 +54,13 @@ function setupEnhancedFlatpickr(selector, options = {}) {
   return flatpickr(selector, { ...defaults, ...options });
 }
 
-function updateHeader(instance, headerEl, gridEl) {
-  if(!headerEl) return;
-  const titleSpan = headerEl.querySelector(".curr-year-month");
-  if (gridEl && gridEl.style.display !== "none") {
-    titleSpan.textContent = `${instance.currentYear}年`;
-    gridEl.querySelectorAll(".custom-fp-month-item").forEach((item, idx) => { idx === instance.currentMonth ? item.classList.add("is-current") : item.classList.remove("is-current"); });
-  } else { titleSpan.textContent = `${instance.currentYear}年 ${instance.l10n.months.longhand[instance.currentMonth]}`; }
-}
-
-function renderMonthGridDots(instance, gridEl) {
-  const currentYear = instance.currentYear;
-  // ★ 修改：檢查 allCalendarEvents 是否有該月份的資料
-  const monthsWithData = new Set();
-  allCalendarEvents.forEach(e => {
-    if (!e.date) return;
-    const parts = e.date.split('-');
-    if (parts.length >= 2 && parseInt(parts[0], 10) === currentYear) monthsWithData.add(parseInt(parts[1], 10) - 1);
-  });
-  gridEl.querySelectorAll(".custom-fp-month-item").forEach((item, idx) => { monthsWithData.has(idx) ? item.classList.add("has-record") : item.classList.remove("has-record"); });
-}
-
 // 頁面載入完成後執行
 window.onload = function() {
   const today = new Date().toISOString().split('T')[0];
   document.querySelectorAll('#treatmentDate, #maintenanceDate, #doctorConsultDate, #trackDate').forEach(el => el.value = today);
   
-  setupEnhancedFlatpickr('input[type="date"], #trackDate', {
-    onChange: function(selectedDates, dateStr, instance) {
-      if (instance.element.id === 'filterDate') { applyLogFilters(); if (selectedDates.length > 0) { currentCalDate = new Date(selectedDates[0]); isMonthPickerMode = false; renderTreatmentCalendar(); } }
-    }
-  });
+  // 初始化所有日期選擇器
+  setupEnhancedFlatpickr('input[type="date"], #trackDate');
   
   const overviewConfig = { onChange: function() { renderOverviewList(); } };
   setupEnhancedFlatpickr('#overviewStartDate', overviewConfig);
@@ -136,8 +84,7 @@ function loadSystemStaff() {
     setOptions('trackStaff', staff.allStaff, '請選擇人員');
     setOptions('trackType', staff.trackingTypes || [], '請選擇項目');
     
-    const fts = document.getElementById('filterTherapist');
-    if(fts) fts.innerHTML = '<option value="">所有執行人員</option>' + staff.therapists.map(n => `<option value="${n}">${n}</option>`).join('');
+    // 已移除 filterTherapist，無需設定選項
   }).getSystemStaff();
 }
 
@@ -163,7 +110,7 @@ function navTo(viewName) {
   document.getElementById('pageTitle').textContent = titles[viewName] || '康飛運醫';
   
   if (currentClient) {
-    // ★★★ 關鍵修改：進入任何有紀錄的頁面時，若尚未載入總覽資料，則背景載入一次，以確保月曆有資料顯示
+    // 進入有紀錄的頁面時，若尚未載入總覽資料，則背景載入一次，確保日期選擇器有彩色點點
     if (['treatment', 'maintenance', 'doctor', 'tracking', 'overview'].includes(viewName)) {
         if (allCalendarEvents.length === 0) {
             fetchCalendarData(); // 背景載入所有資料
@@ -180,16 +127,11 @@ function navTo(viewName) {
   }
 }
 
-// ★★★ 新增：背景載入所有日曆資料 ★★★
+// 背景載入所有日曆資料 (用於在 Flatpickr 上顯示點點)
 function fetchCalendarData() {
     google.script.run.withSuccessHandler(data => {
         allCalendarEvents = data || [];
-        // 如果目前在治療紀錄頁面，刷新自製月曆 (左側那個)
-        const treatmentView = document.getElementById('view-treatment');
-        if (treatmentView && !treatmentView.classList.contains('hidden')) {
-            renderTreatmentCalendar();
-        }
-        // 如果目前有打開的 Flatpickr，嘗試重繪 (這比較難，通常使用者再次點擊時就會生效)
+        // 資料載入後，若要即時更新已開啟的 Flatpickr 點點，可能需要 redraw，但這裡從簡，下次開啟即生效
     }).getCaseOverviewData(currentClient['個案編號']);
 }
 
@@ -356,7 +298,7 @@ function submitForm(type) {
   const ot = btn ? btn.innerHTML : "儲存"; 
   if(btn) { btn.disabled = true; btn.innerHTML = '<span class="material-icons-outlined animate-spin">sync</span> 儲存中...'; }
   
-  // 儲存成功後的回調處理：重新載入日曆資料，以顯示剛新增的點點
+  // 儲存成功後的回調處理：重新載入日曆資料
   const onSuccess = (res, formId, reloadFunc) => {
       btn.disabled = false; 
       btn.innerHTML = ot;
@@ -421,7 +363,6 @@ function submitForm(type) {
     };
     if (!d.trackDate || !d.trackStaff || !d.trackType || !d.content) { alert("請完整填寫追蹤資料"); if(btn){btn.disabled=false; btn.innerHTML=ot;} return; }
     google.script.run.withSuccessHandler(res => { 
-        // 追蹤表單沒有 reset，只有清空 content
         document.getElementById('trackContent').value = ""; 
         onSuccess(res, null, loadTrackingHistory);
     }).saveTrackingRecord(d);
@@ -429,7 +370,7 @@ function submitForm(type) {
 }
 
 // ==========================================
-// 歷史列表載入與渲染 (加入列印優化類別)
+// 歷史列表載入與渲染
 // ==========================================
 function loadTrackingHistory() {
   const c = document.getElementById('trackingHistoryList'); c.innerHTML = '<div class="text-center py-6 text-slate-400">讀取中...</div>';
@@ -456,14 +397,27 @@ function loadTrackingHistory() {
 
 function loadTreatmentHistory() {
   const c = document.getElementById('historyListContainer'); c.innerHTML = '<div class="text-center py-6 text-slate-400">讀取中...</div>';
-  google.script.run.withSuccessHandler(logs => { allTreatmentLogs = logs || []; applyLogFilters(); renderTreatmentCalendar(); }).getClientHistory(currentClient['個案編號'], 'Treatment_Logs');
+  google.script.run.withSuccessHandler(logs => { 
+      allTreatmentLogs = logs || []; 
+      renderTreatmentList(allTreatmentLogs); // ★ 修改：直接渲染列表，不再經過 filter
+  }).getClientHistory(currentClient['個案編號'], 'Treatment_Logs');
 }
 
 function renderTreatmentList(logs) {
   const c = document.getElementById('historyListContainer');
-  if(!logs.length) { c.innerHTML = '<div class="text-center py-10 text-slate-300 bg-slate-50 rounded-2xl">無相關紀錄</div>'; return; }
+  const countBadge = document.getElementById('treatmentHistoryCount');
+  
+  if(countBadge) {
+     countBadge.textContent = `共 ${logs ? logs.length : 0} 次`;
+  }
+
+  if(!logs || !logs.length) { 
+    c.innerHTML = '<div class="text-center py-10 text-slate-300 bg-slate-50 rounded-2xl">無相關紀錄</div>'; 
+    return; 
+  }
+  
   c.innerHTML = logs.map(l => `
-    <div class="bg-white p-6 rounded-[2rem] shadow-sm border border-slate-100 card-hover mb-4 relative overflow-hidden print:break-inside-avoid print:mb-4 print:border print:border-slate-300">
+    <div class="bg-white p-6 rounded-[2rem] shadow-sm border border-slate-100 card-hover mb-4 relative overflow-hidden group print:break-inside-avoid print:mb-4 print:border print:border-slate-300">
       <div class="absolute top-0 left-0 w-full h-1 bg-emerald-500 print:hidden"></div>
       <div class="flex justify-between items-center mb-3">
         <span class="text-xs font-bold text-slate-400 font-mono bg-slate-50 px-2 py-1 rounded-lg print:bg-white print:text-black print:border print:border-slate-300">${l['治療日期']}</span>
@@ -732,64 +686,4 @@ function closeLightbox() {
 document.addEventListener('keydown', function(event) {
     if (event.key === "Escape") closeLightbox();
 });
-
-// ★★★ 左側月曆渲染函式 (根據 allCalendarEvents 更新小點) ★★★
-function renderTreatmentCalendar() {
-  const c = document.getElementById('treatmentCalendar'); if(!c) return;
-  const y = currentCalDate.getFullYear(); const m = currentCalDate.getMonth();
-  let h = '';
-  
-  if (isMonthPickerMode) {
-    // 年月選擇模式 (這裡的點點邏輯比較簡單，只顯示有紀錄的月份)
-    const activeMs = new Set(); 
-    allCalendarEvents.forEach(l => { 
-        if(!l.date) return;
-        const p = l.date.split('-'); 
-        if(parseInt(p[0])===y) activeMs.add(parseInt(p[1])-1); 
-    });
-    
-    h = `<div class="cal-header"><button onclick="changePickerYear(-1)" class="p-1 hover:bg-slate-100 rounded-lg text-slate-400 hover:text-emerald-500 transition"><span class="material-icons-outlined text-sm">chevron_left</span></button><div class="cal-title-btn bg-slate-100 text-emerald-600" onclick="toggleMonthPicker()"><span>${y}年</span><span class="material-icons-outlined text-xs">unfold_less</span></div><button onclick="changePickerYear(1)" class="p-1 hover:bg-slate-100 rounded-lg text-slate-400 hover:text-emerald-500 transition"><span class="material-icons-outlined text-sm">chevron_right</span></button></div><div class="cal-month-grid" style="display:grid; grid-template-columns:repeat(3,1fr); gap:8px;">`;
-    for(let i=0; i<12; i++) h+=`<div onclick="selectMonthFromPicker(${i})" class="cal-month-item ${i===m?'is-current':''} ${activeMs.has(i)?'has-record':''}">${i+1}月</div>`;
-    h += `</div>`;
-  } else {
-    // 日曆模式
-    const sel = document.getElementById('filterDate').value; 
-    
-    // 建立快速查詢 Map: date -> categories[]
-    const eventMap = {};
-    allCalendarEvents.forEach(e => {
-        if (!e.date) return;
-        if (!eventMap[e.date]) eventMap[e.date] = new Set();
-        eventMap[e.date].add(e.category);
-    });
-
-    h = `<div class="cal-header"><button onclick="changeCalMonth(-1)" class="p-1 hover:bg-slate-100 rounded-lg text-slate-400 hover:text-emerald-500 transition"><span class="material-icons-outlined text-sm">chevron_left</span></button><div class="cal-title-btn" onclick="toggleMonthPicker()"><span>${y}年 ${m+1}月</span><span class="material-icons-outlined text-xs text-slate-300">expand_more</span></div><button onclick="changeCalMonth(1)" class="p-1 hover:bg-slate-100 rounded-lg text-slate-400 hover:text-emerald-500 transition"><span class="material-icons-outlined text-sm">chevron_right</span></button></div><div class="cal-grid"><div class="cal-weekday text-red-400">日</div><div class="cal-weekday">一</div><div class="cal-weekday">二</div><div class="cal-weekday">三</div><div class="cal-weekday">四</div><div class="cal-weekday">五</div><div class="cal-weekday">六</div>`;
-    
-    const fd = new Date(y, m, 1).getDay(); const dim = new Date(y, m+1, 0).getDate();
-    for(let i=0; i<fd; i++) h+=`<div class="cal-day other-month"></div>`;
-    
-    for(let d=1; d<=dim; d++) { 
-        const ds = `${y}-${String(m+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`; 
-        
-        // 產生小圓點 HTML
-        let dotsHtml = '';
-        if (eventMap[ds]) {
-            dotsHtml = `<div class="dots-container" style="position: absolute; bottom: 3px; display: flex; gap: 2px;">`;
-            eventMap[ds].forEach(cat => {
-                let dotClass = '';
-                if(cat === 'treatment') dotClass = 'dot-treatment';
-                else if(cat === 'maintenance') dotClass = 'dot-maintenance';
-                else if(cat === 'doctor') dotClass = 'dot-doctor';
-                else if(cat === 'tracking') dotClass = 'dot-tracking';
-                dotsHtml += `<div class="cal-dot ${dotClass}"></div>`;
-            });
-            dotsHtml += `</div>`;
-        }
-
-        h+=`<div onclick="selectDateFromCal('${ds}')" class="cal-day ${ds===sel?'is-selected':''}">${d}${dotsHtml}</div>`; 
-    }
-    h += `</div>`;
-  }
-  c.innerHTML = h;
-}
 </script>

@@ -5,50 +5,33 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <script src="https://cdn.tailwindcss.com"></script>
+  
+  <!-- Flatpickr 函式庫 -->
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
   <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
   <script src="https://cdn.jsdelivr.net/npm/flatpickr/dist/l10n/zh-tw.js"></script>
+
+  <!-- 全域 Flatpickr 設定 (保留，用於其他地方的日期選擇器) -->
+  <script>
+    document.addEventListener("DOMContentLoaded", function() {
+      if (typeof flatpickr !== "undefined") {
+        flatpickr.setDefaults({
+          locale: "zh_tw",
+          position: "auto center",
+          disableMobile: "true"
+        });
+      }
+    });
+  </script>
+
   <link href="https://fonts.googleapis.com/icon?family=Material+Icons+Outlined" rel="stylesheet">
   <?!= include('Stylesheet'); ?>
   
   <style>
-    /* 強制縮小治療月曆樣式的 CSS (保持不變) */
-    #treatmentCalendar .cal-day { height: 2rem !important; line-height: 2rem !important; font-size: 0.85rem !important; margin-bottom: 2px !important; position: relative; display: flex; flex-direction: column; align-items: center; justify-content: start; padding-top: 4px; }
-    #treatmentCalendar .cal-header { margin-bottom: 0.5rem !important; padding-top: 0 !important; }
-    #treatmentCalendar .cal-weekday { font-size: 0.75rem !important; padding-bottom: 0.25rem !important; }
-    #treatmentCalendar .cal-month-grid { gap: 4px !important; }
-    #treatmentCalendar .cal-month-item { padding: 0.5rem 0 !important; }
-
-    /* ★★★ 月曆小圓點樣式 ★★★ */
-    /* 容器：讓圓點水平排列 */
-    .dots-container {
-      display: flex;
-      gap: 2px;
-      margin-top: 2px;
-      justify-content: center;
-      height: 4px;
-    }
-    /* 基礎圓點 */
-    .cal-dot {
-      width: 4px;
-      height: 4px;
-      border-radius: 50%;
-    }
-    /* 各種類別顏色 */
-    .dot-treatment { background-color: #10b981; } /* Emerald-500 (治療紀錄 - 綠色) */
-    .dot-maintenance { background-color: #f97316; } /* Orange-500 (保養項目 - 橘色) */
-    .dot-doctor { background-color: #3b82f6; } /* Blue-500 (醫師看診 - 藍色) */
-    .dot-tracking { background-color: #8b5cf6; } /* Violet-500 (個管追蹤 - 紫色) */
-
-    /* Flatpickr 內建日期樣式覆蓋 (讓圓點也能在 Flatpickr 中顯示) */
-    .flatpickr-day { position: relative; }
-    .flatpickr-day .dots-container {
-        position: absolute;
-        bottom: 3px;
-        left: 0;
-        right: 0;
-        justify-content: center;
-    }
+    /* 移除已不再使用的治療月曆樣式 */
+    
+    /* 其他通用樣式保持不變 */
+    .flatpickr-calendar { z-index: 9999 !important; }
 
     /* 列印樣式 (保持之前的優化) */
     @media print {
@@ -246,45 +229,13 @@
         </div>
       </div>
 
-      <!-- 治療紀錄視圖 -->
+      <!-- 治療紀錄視圖 (已修改：移除左側選單，展開表單) -->
       <div id="view-treatment" class="hidden max-w-6xl mx-auto space-y-6">
-         <div class="grid grid-cols-1 lg:grid-cols-3 gap-4 no-print">
-            <!-- 左側：月曆與篩選 -->
-            <div class="space-y-3">
-               <div class="bg-white p-3 rounded-[2rem] shadow-sm border border-slate-100 flex flex-col h-fit">
-                   <h4 class="text-xs font-bold text-slate-400 uppercase tracking-widest flex items-center gap-2 mb-2">
-                      <span class="material-icons-outlined text-lg text-emerald-500">calendar_month</span> 治療月曆
-                   </h4>
-                   <div id="treatmentCalendar"></div>
-               </div>
-               <div class="bg-white p-3 rounded-[2rem] shadow-sm border border-slate-100 space-y-2 h-fit">
-                  <div class="flex justify-between items-center">
-                    <h4 class="text-xs font-bold text-slate-400 uppercase tracking-widest flex items-center gap-2">
-                      <span class="material-icons-outlined text-lg text-emerald-500">filter_alt</span> 快速篩選
-                    </h4>
-                  </div>
-                  <div class="space-y-1">
-                    <label class="text-[10px] font-bold text-slate-400 ml-1">執行人員</label>
-                    <div class="relative">
-                      <select id="filterTherapist" onchange="applyLogFilters()" class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:border-emerald-500 transition-all cursor-pointer appearance-none text-sm text-slate-700 font-bold">
-                      </select>
-                      <span class="material-icons-outlined absolute right-3 top-2 text-slate-400 pointer-events-none text-sm">expand_more</span>
-                    </div>
-                  </div>
-                  <div class="space-y-1">
-                    <label class="text-[10px] font-bold text-slate-400 ml-1">日期查詢</label>
-                    <div class="flex gap-2">
-                       <input type="date" id="filterDate" placeholder="選擇日期" class="flex-1 px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl outline-none transition-all cursor-pointer hover:border-emerald-400 focus:border-emerald-500 text-sm font-bold text-slate-700">
-                       <button onclick="resetTreatmentFilter()" title="清除篩選條件" class="flex items-center justify-center p-2 bg-white border border-slate-200 text-slate-400 rounded-xl hover:bg-red-50 hover:text-red-500 hover:border-red-200 transition shadow-sm group">
-                         <span class="material-icons-outlined text-lg group-active:scale-90 transition">delete_outline</span>
-                       </button>
-                    </div>
-                  </div>
-               </div>
-            </div>
+         <div class="grid grid-cols-1 lg:grid-cols-12 gap-4 no-print">
+            <!-- 已移除左側篩選區塊 -->
             
-            <!-- 右側：新增表單 (列印時隱藏) -->
-            <div class="lg:col-span-2">
+            <!-- 右側：新增表單 (現改為滿版 col-span-12) -->
+            <div class="lg:col-span-12">
                <form id="treatmentForm" class="bg-white p-4 rounded-[2.5rem] shadow-sm border-t-4 border-emerald-500 border-x border-b border-slate-100 h-full flex flex-col gap-2">
                  <div class="flex items-center justify-between">
                    <h3 class="font-black text-slate-800 text-lg flex items-center gap-2">
@@ -748,6 +699,5 @@
         </div>`).join('');
     }
   </script>
-  <?!= include('JavaScript'); ?>
 </body>
 </html>
