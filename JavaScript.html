@@ -10,6 +10,7 @@ let currentCalDate = new Date();
 let isMonthPickerMode = false; 
 let filesToUpload = []; 
 let searchTimer = null;
+let allCalendarEvents = []; // ★★★ 新增：儲存所有類別的日期事件 ★★★
 
 // ==========================================
 // 初始化與 UI 設定
@@ -17,14 +18,7 @@ let searchTimer = null;
 
 function setupEnhancedFlatpickr(selector, options = {}) {
   const defaults = {
-    locale: "zh_tw", 
-    dateFormat: "Y-m-d", 
-    disableMobile: true, 
-    allowInput: true, 
-    
-    // ★★★ 修復重點：改為 false，讓月曆浮動在最上層，不被容器切斷 ★★★
-    static: false, 
-    
+    locale: "zh_tw", dateFormat: "Y-m-d", disableMobile: true, allowInput: true, static: true,
     onReady: function(selectedDates, dateStr, instance) {
       const customHeader = document.createElement("div");
       customHeader.className = "custom-fp-header";
@@ -52,9 +46,37 @@ function setupEnhancedFlatpickr(selector, options = {}) {
     },
     onMonthChange: function(sd, ds, instance) { updateHeader(instance, instance.calendarContainer.querySelector(".custom-fp-header"), instance.calendarContainer.querySelector(".custom-fp-month-grid")); },
     onYearChange: function(sd, ds, instance) { const grid = instance.calendarContainer.querySelector(".custom-fp-month-grid"); updateHeader(instance, instance.calendarContainer.querySelector(".custom-fp-header"), grid); if(grid && grid.style.display !== "none") renderMonthGridDots(instance, grid); },
+    
+    // ★★★ 修改處：根據 allCalendarEvents 動態加入彩色圓點 ★★★
     onDayCreate: function(dObj, dStr, fp, dayElem) {
+      if (!dayElem || !dayElem.dateObj) return;
       const dateKey = dayElem.dateObj.toISOString().split('T')[0];
-      if(allTreatmentLogs.some(log => log['治療日期'] && log['治療日期'].trim() === dateKey)) dayElem.classList.add('has-record');
+      
+      // 找出這一天所有的事件
+      const dayEvents = allCalendarEvents.filter(e => e.date === dateKey);
+      
+      if (dayEvents.length > 0) {
+        // 建立點點容器
+        const dotsContainer = document.createElement('div');
+        dotsContainer.className = 'dots-container';
+        
+        // 檢查有哪些類別，避免重複顯示同一種顏色的點
+        const categories = [...new Set(dayEvents.map(e => e.category))];
+        
+        categories.forEach(cat => {
+          const dot = document.createElement('div');
+          dot.className = 'cal-dot';
+          // 根據類別加上對應的顏色 class
+          if (cat === 'treatment') dot.classList.add('dot-treatment');
+          else if (cat === 'maintenance') dot.classList.add('dot-maintenance');
+          else if (cat === 'doctor') dot.classList.add('dot-doctor');
+          else if (cat === 'tracking') dot.classList.add('dot-tracking');
+          
+          dotsContainer.appendChild(dot);
+        });
+        
+        dayElem.appendChild(dotsContainer);
+      }
     }
   };
   return flatpickr(selector, { ...defaults, ...options });
@@ -71,10 +93,11 @@ function updateHeader(instance, headerEl, gridEl) {
 
 function renderMonthGridDots(instance, gridEl) {
   const currentYear = instance.currentYear;
+  // ★ 修改：檢查 allCalendarEvents 是否有該月份的資料
   const monthsWithData = new Set();
-  allTreatmentLogs.forEach(log => {
-    if (!log['治療日期']) return;
-    const parts = log['治療日期'].trim().split('-');
+  allCalendarEvents.forEach(e => {
+    if (!e.date) return;
+    const parts = e.date.split('-');
     if (parts.length >= 2 && parseInt(parts[0], 10) === currentYear) monthsWithData.add(parseInt(parts[1], 10) - 1);
   });
   gridEl.querySelectorAll(".custom-fp-month-item").forEach((item, idx) => { monthsWithData.has(idx) ? item.classList.add("has-record") : item.classList.remove("has-record"); });
@@ -140,6 +163,13 @@ function navTo(viewName) {
   document.getElementById('pageTitle').textContent = titles[viewName] || '康飛運醫';
   
   if (currentClient) {
+    // ★★★ 關鍵修改：進入任何有紀錄的頁面時，若尚未載入總覽資料，則背景載入一次，以確保月曆有資料顯示
+    if (['treatment', 'maintenance', 'doctor', 'tracking', 'overview'].includes(viewName)) {
+        if (allCalendarEvents.length === 0) {
+            fetchCalendarData(); // 背景載入所有資料
+        }
+    }
+
     if(viewName === 'basic') renderBasicInfo();
     if(viewName === 'doctor') loadDoctorHistory();
     if(viewName === 'treatment') loadTreatmentHistory();
@@ -150,9 +180,17 @@ function navTo(viewName) {
   }
 }
 
-function loadClientImages() {
-  // 若後端尚未設定影像功能，此處保留空函式或顯示提示，防止報錯
-  console.log("影像載入功能尚未實作或未包含在此版本中");
+// ★★★ 新增：背景載入所有日曆資料 ★★★
+function fetchCalendarData() {
+    google.script.run.withSuccessHandler(data => {
+        allCalendarEvents = data || [];
+        // 如果目前在治療紀錄頁面，刷新自製月曆 (左側那個)
+        const treatmentView = document.getElementById('view-treatment');
+        if (treatmentView && !treatmentView.classList.contains('hidden')) {
+            renderTreatmentCalendar();
+        }
+        // 如果目前有打開的 Flatpickr，嘗試重繪 (這比較難，通常使用者再次點擊時就會生效)
+    }).getCaseOverviewData(currentClient['個案編號']);
 }
 
 // ==========================================
@@ -297,6 +335,9 @@ function handleSearch(keyword) {
 
 function selectClient(c) {
   currentClient = c;
+  // ★ 切換個案時，清空舊的日曆事件，並觸發重新載入
+  allCalendarEvents = [];
+  
   document.getElementById('topBarClientInfo').classList.remove('hidden');
   document.getElementById('headerClientName').textContent = c['姓名'];
   document.getElementById('headerClientDob').textContent = c['生日'];
@@ -315,6 +356,20 @@ function submitForm(type) {
   const ot = btn ? btn.innerHTML : "儲存"; 
   if(btn) { btn.disabled = true; btn.innerHTML = '<span class="material-icons-outlined animate-spin">sync</span> 儲存中...'; }
   
+  // 儲存成功後的回調處理：重新載入日曆資料，以顯示剛新增的點點
+  const onSuccess = (res, formId, reloadFunc) => {
+      btn.disabled = false; 
+      btn.innerHTML = ot;
+      if (res.success) { 
+          alert(res.message); 
+          if(formId) document.getElementById(formId).reset(); 
+          if(reloadFunc) reloadFunc(); 
+          fetchCalendarData(); // ★ 重新抓取資料以更新月曆點點
+      } else { 
+          alert(res.message); 
+      }
+  };
+
   if (type === 'doctor') {
     const d = { 
       clientId: clientId,
@@ -329,7 +384,7 @@ function submitForm(type) {
       remark: document.getElementById('doctorRemark').value 
     };
     if (!d.date || !d.doctor) { alert("請填寫日期與醫師"); if(btn){btn.disabled=false; btn.innerHTML=ot;} return; }
-    google.script.run.withSuccessHandler(res => { if(btn){btn.disabled=false; btn.innerHTML=ot;} if (res.success) { alert(res.message); document.getElementById('doctorForm').reset(); loadDoctorHistory(); } else { alert(res.message); } }).saveDoctorConsultation(d);
+    google.script.run.withSuccessHandler(res => onSuccess(res, 'doctorForm', loadDoctorHistory)).saveDoctorConsultation(d);
   } else if (type === 'treatment') {
     const d = { 
       '個案編號': clientId,
@@ -340,7 +395,7 @@ function submitForm(type) {
       '備註/下次治療': document.getElementById('inputNextPlan').value 
     };
     if (!d['治療日期'] || !d['執行治療師']) { alert("請填寫日期與治療師"); if(btn){btn.disabled=false; btn.innerHTML=ot;} return; }
-    google.script.run.withSuccessHandler(res => { if(btn){btn.disabled=false; btn.innerHTML=ot;} if (res.success) { alert(res.message); document.getElementById('treatmentForm').reset(); loadTreatmentHistory(); } else { alert(res.message); } }).saveData('Treatment_Logs', d);
+    google.script.run.withSuccessHandler(res => onSuccess(res, 'treatmentForm', loadTreatmentHistory)).saveData('Treatment_Logs', d);
   } else if (type === 'maintenance') {
     const f = document.getElementById('maintenanceForm');
     const d = { 
@@ -355,7 +410,7 @@ function submitForm(type) {
       remark: f.querySelector('textarea[name="備註"]').value 
     };
     if (!d.date || !d.staff || !d.item) { alert("請完整填寫必填欄位"); if(btn){btn.disabled=false; btn.innerHTML=ot;} return; }
-    google.script.run.withSuccessHandler(res => { if(btn){btn.disabled=false; btn.innerHTML=ot;} if (res.success) { alert(res.message); f.reset(); document.getElementById('maintenanceDate').value = new Date().toISOString().split('T')[0]; loadMaintenanceHistory(); } else { alert(res.message); } }).saveMaintenanceRecord(d);
+    google.script.run.withSuccessHandler(res => onSuccess(res, 'maintenanceForm', loadMaintenanceHistory)).saveMaintenanceRecord(d);
   } else if (type === 'tracking') {
     const d = { 
       clientId: clientId,
@@ -365,9 +420,15 @@ function submitForm(type) {
       content: document.getElementById('trackContent').value 
     };
     if (!d.trackDate || !d.trackStaff || !d.trackType || !d.content) { alert("請完整填寫追蹤資料"); if(btn){btn.disabled=false; btn.innerHTML=ot;} return; }
-    google.script.run.withSuccessHandler(res => { if(btn){btn.disabled=false; btn.innerHTML=ot;} if (res.success) { alert(res.message); document.getElementById('trackContent').value = ""; loadTrackingHistory(); } else { alert(res.message); } }).saveTrackingRecord(d);
+    google.script.run.withSuccessHandler(res => { 
+        // 追蹤表單沒有 reset，只有清空 content
+        document.getElementById('trackContent').value = ""; 
+        onSuccess(res, null, loadTrackingHistory);
+    }).saveTrackingRecord(d);
   }
-}// ==========================================
+}
+
+// ==========================================
 // 歷史列表載入與渲染 (加入列印優化類別)
 // ==========================================
 function loadTrackingHistory() {
@@ -395,48 +456,12 @@ function loadTrackingHistory() {
 
 function loadTreatmentHistory() {
   const c = document.getElementById('historyListContainer'); c.innerHTML = '<div class="text-center py-6 text-slate-400">讀取中...</div>';
-  google.script.run.withSuccessHandler(logs => { 
-    allTreatmentLogs = logs || []; 
-    applyLogFilters(); 
-    renderTreatmentCalendar(); 
-  }).getClientHistory(currentClient['個案編號'], 'Treatment_Logs');
-}
-
-function applyLogFilters() {
-  const filterDate = document.getElementById('filterDate')?.value;
-  const filterTherapist = document.getElementById('filterTherapist')?.value;
-  
-  let filtered = allTreatmentLogs;
-  
-  if (filterDate) {
-    filtered = filtered.filter(log => log['治療日期'] === filterDate);
-  }
-  
-  if (filterTherapist) {
-    filtered = filtered.filter(log => log['執行治療師'] === filterTherapist);
-  }
-  
-  renderTreatmentList(filtered);
-}
-
-function renderTreatmentCalendar() {
-  const fp = document.querySelector("#filterDate")?._flatpickr;
-  if(fp) {
-    fp.redraw();
-  }
-  applyLogFilters();
+  google.script.run.withSuccessHandler(logs => { allTreatmentLogs = logs || []; applyLogFilters(); renderTreatmentCalendar(); }).getClientHistory(currentClient['個案編號'], 'Treatment_Logs');
 }
 
 function renderTreatmentList(logs) {
   const c = document.getElementById('historyListContainer');
-  const countBadge = document.getElementById('treatmentHistoryCount');
-  
-  // 更新計數顯示
-  if(countBadge) {
-     countBadge.textContent = `共 ${logs ? logs.length : 0} 次`;
-  }
-
-  if(!logs || !logs.length) { c.innerHTML = '<div class="text-center py-10 text-slate-300 bg-slate-50 rounded-2xl">無相關紀錄</div>'; return; }
+  if(!logs.length) { c.innerHTML = '<div class="text-center py-10 text-slate-300 bg-slate-50 rounded-2xl">無相關紀錄</div>'; return; }
   c.innerHTML = logs.map(l => `
     <div class="bg-white p-6 rounded-[2rem] shadow-sm border border-slate-100 card-hover mb-4 relative overflow-hidden print:break-inside-avoid print:mb-4 print:border print:border-slate-300">
       <div class="absolute top-0 left-0 w-full h-1 bg-emerald-500 print:hidden"></div>
@@ -536,7 +561,12 @@ function loadDoctorHistory() {
 // ==========================================
 function loadOverviewData() {
   const container = document.getElementById('overviewListContainer'); container.innerHTML = '<div class="text-center py-12 text-slate-400 flex flex-col items-center gap-2"><span class="material-icons-outlined animate-spin">sync</span><span>讀取個案歷程中...</span></div>';
-  google.script.run.withSuccessHandler(data => { allOverviewRecords = data || []; renderOverviewList(); }).withFailureHandler(err => { container.innerHTML = `<div class="text-red-500 text-center py-10">載入失敗: ${err.message}</div>`; }).getCaseOverviewData(currentClient['個案編號']);
+  google.script.run.withSuccessHandler(data => { 
+      allOverviewRecords = data || []; 
+      // ★ 同時更新日曆事件資料 (因為總覽資料結構已經正規化，可以直接轉換)
+      allCalendarEvents = data || []; 
+      renderOverviewList(); 
+  }).withFailureHandler(err => { container.innerHTML = `<div class="text-red-500 text-center py-10">載入失敗: ${err.message}</div>`; }).getCaseOverviewData(currentClient['個案編號']);
 }
 
 function renderOverviewList() {
@@ -702,4 +732,64 @@ function closeLightbox() {
 document.addEventListener('keydown', function(event) {
     if (event.key === "Escape") closeLightbox();
 });
+
+// ★★★ 左側月曆渲染函式 (根據 allCalendarEvents 更新小點) ★★★
+function renderTreatmentCalendar() {
+  const c = document.getElementById('treatmentCalendar'); if(!c) return;
+  const y = currentCalDate.getFullYear(); const m = currentCalDate.getMonth();
+  let h = '';
+  
+  if (isMonthPickerMode) {
+    // 年月選擇模式 (這裡的點點邏輯比較簡單，只顯示有紀錄的月份)
+    const activeMs = new Set(); 
+    allCalendarEvents.forEach(l => { 
+        if(!l.date) return;
+        const p = l.date.split('-'); 
+        if(parseInt(p[0])===y) activeMs.add(parseInt(p[1])-1); 
+    });
+    
+    h = `<div class="cal-header"><button onclick="changePickerYear(-1)" class="p-1 hover:bg-slate-100 rounded-lg text-slate-400 hover:text-emerald-500 transition"><span class="material-icons-outlined text-sm">chevron_left</span></button><div class="cal-title-btn bg-slate-100 text-emerald-600" onclick="toggleMonthPicker()"><span>${y}年</span><span class="material-icons-outlined text-xs">unfold_less</span></div><button onclick="changePickerYear(1)" class="p-1 hover:bg-slate-100 rounded-lg text-slate-400 hover:text-emerald-500 transition"><span class="material-icons-outlined text-sm">chevron_right</span></button></div><div class="cal-month-grid" style="display:grid; grid-template-columns:repeat(3,1fr); gap:8px;">`;
+    for(let i=0; i<12; i++) h+=`<div onclick="selectMonthFromPicker(${i})" class="cal-month-item ${i===m?'is-current':''} ${activeMs.has(i)?'has-record':''}">${i+1}月</div>`;
+    h += `</div>`;
+  } else {
+    // 日曆模式
+    const sel = document.getElementById('filterDate').value; 
+    
+    // 建立快速查詢 Map: date -> categories[]
+    const eventMap = {};
+    allCalendarEvents.forEach(e => {
+        if (!e.date) return;
+        if (!eventMap[e.date]) eventMap[e.date] = new Set();
+        eventMap[e.date].add(e.category);
+    });
+
+    h = `<div class="cal-header"><button onclick="changeCalMonth(-1)" class="p-1 hover:bg-slate-100 rounded-lg text-slate-400 hover:text-emerald-500 transition"><span class="material-icons-outlined text-sm">chevron_left</span></button><div class="cal-title-btn" onclick="toggleMonthPicker()"><span>${y}年 ${m+1}月</span><span class="material-icons-outlined text-xs text-slate-300">expand_more</span></div><button onclick="changeCalMonth(1)" class="p-1 hover:bg-slate-100 rounded-lg text-slate-400 hover:text-emerald-500 transition"><span class="material-icons-outlined text-sm">chevron_right</span></button></div><div class="cal-grid"><div class="cal-weekday text-red-400">日</div><div class="cal-weekday">一</div><div class="cal-weekday">二</div><div class="cal-weekday">三</div><div class="cal-weekday">四</div><div class="cal-weekday">五</div><div class="cal-weekday">六</div>`;
+    
+    const fd = new Date(y, m, 1).getDay(); const dim = new Date(y, m+1, 0).getDate();
+    for(let i=0; i<fd; i++) h+=`<div class="cal-day other-month"></div>`;
+    
+    for(let d=1; d<=dim; d++) { 
+        const ds = `${y}-${String(m+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`; 
+        
+        // 產生小圓點 HTML
+        let dotsHtml = '';
+        if (eventMap[ds]) {
+            dotsHtml = `<div class="dots-container" style="position: absolute; bottom: 3px; display: flex; gap: 2px;">`;
+            eventMap[ds].forEach(cat => {
+                let dotClass = '';
+                if(cat === 'treatment') dotClass = 'dot-treatment';
+                else if(cat === 'maintenance') dotClass = 'dot-maintenance';
+                else if(cat === 'doctor') dotClass = 'dot-doctor';
+                else if(cat === 'tracking') dotClass = 'dot-tracking';
+                dotsHtml += `<div class="cal-dot ${dotClass}"></div>`;
+            });
+            dotsHtml += `</div>`;
+        }
+
+        h+=`<div onclick="selectDateFromCal('${ds}')" class="cal-day ${ds===sel?'is-selected':''}">${d}${dotsHtml}</div>`; 
+    }
+    h += `</div>`;
+  }
+  c.innerHTML = h;
+}
 </script>

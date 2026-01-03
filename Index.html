@@ -12,26 +12,49 @@
   <?!= include('Stylesheet'); ?>
   
   <style>
-    /* ★★★ 修復：強制提升月曆層級，避免被卡片遮擋 ★★★ */
-    .flatpickr-calendar { z-index: 9999 !important; }
-
     /* 強制縮小治療月曆樣式的 CSS (保持不變) */
-    #treatmentCalendar .cal-day { height: 2rem !important; line-height: 2rem !important; font-size: 0.85rem !important; margin-bottom: 2px !important; }
+    #treatmentCalendar .cal-day { height: 2rem !important; line-height: 2rem !important; font-size: 0.85rem !important; margin-bottom: 2px !important; position: relative; display: flex; flex-direction: column; align-items: center; justify-content: start; padding-top: 4px; }
     #treatmentCalendar .cal-header { margin-bottom: 0.5rem !important; padding-top: 0 !important; }
     #treatmentCalendar .cal-weekday { font-size: 0.75rem !important; padding-bottom: 0.25rem !important; }
     #treatmentCalendar .cal-month-grid { gap: 4px !important; }
     #treatmentCalendar .cal-month-item { padding: 0.5rem 0 !important; }
 
-    /* ★★★ 列印專用樣式優化 ★★★ */
+    /* ★★★ 月曆小圓點樣式 ★★★ */
+    /* 容器：讓圓點水平排列 */
+    .dots-container {
+      display: flex;
+      gap: 2px;
+      margin-top: 2px;
+      justify-content: center;
+      height: 4px;
+    }
+    /* 基礎圓點 */
+    .cal-dot {
+      width: 4px;
+      height: 4px;
+      border-radius: 50%;
+    }
+    /* 各種類別顏色 */
+    .dot-treatment { background-color: #10b981; } /* Emerald-500 (治療紀錄 - 綠色) */
+    .dot-maintenance { background-color: #f97316; } /* Orange-500 (保養項目 - 橘色) */
+    .dot-doctor { background-color: #3b82f6; } /* Blue-500 (醫師看診 - 藍色) */
+    .dot-tracking { background-color: #8b5cf6; } /* Violet-500 (個管追蹤 - 紫色) */
+
+    /* Flatpickr 內建日期樣式覆蓋 (讓圓點也能在 Flatpickr 中顯示) */
+    .flatpickr-day { position: relative; }
+    .flatpickr-day .dots-container {
+        position: absolute;
+        bottom: 3px;
+        left: 0;
+        right: 0;
+        justify-content: center;
+    }
+
+    /* 列印樣式 (保持之前的優化) */
     @media print {
       @page { margin: 1cm; size: A4; }
       body, main { height: auto !important; overflow: visible !important; background-color: white !important; }
-      
-      /* 隱藏不需要的元素 */
       .no-print, button, .material-icons-outlined { display: none !important; }
-      /* 保留特定 icon (如 checkbox) 可視情況調整，這裡統一隱藏裝飾性 icon 以求簡潔 */
-      
-      /* 卡片樣式重置：去除陰影、圓角、背景色，改為黑白線條 */
       .card-hover, .bg-white, .rounded-\[2rem\], .rounded-\[2\.5rem\], .shadow-sm {
         box-shadow: none !important;
         border-radius: 4px !important;
@@ -41,33 +64,21 @@
         padding: 10px !important;
         transform: none !important;
       }
-      
-      /* 防止內容被切斷 */
       .card-hover, .group, div { break-inside: avoid !important; }
-      
-      /* 文字顏色強制加深 */
       .text-slate-400, .text-slate-500, .text-slate-600 { color: #333 !important; }
       .text-slate-300 { color: #999 !important; }
-      
-      /* 移除裝飾性色塊背景，改為細框線 */
       [class*="bg-"][class*="-50"] {
         background-color: transparent !important;
         border: 1px solid #eee !important;
         color: #000 !important;
       }
-      
-      /* 標籤樣式簡化 */
       span.rounded-full, span.rounded-lg {
         border: 1px solid #666 !important;
         background: none !important;
         color: #000 !important;
         padding: 2px 6px !important;
       }
-
-      /* 隱藏列印頁首的網址/日期 (瀏覽器設定)，顯示自訂頁首 */
       #print-header { display: flex !important; border-bottom: 2px solid #000 !important; margin-bottom: 15px !important; }
-      
-      /* 確保列表容器不限高 */
       #overviewListContainer, #historyListContainer { min-height: 0 !important; height: auto !important; }
     }
   </style>
@@ -159,8 +170,7 @@
           </button>
         </div>
 
-        <!-- ★★★ 修復：移除 overflow-hidden 以防未來擴充問題 ★★★ -->
-        <div class="bg-white rounded-[2rem] shadow-sm border border-slate-100 print:border-0 print:shadow-none print:rounded-none">
+        <div class="bg-white rounded-[2rem] shadow-sm border border-slate-100 overflow-hidden print:border-0 print:shadow-none print:rounded-none">
           <div class="grid grid-cols-1 md:grid-cols-3 print:grid-cols-3">
             <div class="p-5 border-b md:border-b-0 md:border-r border-slate-50 print:p-2 print:border-slate-200">
               <label class="block text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">個案編號</label>
@@ -247,9 +257,7 @@
                    </h4>
                    <div id="treatmentCalendar"></div>
                </div>
-               
-               <!-- ★★★ 修復重點：加入 overflow-visible，確保月曆不被此卡片裁切 ★★★ -->
-               <div class="bg-white p-3 rounded-[2rem] shadow-sm border border-slate-100 space-y-2 h-fit overflow-visible">
+               <div class="bg-white p-3 rounded-[2rem] shadow-sm border border-slate-100 space-y-2 h-fit">
                   <div class="flex justify-between items-center">
                     <h4 class="text-xs font-bold text-slate-400 uppercase tracking-widest flex items-center gap-2">
                       <span class="material-icons-outlined text-lg text-emerald-500">filter_alt</span> 快速篩選
@@ -273,9 +281,10 @@
                     </div>
                   </div>
                </div>
-            </div><!-- 右側：新增表單 (列印時隱藏) -->
+            </div>
+            
+            <!-- 右側：新增表單 (列印時隱藏) -->
             <div class="lg:col-span-2">
-               <!-- ★★★ 修復：確保表單容器沒有 overflow-hidden ★★★ -->
                <form id="treatmentForm" class="bg-white p-4 rounded-[2.5rem] shadow-sm border-t-4 border-emerald-500 border-x border-b border-slate-100 h-full flex flex-col gap-2">
                  <div class="flex items-center justify-between">
                    <h3 class="font-black text-slate-800 text-lg flex items-center gap-2">
@@ -345,8 +354,7 @@
 
       <!-- 保養項目視圖 -->
       <div id="view-maintenance" class="hidden max-w-5xl mx-auto space-y-4">
-        <!-- ★★★ 修復：移除 overflow-hidden，防止日期選擇器被切斷 ★★★ -->
-        <div class="bg-white rounded-[2.5rem] shadow-sm border border-slate-100 no-print">
+        <div class="bg-white rounded-[2.5rem] shadow-sm border border-slate-100 overflow-hidden no-print">
           <div class="px-6 py-4 border-b border-slate-50 flex items-center gap-3">
              <div class="p-2.5 bg-orange-50 rounded-2xl text-orange-500">
                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -478,8 +486,7 @@
 
       <!-- 醫師看診視圖 -->
       <div id="view-doctor" class="hidden max-w-5xl mx-auto space-y-4">
-        <!-- ★★★ 修復：移除 overflow-hidden，確保看診日期選擇器正常顯示 ★★★ -->
-        <div class="bg-white rounded-[2.5rem] shadow-sm border border-slate-100 no-print">
+        <div class="bg-white rounded-[2.5rem] shadow-sm border border-slate-100 overflow-hidden no-print">
           <div class="px-6 py-3 bg-slate-50 border-b border-slate-100 flex justify-between items-center">
              <div class="flex items-center gap-3">
                <span class="w-2 h-6 bg-emerald-500 rounded-full"></span>
@@ -542,6 +549,8 @@
                    個案歷程總覽
                  </h3>
                  <p id="overviewStats" class="text-slate-400 text-sm mt-1 ml-1">共 0 筆紀錄</p>
+              </div>
+              <div class="flex items-center gap-3">
               </div>
            </div>
            <div class="flex flex-col xl:flex-row justify-between items-start xl:items-center gap-4">

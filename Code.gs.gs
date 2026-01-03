@@ -7,7 +7,7 @@ const CONFIG = {
   // 原本的系統資料庫 (存放紀錄、設定、影像等)
   SPREADSHEET_ID: '1LMhlQGyXNXq9Teqm0_W0zU9NbQlVCHKLDL0mSOiDomc', 
   
-  // ★ 新增：個案核心資料庫 (獨立存放 Client_Basic_Info)
+  // ★ 已修復：個案核心資料庫 (移除網址後綴，只保留純 ID)
   CLIENT_DB_ID: '1SPLLacdq9RYV6Jfur-pZQiQwMqGuBFEZ5jaho_0WUK0',
 
   PARENT_FOLDER_ID: '1NIsNHALeSSVm60Yfjc9k-u30A42CuZw8',
@@ -61,7 +61,7 @@ function getSheetHelper(sheetName) {
     try {
       ss = SpreadsheetApp.openById(CONFIG.CLIENT_DB_ID);
     } catch (e) {
-      throw new Error("無法連接個案核心資料庫 (Client DB)，請檢查權限或ID。");
+      throw new Error("無法連接個案核心資料庫 (Client DB)，請檢查 ID 是否正確或是否有權限。");
     }
   } else {
     // 其他資料 (治療紀錄、系統設定等) 維持在原資料庫
@@ -79,7 +79,7 @@ function getSheetHelper(sheetName) {
   return sheet;
 }
 
-// 1. 搜尋功能 (已修改：使用 helper 連接新資料庫)
+// 1. 搜尋功能 (已修復：支援模糊搜尋與忽略空格)
 function searchClient(keyword) {
   try {
     // 使用 helper 自動取得正確的 Sheet (會在外部 DB 尋找)
@@ -87,16 +87,19 @@ function searchClient(keyword) {
     
     const data = sheet.getDataRange().getDisplayValues(); 
     const results = [];
-    const query = String(keyword).trim().toLowerCase();
+    
+    // ★ 優化：移除搜尋字詞中的所有空白並轉小寫，提高容錯率
+    const query = String(keyword).replace(/\s+/g, '').toLowerCase();
     if (!query) return [];
     
     for (let i = 1; i < data.length; i++) {
       const row = data[i];
-      const id = String(row[0]).replace(/^'/, '').trim().toLowerCase();
-      const name = String(row[1]).trim().toLowerCase();
-      const phone = String(row[4]).replace(/^'/, '').trim().toLowerCase();
+      // 取得欄位資料並移除空白進行比對
+      const id = String(row[0]).replace(/^'/, '').replace(/\s+/g, '').toLowerCase();
+      const name = String(row[1]).replace(/\s+/g, '').toLowerCase();
+      const phone = String(row[4]).replace(/^'/, '').replace(/\s+/g, '').toLowerCase();
       
-      // 注意：搜尋結果的物件映射可能需要根據 Index.html 的需求調整
+      // 比對邏輯：只要 ID、姓名或電話包含關鍵字即可 (支援模糊搜尋)
       if (id.includes(query) || name.includes(query) || phone.includes(query)) {
         results.push({
           '個案編號': row[0], '姓名': row[1], '生日': row[2], '身分證字號': row[3],
@@ -175,7 +178,6 @@ function getSystemStaff() {
     trackingTypes: rows.map(r => r[3]).filter(String),
     maintItems: rows.map(r => r[4]).filter(String),
     allStaff: rows.map(r => r[5]).filter(String),
-    // ★ 這裡是問題二的關鍵：從 G 欄 (Index 6) 取得治療項目
     treatmentItems: rows.map(r => r[6]).filter(String)
   };
 }
