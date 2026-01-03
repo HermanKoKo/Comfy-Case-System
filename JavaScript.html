@@ -885,4 +885,28 @@ function closeLightbox() {
 document.addEventListener('keydown', function(event) {
     if (event.key === "Escape") closeLightbox();
 });
+
+// ==========================================
+// 回到頂部按鈕邏輯
+// ==========================================
+window.addEventListener('scroll', function() {
+  const btn = document.getElementById('btnBackToTop');
+  if (!btn) return;
+  
+  // 當捲動超過 300px 時顯示按鈕，否則隱藏
+  if (window.scrollY > 300) {
+    btn.classList.remove('hidden');
+    btn.classList.add('animate-bounce-in'); // 簡單的淡入效果(若有設定動畫)
+  } else {
+    btn.classList.add('hidden');
+  }
+});
+
+function scrollToTop() {
+  window.scrollTo({
+    top: 0,
+    behavior: 'smooth' // 平滑捲動效果
+  });
+}
+
 </script>

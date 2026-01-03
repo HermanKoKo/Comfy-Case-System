@@ -64,6 +64,15 @@
       #print-header { display: flex !important; border-bottom: 2px solid #000 !important; margin-bottom: 15px !important; }
       #overviewListContainer, #historyListContainer { min-height: 0 !important; height: auto !important; }
     }
+    
+    /* 回到頂部按鈕動畫 */
+    @keyframes bounce-in {
+      0% { opacity: 0; transform: scale(0.5) translateY(20px); }
+      100% { opacity: 1; transform: scale(1) translateY(0); }
+    }
+    .animate-bounce-in {
+      animation: bounce-in 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+    }
   </style>
 </head>
 <body class="bg-[#f8fafc] font-sans text-slate-900 antialiased h-screen overflow-hidden flex print:h-auto print:overflow-visible">
@@ -120,7 +129,7 @@
       </div>
     </header>
 
-    <div id="contentArea" class="flex-1 overflow-y-auto p-5 custom-scrollbar print:p-0 print:overflow-visible">
+    <div id="contentArea" class="flex-1 overflow-y-auto p-5 custom-scrollbar print:p-0 print:overflow-visible scroll-smooth">
       
       <!-- 搜尋頁面 (列印時隱藏) -->
       <div id="view-search" class="max-w-md mx-auto flex flex-col items-center justify-center min-h-[70vh] space-y-6 no-print">
@@ -727,6 +736,36 @@
             </div>
         </div>`).join('');
     }
+    
+    // ==========================================
+    // 回到頂部按鈕邏輯
+    // ==========================================
+    // 監聽內容區域的捲動事件
+    document.getElementById('contentArea').addEventListener('scroll', function() {
+      const btn = document.getElementById('btnBackToTop');
+      if (!btn) return;
+      
+      // 當捲動超過 300px 時顯示按鈕
+      if (this.scrollTop > 300) {
+        btn.classList.remove('hidden');
+        btn.classList.add('animate-bounce-in');
+      } else {
+        btn.classList.add('hidden');
+        btn.classList.remove('animate-bounce-in');
+      }
+    });
+
+    function scrollToTop() {
+      document.getElementById('contentArea').scrollTo({
+        top: 0,
+        behavior: 'smooth'
+      });
+    }
   </script>
+
+  <!-- 回到頂部按鈕 -->
+  <button id="btnBackToTop" onclick="scrollToTop()" class="hidden fixed bottom-8 right-8 z-50 bg-slate-700 text-white w-12 h-12 rounded-full shadow-lg hover:bg-slate-600 hover:shadow-xl hover:-translate-y-1 transition-all duration-300 flex items-center justify-center print:hidden">
+    <span class="material-icons-outlined text-2xl">arrow_upward</span>
+  </button>
 </body>
 </html>
