@@ -67,6 +67,7 @@ window.onload = function() {
   setupEnhancedFlatpickr('#overviewEndDate', overviewConfig);
   
   loadSystemStaff();
+  loadTreatmentItems(); // ★ 新增：額外確保治療項目被載入 (雙重保險)
 };
 
 function loadSystemStaff() {
@@ -87,7 +88,30 @@ function loadSystemStaff() {
     // ★ 修改處：設定新增個案用的「負責治療師」選單
     setOptions('addTherapist', staff.therapists, '請選擇負責治療師');
     
+    // ★ 修改處：設定治療紀錄用的「治療項目」選單 (從 System 分頁 G 欄)
+    setOptions('inputTreatmentItem', staff.treatmentItems, '請選擇項目');
+    
   }).getSystemStaff();
+}
+
+// ★ 新增函式：專門負責載入治療項目 (若 getSystemStaff 已包含，此為備援)
+function loadTreatmentItems() {
+  google.script.run
+    .withSuccessHandler(function(items) {
+      // 只有當上面的 loadSystemStaff 尚未填充或失敗時才執行
+      var select = document.getElementById("inputTreatmentItem");
+      if (select && select.options.length <= 1) { // 假設只有預設選項
+          select.innerHTML = '<option value="" disabled selected>請選擇項目</option>';
+          items.forEach(function(item) {
+            var option = document.createElement("option");
+            option.value = item;
+            option.textContent = item;
+            select.appendChild(option);
+          });
+          console.log("治療項目載入完成 (獨立函式)", items);
+      }
+    })
+    .getTreatmentItemsFromSystem(); 
 }
 
 // ==========================================
@@ -338,6 +362,7 @@ function submitForm(type) {
       '個案編號': clientId,
       '治療日期': document.getElementById('treatmentDate').value, 
       '執行治療師': document.getElementById('inputTherapist').value, 
+      '治療項目': document.getElementById('inputTreatmentItem').value, // ★ 修改：抓取治療項目
       '當日主訴': document.getElementById('inputComplaint').value, 
       '治療內容': document.getElementById('inputContent').value, 
       '備註/下次治療': document.getElementById('inputNextPlan').value 
@@ -427,15 +452,22 @@ function renderTreatmentList(logs) {
       <div class="absolute top-0 left-0 w-full h-1 bg-emerald-500 print:hidden"></div>
       <div class="flex justify-between items-center mb-3">
         <span class="text-xs font-bold text-slate-400 font-mono bg-slate-50 px-2 py-1 rounded-lg print:bg-white print:text-black print:border print:border-slate-300">${l['治療日期']}</span>
-        <div class="flex items-center gap-1 text-xs font-bold text-slate-500 print:text-black">
-          <span class="material-icons-outlined text-sm text-slate-400 print:hidden">person</span>${l['執行治療師']}
+        
+        <div class="flex items-center gap-2">
+            ${l['治療項目'] ? `<span class="px-2 py-0.5 rounded text-[10px] font-bold bg-blue-50 text-blue-600 border border-blue-100 print:text-black">${l['治療項目']}</span>` : ''}
+            <div class="flex items-center gap-1 text-xs font-bold text-slate-500 print:text-black">
+              <span class="material-icons-outlined text-sm text-slate-400 print:hidden">person</span>${l['執行治療師']}
+            </div>
         </div>
       </div>
       <div class="space-y-3">
+        ${l['當日主訴'] ? `
         <div class="text-xs text-slate-500 bg-slate-50 p-3 rounded-xl border border-slate-100 print:bg-white print:border-0 print:p-0">
-          <span class="font-bold text-slate-400 block mb-1 uppercase tracking-widest text-[10px] print:text-black">Complaint</span>${l['當日主訴']||'--'}
-        </div>
+          <span class="font-bold text-slate-400 block mb-1 uppercase tracking-widest text-[10px] print:text-black">Complaint</span>${l['當日主訴']}
+        </div>` : ''}
+        
         <div class="text-sm text-slate-700 whitespace-pre-wrap px-1 print:text-black">${l['治療內容']}</div>
+        
         ${l['備註/下次治療']?`<div class="mt-2 text-xs text-slate-600 bg-amber-50 p-3 rounded-xl border border-amber-100 print:bg-white print:border-slate-300"><span class="font-bold text-amber-500 block mb-1 flex items-center gap-1 print:text-black"><span class="material-icons-outlined text-[12px] print:hidden">flag</span> Next Plan</span>${l['備註/下次治療']}</div>`:''}
       </div>
     </div>`).join('');

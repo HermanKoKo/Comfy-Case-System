@@ -670,3 +670,32 @@ function formatDateForJSON(dateVal) {
   if (dateVal instanceof Date) return Utilities.formatDate(dateVal, Session.getScriptTimeZone(), "yyyy-MM-dd");
   return String(dateVal);
 }
+
+/**
+ * 從 "System" 分頁的 G 欄讀取治療項目清單
+ * 假設第一列是標題，資料從第二列開始
+ */
+function getTreatmentItemsFromSystem() {
+  // 使用 helper 取得目前綁定的 "System" 工作表
+  var sheet = getSheetHelper(CONFIG.SHEETS.SYSTEM);
+  
+  // 取得最後一列的列號
+  var lastRow = sheet.getLastRow();
+  
+  // 如果只有標題或沒資料，回傳空陣列
+  if (lastRow < 2) {
+    return [];
+  }
+  
+  // 讀取 G 欄的範圍：從第 2 列開始，第 7 欄 (G欄)，讀取到最後一列
+  // getRange(row, column, numRows)
+  var range = sheet.getRange(2, 7, lastRow - 1);
+  var values = range.getValues();
+  
+  // 整理資料：扁平化陣列並過濾掉空值
+  var items = values.flat().filter(function(item) {
+    return item !== "" && item != null;
+  });
+  
+  return items;
+}

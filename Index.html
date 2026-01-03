@@ -271,8 +271,10 @@
                     <div class="flex items-center gap-2">
                       <label class="text-xs font-bold text-slate-400 shrink-0">治療項目</label>
                       <div class="relative w-full">
+                        <!-- ★ 關鍵修改：確保 id 為 inputTreatmentItem，前端腳本將自動填入選項 -->
                         <select id="inputTreatmentItem" class="w-full px-3 py-2.5 bg-slate-50 border border-slate-100 rounded-2xl outline-none focus:border-emerald-500 transition-all cursor-pointer appearance-none font-bold text-slate-700 text-sm">
                            <option value="" disabled selected>請選擇項目</option>
+                           <!-- 選項將由 loadTreatmentItems() 自動插入 -->
                         </select>
                         <span class="material-icons-outlined absolute right-2 top-3 text-slate-400 pointer-events-none text-sm">expand_more</span>
                       </div>
