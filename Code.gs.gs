@@ -577,38 +577,74 @@ function getCaseOverviewData(clientId) {
   } catch (e) { throw new Error("取得總覽資料失敗: " + e.message); }
 }
 
-// 影像功能 - 修改版：從 Sheet 讀取
+// ★ 影像功能 - 大幅修改版：直接從 Client DB 讀取資料夾連結，掃描 Drive 檔案
 function getClientImages(clientId) {
   try {
-    // 使用 helper 取得 Image Sheet (位於原資料庫)
-    const sheet = getSheetHelper(CONFIG.SHEETS.IMAGE); 
+    // 1. 先去 Client_Basic_Info 找到該個案的資料夾連結
+    const clientSheet = getSheetHelper(CONFIG.SHEETS.CLIENT);
+    const clientData = clientSheet.getDataRange().getDisplayValues(); // 使用 DisplayValues 以避免格式問題
     
-    const data = sheet.getDataRange().getDisplayValues();
+    let folderUrl = "";
+    const targetId = String(clientId).replace(/^'/, '').trim();
+    
+    // 從第二列開始遍歷資料
+    for (let i = 1; i < clientData.length; i++) {
+      const rowId = String(clientData[i][0]).replace(/^'/, '').trim();
+      
+      // 比對個案編號
+      if (rowId === targetId) {
+        // ★ 關鍵：資料夾連結位於第 11 欄 (Index 10)
+        // (根據 createNewClient 邏輯：... 治療師(8), 慢性病(9), 連結(10) ...)
+        folderUrl = clientData[i][10];
+        break;
+      }
+    }
+    
+    // 如果找不到連結，回傳空陣列 (前端會顯示無影像)
+    if (!folderUrl) {
+      return { success: true, images: [] };
+    }
+    
+    // 2. 解析 Drive Folder ID
+    const idMatch = folderUrl.match(/[-\w]{25,}/);
+    if (!idMatch) {
+       // 連結格式錯誤
+       return { success: true, images: [] };
+    }
+    const folderId = idMatch[0];
+    
+    // 3. 掃描該資料夾內的檔案
+    const folder = DriveApp.getFolderById(folderId);
+    const files = folder.getFiles();
     const imageList = [];
     
-    for (let i = 1; i < data.length; i++) {
-      const row = data[i];
-      if (String(row[1]).replace(/^'/, '').trim() === String(clientId).trim()) {
-        const fileUrl = row[4];
-        let fileId = "";
-        
-        const idMatch = fileUrl.match(/[-\w]{25,}/);
-        if (idMatch) fileId = idMatch[0];
-
+    while (files.hasNext()) {
+      const file = files.next();
+      const mimeType = file.getMimeType();
+      
+      // 簡單過濾：只顯示圖片類型的檔案
+      if (mimeType.indexOf('image/') === 0) {
+        const fileId = file.getId();
         imageList.push({
-          id: row[0],
-          name: row[3],
-          url: fileUrl,
-          thumbnail: fileId ? "https://lh3.googleusercontent.com/d/" + fileId + "=s400" : "",
-          date: row[2],
-          remark: row[5]
+          id: fileId,
+          name: file.getName(),
+          url: file.getUrl(),
+          // 產生縮圖連結
+          thumbnail: "https://lh3.googleusercontent.com/d/" + fileId + "=s400",
+          date: Utilities.formatDate(file.getDateCreated(), Session.getScriptTimeZone(), "yyyy-MM-dd HH:mm"),
+          remark: "" // 直接讀取 Drive，沒有額外的備註欄位
         });
       }
     }
     
-    return { success: true, images: imageList.sort((a,b)=>b.date.localeCompare(a.date)) };
+    // 4. 依照日期排序 (新到舊)
+    imageList.sort((a, b) => new Date(b.date) - new Date(a.date));
+    
+    return { success: true, images: imageList };
 
-  } catch (e) { return { success: false, message: "讀取影像失敗: " + e.toString() }; }
+  } catch (e) { 
+    return { success: false, message: "讀取影像失敗: " + e.toString() }; 
+  }
 }
 
 // 上傳影像 - 修改版：從新資料庫查 Folder，寫入舊資料庫
@@ -642,6 +678,7 @@ function uploadClientImage(clientId, fileData, fileName, mimeType, remark) {
     const fileUrl = file.getUrl();
     
     // 3. 寫入資料到 Image_Gallery Sheet (★ 寫回原資料庫)
+    // 雖然現在 getClientImages 已經改為直接讀 Drive，但為了保持上傳紀錄的完整性，我們還是寫入 Sheet
     let imgSheet = getSheetHelper(CONFIG.SHEETS.IMAGE);
     const ss = imgSheet.getParent(); // 取得原資料庫的 Spreadsheet 物件以獲取時區
 

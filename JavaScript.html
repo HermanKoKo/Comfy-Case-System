@@ -684,6 +684,151 @@ function getFilteredOverviewData() {
 function printOverviewReport() { handlePrint(); } 
 
 // ==========================================
+// ★★★ 新增：影像載入與上傳邏輯 ★★★
+// ==========================================
+
+// 1. 載入並渲染影像 (包含空資料處理)
+function loadClientImages() {
+  const container = document.getElementById('imageGalleryContainer');
+  const countText = document.getElementById('img-stats-text');
+
+  // Loading State
+  container.innerHTML = '<div class="col-span-full flex flex-col items-center justify-center py-20 text-slate-300"><span class="material-icons-outlined text-4xl animate-spin mb-3">sync</span><p>讀取影像中...</p></div>';
+  if(countText) countText.textContent = '讀取中...';
+
+  const clientId = currentClient['個案編號'];
+
+  google.script.run.withSuccessHandler(function(res) {
+     if (!res.success) {
+        container.innerHTML = '<div class="col-span-full text-center py-10 text-red-400">讀取失敗: ' + res.message + '</div>';
+        return;
+     }
+
+     const images = res.images;
+     if (countText) countText.textContent = '共 ' + images.length + ' 張影像紀錄';
+
+     // ★ 修改處：若無資料，顯示特定樣式
+     if (images.length === 0) {
+        container.innerHTML = `
+          <div class="col-span-full flex flex-col items-center justify-center py-24 bg-white rounded-[2.5rem] border border-slate-100">
+              <div class="w-16 h-16 bg-slate-50 rounded-full flex items-center justify-center mb-4 text-slate-300">
+                  <span class="material-icons-outlined text-3xl">broken_image</span>
+              </div>
+              <p class="text-slate-400 font-bold">無影像資料</p>
+              <p class="text-xs text-slate-300 mt-1">請確認雲端資料夾是否已有檔案</p>
+          </div>`;
+        return;
+     }
+
+     // 渲染圖片
+     container.innerHTML = images.map(img => `
+        <div class="group relative bg-white rounded-3xl shadow-sm border border-slate-100 overflow-hidden aspect-square cursor-pointer hover:shadow-md transition-all" onclick="openLightbox('${img.id}', '${img.name}')">
+            <img src="${img.thumbnail}" alt="${img.name}" class="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110">
+            <div class="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex flex-col justify-end p-4">
+                <p class="text-white font-bold text-sm truncate">${img.name}</p>
+                <p class="text-white/80 text-xs font-mono">${img.date}</p>
+            </div>
+        </div>
+     `).join('');
+
+  }).getClientImages(clientId);
+}
+
+// 2. 檔案預覽 (供上傳 Modal 使用)
+function previewFiles(input) {
+  const container = document.getElementById('previewList');
+  const previewArea = document.getElementById('uploadPreviewArea');
+  
+  // 清空舊陣列，重新加入新選擇的檔案
+  filesToUpload = Array.from(input.files);
+  container.innerHTML = '';
+  
+  if (filesToUpload.length > 0) {
+    previewArea.classList.remove('hidden');
+    filesToUpload.forEach(file => {
+      const reader = new FileReader();
+      reader.onload = function(e) {
+        const div = document.createElement('div');
+        div.className = "flex items-center gap-3 p-2 bg-slate-50 rounded-xl border border-slate-100";
+        div.innerHTML = `
+          <div class="w-10 h-10 rounded-lg overflow-hidden bg-white shrink-0">
+             <img src="${e.target.result}" class="w-full h-full object-cover">
+          </div>
+          <div class="flex-1 min-w-0">
+             <p class="text-xs font-bold text-slate-700 truncate">${file.name}</p>
+             <p class="text-[10px] text-slate-400">${(file.size/1024).toFixed(1)} KB</p>
+          </div>`;
+        container.appendChild(div);
+      };
+      reader.readAsDataURL(file);
+    });
+  } else {
+    previewArea.classList.add('hidden');
+  }
+}
+
+// 3. 開始上傳
+function startUpload() {
+  if (filesToUpload.length === 0) { alert("請先選擇檔案"); return; }
+  const btn = document.getElementById('btnStartUpload');
+  const originalText = btn.innerHTML;
+  const remark = document.getElementById('fileRemark').value;
+  
+  btn.disabled = true;
+  btn.innerHTML = '<span class="material-icons-outlined animate-spin mr-2">sync</span>上傳中...';
+  
+  let successCount = 0;
+  let processCount = 0;
+
+  // 簡單的序列上傳處理
+  const processNext = (idx) => {
+      if (idx >= filesToUpload.length) {
+         // 全部完成
+         alert(`上傳完成！成功 ${successCount} / ${filesToUpload.length}`);
+         btn.disabled = false; 
+         btn.innerHTML = originalText;
+         closeModal('uploadImageModal');
+         // 清空狀態
+         document.getElementById('uploadInput').value = '';
+         document.getElementById('fileRemark').value = '';
+         document.getElementById('previewList').innerHTML = '';
+         document.getElementById('uploadPreviewArea').classList.add('hidden');
+         filesToUpload = [];
+         // 重新載入列表
+         loadClientImages();
+         return;
+      }
+
+      const file = filesToUpload[idx];
+      const reader = new FileReader();
+      reader.onload = function(e) {
+          const content = e.target.result.split(',')[1]; // 去除 base64 header
+          google.script.run.withSuccessHandler(res => {
+             if(res.success) successCount++;
+             processNext(idx + 1);
+          }).withFailureHandler(err => {
+             console.error(err);
+             processNext(idx + 1);
+          }).uploadClientImage(currentClient['個案編號'], content, file.name, file.type, remark);
+      };
+      reader.readAsDataURL(file);
+  };
+  
+  processNext(0);
+}
+
+// 4. 開啟上傳 Modal 時清空狀態
+function openUploadModal() {
+  if (!currentClient) { alert("請先選取個案"); return; }
+  document.getElementById('uploadInput').value = '';
+  document.getElementById('fileRemark').value = '';
+  document.getElementById('previewList').innerHTML = '';
+  document.getElementById('uploadPreviewArea').classList.add('hidden');
+  filesToUpload = [];
+  openModal('uploadImageModal');
+}
+
+// ==========================================
 // 工具函式
 // ==========================================
 function resetSearch() { currentClient = null; document.getElementById('topBarClientInfo').classList.add('hidden'); navTo('search'); }
