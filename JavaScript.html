@@ -863,9 +863,7 @@ function getFilteredOverviewData() {
       data = data.filter(i => i.date >= s && i.date <= e);
   }
   return data;
-}
-
-function renderOverviewList() {
+}function renderOverviewList() {
   const c = document.getElementById('overviewListContainer');
   const printTable = document.getElementById('overviewPrintTable');
   const f = getFilteredOverviewData();
@@ -878,6 +876,7 @@ function renderOverviewList() {
     return;
   }
 
+  // 生成畫面上的卡片列表
   c.innerHTML = f.map((i, index) => {
     const cardClass = `print:break-before-page ${index === 0 ? '' : 'print:break-before-page'} bg-white border border-slate-100 rounded-[2rem] p-5 shadow-sm mb-4 card-hover relative overflow-hidden group print:hidden`;
     const headerClass = "flex justify-between items-center mb-3 pb-2 border-b border-slate-50 pl-3";
@@ -971,9 +970,18 @@ function renderOverviewList() {
     return '';
   }).join('');
 
-  // --- 列印表格生成 ---
+  // --- ★ 修正三：列印表格生成 (含標題與姓名) ---
   const catName = { 'all': '全部', 'doctor': '醫師看診', 'treatment': '物理治療', 'maintenance': '保養項目', 'tracking': '個管追蹤' };
+  const clientName = currentClient ? currentClient['姓名'] : ''; // 取得個案姓名
+
   let tableHtml = `
+    <!-- 標題區塊：標題置中，姓名靠右 -->
+    <div style="display: flex; justify-content: space-between; align-items: flex-end; margin-bottom: 5px; border-bottom: 2px solid #000; padding-bottom: 5px;">
+        <div style="flex: 1;"></div> 
+        <div style="flex: 0 0 auto; text-align: center; font-size: 24px; font-weight: bold; letter-spacing: 2px;">康飛運醫 物理治療所</div>
+        <div style="flex: 1; text-align: right; font-size: 16px; font-weight: bold;">${clientName}</div>
+    </div>
+
     <div style="margin-bottom: 10px; font-weight: bold; font-size: 12px; border-bottom: 1px solid #000; padding-bottom: 5px;">
         列印日期：${new Date().toISOString().split('T')[0]} ｜ 篩選條件：${catName[currentOverviewCategory] || '全部'} ｜ 資料筆數：${f.length}
     </div>
@@ -989,6 +997,7 @@ function renderOverviewList() {
         <tbody>`;
 
   f.forEach((i, index) => {
+    // 若為全部或治療分頁，因為內容較多，每一筆後強制分頁(除了第一筆)
     const isPageBreakNeeded = (currentOverviewCategory === 'all' || currentOverviewCategory === 'treatment') && index > 0;
     const rowStyle = isPageBreakNeeded ? 'style="page-break-before: always; border-top: 1px solid #000; padding-top: 10px;"' : 'style="border-top: 1px solid #000; padding-top: 10px;"';
 
