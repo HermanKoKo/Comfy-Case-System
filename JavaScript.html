@@ -57,9 +57,35 @@ window.onload = function() {
   setupEnhancedFlatpickr('#overviewStartDate', overviewConfig);
   setupEnhancedFlatpickr('#overviewEndDate', overviewConfig);
 
-  loadSystemStaff();
-  loadTreatmentItems();
+  loadSystemStaff();      // 載入一般系統人員 (醫師、護理師等)
+  loadTreatmentItems();   // 載入治療項目
+  loadTherapistOptions(); // ★ 修正一：載入治療師清單 (System 分頁 C 欄)
 };
+
+// 修正一：載入治療師下拉選單
+function loadTherapistOptions() {
+  google.script.run
+    .withSuccessHandler(function(therapists) {
+      const selectElement = document.getElementById('inputTherapist'); // 對應 Index.html 的 select ID
+      if (!selectElement) return;
+
+      // 清空現有選項，只保留預設提示
+      selectElement.innerHTML = '<option value="" disabled selected>請選擇治療師</option>';
+      
+      // 動態加入後端回傳的名單
+      therapists.forEach(function(name) {
+        const option = document.createElement('option');
+        option.value = name;
+        option.textContent = name;
+        selectElement.appendChild(option);
+      });
+      console.log("治療師名單已更新");
+    })
+    .withFailureHandler(function(err) {
+      console.error("無法載入治療師名單", err);
+    })
+    .getTherapistList(); // 呼叫 Code.gs 的函式
+}
 
 function loadSystemStaff() {
   if (typeof google === 'undefined' || !google.script) return;
@@ -70,12 +96,12 @@ function loadSystemStaff() {
     };
     setOptions('selectDoctor', staff.doctors, '請選擇醫師');
     setOptions('selectNurse', staff.nurses, '請選擇護理師');
-    setOptions('addTherapist', staff.therapists, '請選擇治療師');
+    // 注意：addTherapist 是「新增個案」Modal 中的欄位，這裡沿用舊邏輯
+    setOptions('addTherapist', staff.therapists, '請選擇治療師'); 
     setOptions('selectMaintStaff', staff.allStaff, '請選擇執行人員');
     setOptions('selectMaintItem', staff.maintItems, '請選擇項目');
     setOptions('trackStaff', staff.allStaff, '請選擇人員');
     setOptions('trackType', staff.trackingTypes || [], '請選擇項目');
-    setOptions('addTherapist', staff.therapists, '請選擇負責治療師');
     setOptions('inputTreatmentItem', staff.treatmentItems, '請選擇項目');
   }).getSystemStaff();
 }
@@ -209,7 +235,7 @@ function submitNewClient() {
 }
 
 // ==========================================
-// 列印功能 (★ 本次修改重點 ★)
+// 列印功能
 // ==========================================
 function handlePrint() {
   const today = new Date();
@@ -219,13 +245,12 @@ function handlePrint() {
   const dateEl = document.getElementById('print-date-display');
   if(dateEl) dateEl.innerText = dateStr;
 
-  // ★ 修改：在標題右側顯示個案姓名
   const infoEl = document.getElementById('print-patient-info');
   if (infoEl) {
       if (currentClient) {
           infoEl.innerText = currentClient['姓名'];
       } else {
-          infoEl.innerText = ""; // 若無選擇個案則留白
+          infoEl.innerText = "";
       }
   }
   window.print();
@@ -314,10 +339,14 @@ function selectClient(c) {
   document.getElementById('headerClientDob').textContent = c['生日'];
   document.querySelectorAll('.auto-fill-id').forEach(el => el.value = c['個案編號']);
 
+  // ★ 修正二：自動帶入負責治療師
   const therapistSelect = document.getElementById('inputTherapist');
   if (therapistSelect) {
+      // 嘗試選取該個案的負責治療師，若該治療師不在清單中(value不匹配)則會變為空或保持原狀(視瀏覽器行為)
+      // 若清單已載入，此操作會生效
       therapistSelect.value = c['負責治療師'] || "";
   }
+  
   const itemSelect = document.getElementById('inputTreatmentItem');
   if (itemSelect) {
       itemSelect.value = "1600";
@@ -326,7 +355,7 @@ function selectClient(c) {
 }
 
 // ==========================================
-// ★★★ 編輯功能相關函式 ★★★
+// 編輯功能相關函式
 // ==========================================
 
 function findIdFromData(data) {
@@ -431,6 +460,11 @@ function cancelEdit(type) {
       document.getElementById('trackingForm').reset();
   } else {
       document.getElementById(type + 'Form').reset();
+      
+      // ★ 修正二：取消編輯後，若為治療紀錄，自動帶回負責治療師
+      if (type === 'treatment' && currentClient) {
+          document.getElementById('inputTherapist').value = currentClient['負責治療師'] || "";
+      }
   }
 
   const today = new Date();
@@ -501,6 +535,11 @@ function submitForm(type) {
           } else {
              if(formId) document.getElementById(formId).reset();
              document.querySelectorAll('.auto-fill-id').forEach(el => el.value = clientId);
+             
+             // ★ 修正二：新增成功並重置表單後，自動帶回負責治療師
+             if (formId === 'treatmentForm' && currentClient) {
+                 document.getElementById('inputTherapist').value = currentClient['負責治療師'] || "";
+             }
           }
           if(reloadFunc) reloadFunc();
           fetchCalendarData();
@@ -535,7 +574,7 @@ function submitForm(type) {
       record_id: editId,
       '個案編號': clientId,
       '治療日期': document.getElementById('treatmentDate').value,
-      '執行治療師': document.getElementById('inputTherapist').value,
+      '執行治療師': document.getElementById('inputTherapist').value, // Select ID
       '治療項目': document.getElementById('inputTreatmentItem').value,
       '當日主訴': document.getElementById('inputComplaint').value,
       '治療內容': document.getElementById('inputContent').value,
@@ -783,7 +822,7 @@ function loadDoctorHistory() {
 }
 
 // ==========================================
-// 個案總覽 (★ 修改版：包含列印表格生成 ★)
+// 個案總覽
 // ==========================================
 function loadOverviewData() {
   const container = document.getElementById('overviewListContainer'); container.innerHTML = '<div class="text-center py-12 text-slate-400 flex flex-col items-center gap-2"><span class="material-icons-outlined animate-spin">sync</span><span>讀取個案歷程中...</span></div>';
@@ -840,10 +879,6 @@ function renderOverviewList() {
   }
 
   c.innerHTML = f.map((i, index) => {
-    // *** 核心修改點 ***
-    // 判斷是否為第一筆紀錄 (index === 0)
-    // 如果是第一筆，則不加入 break-before-page
-    // 否則 (非第一筆)，才加入 break-before-page
     const cardClass = `print:break-before-page ${index === 0 ? '' : 'print:break-before-page'} bg-white border border-slate-100 rounded-[2rem] p-5 shadow-sm mb-4 card-hover relative overflow-hidden group print:hidden`;
     const headerClass = "flex justify-between items-center mb-3 pb-2 border-b border-slate-50 pl-3";
     const badgeClass = "text-xs font-bold px-3 py-1 rounded-full font-mono";
@@ -954,8 +989,6 @@ function renderOverviewList() {
         <tbody>`;
 
   f.forEach((i, index) => {
-    // *** 列印表格的換頁邏輯 ***
-    // 只有當類別是 "全部" 或 "治療紀錄"，且非第一筆紀錄時，才加入換頁樣式
     const isPageBreakNeeded = (currentOverviewCategory === 'all' || currentOverviewCategory === 'treatment') && index > 0;
     const rowStyle = isPageBreakNeeded ? 'style="page-break-before: always; border-top: 1px solid #000; padding-top: 10px;"' : 'style="border-top: 1px solid #000; padding-top: 10px;"';
 
@@ -1212,12 +1245,6 @@ function scrollToTop() {
 // ★★★ 自訂通知 (Custom Notification) ★★★
 // ==========================================
 
-/**
- * 顯示自訂通知視窗
- * @param {string} title - 標題
- * @param {string} message - 內容訊息
- * @param {string} type - 類型 ('success', 'error', 'info', 'warning')
- */
 function showNotification(title, message, type = 'info') {
   const modal = document.getElementById('custom-modal');
   const titleEl = document.getElementById('modal-title');
@@ -1251,7 +1278,6 @@ function showNotification(title, message, type = 'info') {
       iconContainer.classList.add('bg-amber-100');
       btn.classList.add('bg-amber-500', 'hover:bg-amber-600', 'shadow-amber-500/20');
   } else {
-      // Info / Default
       iconEl.innerText = 'info';
       iconEl.className = 'material-icons-outlined text-3xl text-slate-500';
       iconContainer.classList.add('bg-slate-100');
@@ -1261,9 +1287,6 @@ function showNotification(title, message, type = 'info') {
   modal.classList.remove('hidden');
 }
 
-/**
- * 關閉自訂通知視窗
- */
 function closeNotification() {
   const modal = document.getElementById('custom-modal');
   if (modal) modal.classList.add('hidden');

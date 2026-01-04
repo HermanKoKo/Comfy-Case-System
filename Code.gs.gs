@@ -79,6 +79,40 @@ function getSheetHelper(sheetName) {
   return sheet;
 }
 
+/**
+ * 修正一：取得治療師下拉選單選項
+ * 來源：Google Sheets 'system' 分頁的 C 欄 (從第 2 列開始)
+ */
+function getTherapistList() {
+  try {
+    // 1. 取得試算表與 'system' 分頁
+    const ss = SpreadsheetApp.getActiveSpreadsheet();
+    const sheet = ss.getSheetByName("system");
+    
+    if (!sheet) {
+      throw new Error("找不到名為 'system' 的分頁");
+    }
+
+    // 2. 取得最後一行，避免讀取過多空行
+    const lastRow = sheet.getLastRow();
+    if (lastRow < 2) return []; // 若只有標題或無資料，回傳空陣列
+
+    // 3. 讀取 C 欄資料 (Row 2, Column 3, 讀取 LastRow-1 行)
+    const data = sheet.getRange(2, 3, lastRow - 1, 1).getValues();
+
+    // 4. 扁平化陣列並過濾空值與重複值
+    const therapists = data
+      .flat()
+      .filter(function(name) { return name && name.toString().trim() !== ""; });
+      
+    return therapists;
+    
+  } catch (e) {
+    Logger.log("Error in getTherapistList: " + e.toString());
+    return []; // 發生錯誤時回傳空陣列
+  }
+}
+
 // 1. 搜尋功能 (已修復：支援模糊搜尋與忽略空格)
 function searchClient(keyword) {
   try {
