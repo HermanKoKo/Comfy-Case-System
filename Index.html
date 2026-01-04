@@ -81,16 +81,16 @@
 </head>
 <body class="bg-[#f8fafc] font-sans text-slate-900 antialiased h-screen overflow-hidden flex print:h-auto print:overflow-visible">
 
-  <!-- 列印專用頁首 -->
-  <div id="print-header" class="hidden print:flex flex-row justify-between items-end border-b-2 border-slate-800 pb-2 mb-4 w-full bg-white">
-    <div class="text-xs">
+  <!-- ★★★ 列印專用頁首 (已修正) ★★★ -->
+  <div id="print-header" class="hidden print:flex flex-row justify-between items-center border-b-2 border-slate-800 pb-2 mb-4 w-full bg-white">
+    <div class="text-xs w-1/3">
       <span class="font-bold text-slate-600">列印日期：</span>
       <span id="print-date-display" class="font-mono"></span>
     </div>
-    <div class="text-xl font-black text-center tracking-widest text-slate-800">
-      康飛運醫 | 個案紀錄
+    <div class="text-xl font-black text-center tracking-widest text-slate-800 w-1/3">
+      康飛運醫 物理治療所
     </div>
-    <div class="text-xs text-right">
+    <div class="text-xs text-right w-1/3">
       <div id="print-patient-info" class="font-bold text-lg text-emerald-700"></div>
     </div>
   </div>
@@ -120,10 +120,8 @@
         <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M12 4v16m8-8H4"></path></svg> 新增個案
       </button>
     </div>
-  </aside>
-
-  <!-- Main -->
-  <main id="main-content" class="flex-1 flex flex-col h-screen overflow-hidden print:h-auto print:overflow-visible">
+  </aside><!-- Main -->
+  <main id="main-content" class="flex-1 flex flex-col h-screen overflow-hidden print:h-auto print:overflow-visible print:block">
     <header class="bg-white border-b border-slate-200 px-6 py-3 flex justify-between items-center flex-shrink-0 shadow-sm z-10 no-print">
       <h2 id="pageTitle" class="text-lg font-bold text-slate-800">首頁</h2>
       <div id="topBarClientInfo" class="hidden flex items-center gap-2 bg-slate-50 pl-4 pr-1 py-1 rounded-full border border-slate-100 shadow-sm">
@@ -132,7 +130,7 @@
       </div>
     </header>
 
-    <div id="contentArea" class="flex-1 overflow-y-auto p-5 custom-scrollbar print:p-0 print:overflow-visible scroll-smooth">
+    <div id="contentArea" class="flex-1 overflow-y-auto p-5 custom-scrollbar print:p-0 print:overflow-visible scroll-smooth print:block print:h-auto">
       
       <!-- 搜尋頁面 -->
       <div id="view-search" class="max-w-md mx-auto flex flex-col items-center justify-center min-h-[70vh] space-y-6 no-print">
@@ -396,6 +394,72 @@
         </div>
       </div>
 
+      <!-- 個管追蹤視圖 -->
+      <div id="view-tracking" class="hidden max-w-6xl mx-auto space-y-4">
+        <div class="flex justify-between items-center mb-2 no-print">
+          <h3 class="text-2xl font-bold text-violet-700 flex items-center gap-3">
+             <span class="material-icons-outlined text-3xl">fact_check</span>
+             個管追蹤紀錄
+          </h3>
+        </div>
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-4">
+          <div class="lg:col-span-1 bg-white rounded-[2.5rem] p-5 shadow-sm border border-slate-100 h-fit no-print">
+            <h3 class="text-lg font-bold text-violet-600 mb-3 border-b border-violet-50 pb-2">新增紀錄</h3>
+            <form id="trackingForm" onsubmit="event.preventDefault(); submitForm('tracking');">
+              <input type="hidden" name="個案編號" class="auto-fill-id">
+              <input type="hidden" id="edit_id_tracking" name="record_id" value="">
+
+              <div class="mb-2 space-y-1">
+                <label class="block text-sm font-bold text-slate-400 ml-1">追蹤日期</label>
+                <input type="text" id="trackDate" name="trackDate" required
+                       class="w-full px-4 py-2 bg-slate-50 border border-slate-200 rounded-2xl outline-none focus:border-violet-500 transition-all cursor-pointer">
+              </div>
+              <div class="mb-2 space-y-1">
+                <label class="block text-sm font-bold text-slate-400 ml-1">追蹤人員</label>
+                <select id="trackStaff" name="trackStaff" required
+                        class="custom-select-arrow w-full px-4 py-2 bg-slate-50 border border-slate-200 rounded-2xl outline-none focus:border-violet-500 transition-all cursor-pointer appearance-none pr-10">
+                  <option value="" disabled selected>載入中...</option>
+                </select>
+              </div>
+              <div class="mb-2 space-y-1">
+                <label class="block text-sm font-bold text-slate-400 ml-1">追蹤項目</label>
+                <select id="trackType" name="trackType" required
+                        class="custom-select-arrow w-full px-4 py-2 bg-slate-50 border border-slate-200 rounded-2xl outline-none focus:border-violet-500 transition-all cursor-pointer appearance-none pr-10">
+                  <option value="" disabled selected>載入中...</option>
+                </select>
+              </div>
+              <div class="mb-3 space-y-1">
+                <label class="block text-sm font-bold text-slate-400 ml-1">追蹤內容</label>
+                <textarea id="trackContent" name="content" rows="5" required placeholder="請輸入追蹤情形、個案回饋或備註..."
+                          class="w-full px-4 py-2 bg-slate-50 border border-slate-200 rounded-2xl outline-none focus:border-violet-500 transition-all resize-none"></textarea>
+              </div>
+
+              <div id="edit-cancel-tracking" class="hidden mb-2">
+                   <button type="button" onclick="cancelEdit('tracking')" class="w-full bg-slate-400 hover:bg-slate-500 text-white font-bold py-2 rounded-2xl transition shadow-sm border border-slate-400">
+                        取消編輯模式
+                   </button>
+              </div>
+
+              <button type="submit" 
+                      class="w-full text-white bg-violet-600 hover:bg-violet-700 font-bold rounded-2xl px-5 py-3 text-center transition-all shadow-lg shadow-violet-500/20 active:scale-95">
+                儲存追蹤紀錄
+              </button>
+            </form>
+          </div>
+          <div class="lg:col-span-2">
+            <h3 class="text-lg font-bold text-slate-700 mb-3 ml-2 flex items-center gap-2">
+              <span class="w-1.5 h-5 bg-violet-500 rounded-full print:hidden"></span> 歷史紀錄
+            </h3>
+            <div id="trackingHistoryList" class="space-y-3 max-h-[700px] overflow-y-auto pr-2 custom-scrollbar print:max-h-none print:overflow-visible">
+              <div class="text-center text-slate-400 py-10 bg-white/50 border-2 border-dashed border-slate-100 rounded-[2.5rem] print:hidden">
+                <span class="material-icons-outlined text-4xl mb-2">history</span>
+                <p>尚無追蹤紀錄</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
       <!-- 醫師看診視圖 -->
       <div id="view-doctor" class="hidden max-w-5xl mx-auto space-y-4">
         <div class="bg-white rounded-[2.5rem] shadow-sm border border-slate-100 overflow-hidden no-print">
@@ -460,7 +524,9 @@
           </form>
         </div>
         <div id="doctorHistoryList" class="space-y-4 mt-6"></div>
-      </div><!-- 個案總覽 -->
+      </div>
+
+      <!-- 個案總覽 -->
       <div id="view-overview" class="hidden max-w-6xl mx-auto space-y-4">
         <div class="bg-white rounded-[2.5rem] shadow-sm border border-slate-100 p-5 no-print">
            <div class="flex justify-between items-center mb-4 border-b border-slate-50 pb-3">
@@ -472,7 +538,6 @@
                  <p id="overviewStats" class="text-slate-400 text-sm mt-1 ml-1">共 0 筆紀錄</p>
               </div>
               <div class="flex items-center gap-3">
-                 <!-- ★★★ 新增：儲存/列印按鈕 (no-print) ★★★ -->
                  <button onclick="window.print()" class="no-print flex items-center gap-2 bg-slate-800 text-white px-4 py-2 rounded-xl text-sm font-bold shadow-lg hover:bg-slate-700 transition active:scale-95">
                     <span class="material-icons-outlined text-lg">print</span>
                     儲存/列印
@@ -502,7 +567,6 @@
            </div>
         </div>
         
-        <!-- 螢幕顯示用的卡片列表 -->
         <div id="overviewListContainer" class="min-h-[300px] space-y-4">
            <div class="flex flex-col items-center justify-center py-20 bg-white rounded-[2.5rem] border-2 border-dashed border-slate-100 print:hidden">
               <div class="w-16 h-16 bg-slate-50 rounded-full flex items-center justify-center mb-4">
@@ -512,7 +576,6 @@
            </div>
         </div>
 
-        <!-- ★★★ 新增：列印專用表格容器 (螢幕隱藏，列印顯示) ★★★ -->
         <div id="overviewPrintTable" class="hidden print:block w-full mt-4">
             <!-- 內容將由 JavaScript 動態生成 -->
         </div>
@@ -564,7 +627,6 @@
 
            <div class="flex items-center gap-3">
               <label class="w-28 shrink-0 text-sm font-bold text-slate-500 text-right">負責治療師</label>
-              <!-- 保持修改：移除 relative class, 移除 span, 加入 select 的 custom-select-arrow style -->
               <div class="flex-1">
                  <select id="addTherapist" class="custom-select-arrow w-full px-4 py-2.5 bg-slate-50 border border-slate-100 rounded-xl outline-none focus:bg-white focus:border-emerald-500 transition-all appearance-none cursor-pointer pr-10">
                     <option value="" disabled selected>載入中...</option>

@@ -209,7 +209,7 @@ function submitNewClient() {
 }
 
 // ==========================================
-// 列印功能
+// 列印功能 (★ 本次修改重點 ★)
 // ==========================================
 function handlePrint() {
   const today = new Date();
@@ -218,10 +218,15 @@ function handlePrint() {
                   String(today.getDate()).padStart(2, '0');
   const dateEl = document.getElementById('print-date-display');
   if(dateEl) dateEl.innerText = dateStr;
+  
   const infoEl = document.getElementById('print-patient-info');
   if (infoEl) {
-      if (currentClient) { infoEl.innerText = `${currentClient['姓名']} - ${currentClient['生日']}`; } 
-      else { infoEl.innerText = "個案列表"; }
+      if (currentClient) { 
+          // ★ 修改：只顯示個案姓名 (移除生日)
+          infoEl.innerText = currentClient['姓名']; 
+      } else { 
+          infoEl.innerText = "個案列表"; 
+      }
   }
   window.print();
 }
@@ -789,11 +794,9 @@ function loadOverviewData() {
   }).withFailureHandler(err => { container.innerHTML = `<div class="text-red-500 text-center py-10">載入失敗: ${err.message}</div>`; }).getCaseOverviewData(currentClient['個案編號']);
 }
 
-// ★★★ 補全：篩選類別設定函式 ★★★
 function setOverviewCategory(cat) {
   currentOverviewCategory = cat;
   
-  // 更新按鈕樣式
   document.querySelectorAll('[id^="filter-btn-"]').forEach(btn => {
      if(btn.id === 'filter-btn-' + cat) {
          btn.classList.remove('bg-white', 'text-slate-800', 'text-slate-500', 'hover:bg-white', 'hover:text-slate-700', 'shadow-sm', 'ring-1', 'ring-slate-200');
@@ -801,14 +804,12 @@ function setOverviewCategory(cat) {
      } else {
          btn.classList.remove('bg-slate-800', 'text-white', 'shadow-md');
          btn.classList.add('bg-white', 'text-slate-500', 'hover:bg-white', 'hover:text-slate-700'); 
-         // 這裡為了保持原設計的簡潔，非選取狀態設為淺灰
      }
   });
   
   renderOverviewList();
 }
 
-// ★★★ 補全：取得篩選後資料函式 ★★★
 function getFilteredOverviewData() {
   let data = allOverviewRecords;
   
@@ -825,24 +826,21 @@ function getFilteredOverviewData() {
   return data;
 }
 
-// ★★★ 修改：同時生成「螢幕卡片」與「列印表格」 ★★★
 function renderOverviewList() {
   const c = document.getElementById('overviewListContainer'); 
-  const printTable = document.getElementById('overviewPrintTable'); // 列印容器
+  const printTable = document.getElementById('overviewPrintTable'); 
   const f = getFilteredOverviewData();
   
   document.getElementById('overviewStats').textContent = `共 ${f.length} 筆紀錄`;
   
-  // 1. 若無資料
   if (!f.length) { 
     c.innerHTML = `<div class="flex flex-col items-center justify-center py-24 bg-white rounded-[2.5rem] border border-slate-100"><div class="w-16 h-16 bg-slate-50 rounded-full flex items-center justify-center mb-4 text-slate-300"><span class="material-icons-outlined text-3xl">search_off</span></div><p class="text-slate-400 font-bold">無符合資料</p></div>`;
     printTable.innerHTML = `<p style="text-align:center; padding: 20px;">無符合資料</p>`; 
     return; 
   }
   
-  // 2. 生成螢幕顯示用的卡片 HTML
   c.innerHTML = f.map(i => {
-    const cardClass = "bg-white border border-slate-100 rounded-[2rem] p-5 shadow-sm mb-4 card-hover relative overflow-hidden group print:hidden"; // print:hidden 確保螢幕版卡片不被印出
+    const cardClass = "bg-white border border-slate-100 rounded-[2rem] p-5 shadow-sm mb-4 card-hover relative overflow-hidden group print:hidden"; 
     const headerClass = "flex justify-between items-center mb-3 pb-2 border-b border-slate-50 pl-3";
     const badgeClass = "text-xs font-bold px-3 py-1 rounded-full font-mono";
     
@@ -934,8 +932,6 @@ function renderOverviewList() {
     return '';
   }).join('');
 
-  // 3. 生成列印專用表格 HTML (黑白、格線、簡單文字)
-  // 定義翻譯名稱
   const catName = { 'all': '全部', 'doctor': '醫師看診', 'treatment': '治療紀錄', 'maintenance': '保養項目', 'tracking': '個管追蹤' };
   
   let tableHtml = `

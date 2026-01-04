@@ -23,30 +23,38 @@
   .custom-scrollbar::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
   .custom-scrollbar::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
 
-  /* === 列印樣式 (本次修改重點) === */
+  /* === 列印樣式 (修正空白頁與標題對齊) === */
   @media print {
     /* 1. 隱藏不必要的介面元素 */
     #sidebar, .no-print, .flatpickr-calendar, button,
     input[type="date"]::-webkit-calendar-picker-indicator { display: none !important; }
     
-    /* 2. 重置版面尺寸與背景 */
-    body, main, #main-content, #contentArea, #view-overview {
+    /* 2. 強制重置版面尺寸與背景 (加入 html 與 min-height 修正空白頁) */
+    html, body, main, #main-content, #contentArea, #view-overview {
       height: auto !important; 
+      min-height: 0 !important; /* 關鍵：覆蓋 h-screen */
       width: 100% !important; 
       overflow: visible !important;
       margin: 0 !important; 
       padding: 0 !important; 
       background-color: white !important;
-      display: block !important;
+      display: block !important; /* 取消 flex 佈局 */
     }
     
-    /* 3. 隱藏「螢幕版」的卡片列表 */
+    /* 3. 確保列印標頭顯示並啟用 Flex (以支援垂直置中) */
+    #print-header { 
+        display: flex !important; 
+        border-bottom: 2px solid #000 !important; 
+        margin-bottom: 15px !important; 
+    }
+
+    /* 4. 隱藏「螢幕版」的卡片列表 */
     #overviewListContainer { display: none !important; }
 
-    /* 4. 強制顯示「列印版」的表格 */
+    /* 5. 強制顯示「列印版」的表格 */
     #overviewPrintTable { display: block !important; }
 
-    /* 5. 定義列印專用表格樣式 (黑白、清晰、格線) */
+    /* 6. 定義列印專用表格樣式 (黑白、清晰、格線) */
     .print-table {
       width: 100%;
       border-collapse: collapse;
