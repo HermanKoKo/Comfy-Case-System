@@ -59,32 +59,29 @@ window.onload = function() {
 
   loadSystemStaff();      // 載入一般系統人員 (醫師、護理師等)
   loadTreatmentItems();   // 載入治療項目
-  loadTherapistOptions(); // ★ 修正一：載入治療師清單 (System 分頁 C 欄)
+  loadTherapistOptions(); // 載入治療師清單 (System 分頁 C 欄)
 };
 
 // 修正一：載入治療師下拉選單
 function loadTherapistOptions() {
   google.script.run
     .withSuccessHandler(function(therapists) {
-      const selectElement = document.getElementById('inputTherapist'); // 對應 Index.html 的 select ID
+      const selectElement = document.getElementById('inputTherapist'); 
       if (!selectElement) return;
 
-      // 清空現有選項，只保留預設提示
       selectElement.innerHTML = '<option value="" disabled selected>請選擇治療師</option>';
       
-      // 動態加入後端回傳的名單
       therapists.forEach(function(name) {
         const option = document.createElement('option');
         option.value = name;
         option.textContent = name;
         selectElement.appendChild(option);
       });
-      console.log("治療師名單已更新");
     })
     .withFailureHandler(function(err) {
       console.error("無法載入治療師名單", err);
     })
-    .getTherapistList(); // 呼叫 Code.gs 的函式
+    .getTherapistList(); 
 }
 
 function loadSystemStaff() {
@@ -94,9 +91,14 @@ function loadSystemStaff() {
       const el = document.getElementById(id);
       if(el) { el.innerHTML = `<option value="" disabled selected>${placeholder}</option>` + list.map(n => `<option value="${n}">${n}</option>`).join(''); }
     };
+    
     setOptions('selectDoctor', staff.doctors, '請選擇醫師');
+    
+    // ★★★ 修改處 1：預設選取 "謝炳賢" ★★★
+    const docEl = document.getElementById('selectDoctor');
+    if(docEl) docEl.value = "謝炳賢";
+
     setOptions('selectNurse', staff.nurses, '請選擇護理師');
-    // 注意：addTherapist 是「新增個案」Modal 中的欄位，這裡沿用舊邏輯
     setOptions('addTherapist', staff.therapists, '請選擇治療師'); 
     setOptions('selectMaintStaff', staff.allStaff, '請選擇執行人員');
     setOptions('selectMaintItem', staff.maintItems, '請選擇項目');
@@ -210,7 +212,6 @@ function submitNewClient() {
   else data.gender = '其他';
 
   btn.disabled = true;
-  /* ★★★ 修改處：animate-spin -> animate-spin-reverse ★★★ */
   btn.innerHTML = '<span class="material-icons-outlined animate-spin-reverse">sync</span> 建立中...';
 
   google.script.run
@@ -278,7 +279,20 @@ function renderBasicInfo() {
     const el = document.getElementById(domId);
     if(el) {
        if(domId === 'display-notes' && (!currentClient[dbKey] || currentClient[dbKey] === '')) continue;
-       el.textContent = currentClient[dbKey] || '--';
+       
+       let displayValue = currentClient[dbKey] || '--';
+
+       // ★★★ 修改處 2：電話格式化 (09xx-xxx-xxx) ★★★
+       if ((domId === 'display-phone' || domId === 'display-emergency-phone') && displayValue !== '--') {
+          // 移除所有非數字
+          const cleanNum = displayValue.toString().replace(/\D/g, '');
+          // 若為 10 碼且以 09 開頭，則進行格式化
+          if (cleanNum.length === 10 && cleanNum.startsWith('09')) {
+              displayValue = cleanNum.replace(/(\d{4})(\d{3})(\d{3})/, '$1-$2-$3');
+          }
+       }
+
+       el.textContent = displayValue;
     }
   }
   const statusEl = document.getElementById('display-status');
@@ -300,7 +314,6 @@ function handleSearch(keyword) {
   const kw = keyword || document.getElementById('searchInput').value.trim();
   if (!kw) return;
   const container = document.getElementById('searchResults');
-  /* ★★★ 修改處：animate-spin -> animate-spin-reverse ★★★ */
   container.innerHTML = '<div class="text-center py-8 text-slate-400 flex flex-col items-center gap-2"><span class="material-icons-outlined animate-spin-reverse">sync</span><span>搜尋中...</span></div>';
 
   google.script.run.withSuccessHandler(data => {
@@ -341,11 +354,8 @@ function selectClient(c) {
   document.getElementById('headerClientDob').textContent = c['生日'];
   document.querySelectorAll('.auto-fill-id').forEach(el => el.value = c['個案編號']);
 
-  // ★ 修正二：自動帶入負責治療師
   const therapistSelect = document.getElementById('inputTherapist');
   if (therapistSelect) {
-      // 嘗試選取該個案的負責治療師，若該治療師不在清單中(value不匹配)則會變為空或保持原狀(視瀏覽器行為)
-      // 若清單已載入，此操作會生效
       therapistSelect.value = c['負責治療師'] || "";
   }
   
@@ -354,9 +364,7 @@ function selectClient(c) {
       itemSelect.value = "1600";
   }
   navTo('treatment');
-}
-
-// ==========================================
+}// ==========================================
 // 編輯功能相關函式
 // ==========================================
 
@@ -463,7 +471,7 @@ function cancelEdit(type) {
   } else {
       document.getElementById(type + 'Form').reset();
       
-      // ★ 修正二：取消編輯後，若為治療紀錄，自動帶回負責治療師
+      // 取消編輯後，若為治療紀錄，自動帶回負責治療師
       if (type === 'treatment' && currentClient) {
           document.getElementById('inputTherapist').value = currentClient['負責治療師'] || "";
       }
@@ -525,7 +533,7 @@ function submitForm(type) {
   if(safeBtn) btn = safeBtn;
 
   const ot = btn ? btn.innerHTML : "儲存";
-  /* ★★★ 修改處：animate-spin -> animate-spin-reverse ★★★ */
+  
   if(btn) { btn.disabled = true; btn.innerHTML = '<span class="material-icons-outlined animate-spin-reverse">sync</span> 處理中...'; }
 
   const onSuccess = (res, formId, reloadFunc) => {
@@ -539,7 +547,7 @@ function submitForm(type) {
              if(formId) document.getElementById(formId).reset();
              document.querySelectorAll('.auto-fill-id').forEach(el => el.value = clientId);
              
-             // ★ 修正二：新增成功並重置表單後，自動帶回負責治療師
+             // 新增成功並重置表單後，自動帶回負責治療師
              if (formId === 'treatmentForm' && currentClient) {
                  document.getElementById('inputTherapist').value = currentClient['負責治療師'] || "";
              }
@@ -762,7 +770,9 @@ function loadMaintenanceHistory() {
       </div>`;
     }).join('');
   }).getMaintenanceHistory(currentClient['個案編號']);
-}function loadDoctorHistory() {
+}
+
+function loadDoctorHistory() {
   const c = document.getElementById('doctorHistoryList'); c.innerHTML = '<div class="text-center py-10 text-slate-400">讀取中...</div>';
   google.script.run.withSuccessHandler(logs => {
     if(!logs || !logs.length) { c.innerHTML = '<div class="py-12 text-center text-slate-300 bg-white rounded-[2rem] border border-slate-100">尚無看診紀錄</div>'; return; }
@@ -826,7 +836,6 @@ function loadMaintenanceHistory() {
 // 個案總覽
 // ==========================================
 function loadOverviewData() {
-  /* ★★★ 修改處：animate-spin -> animate-spin-reverse ★★★ */
   const container = document.getElementById('overviewListContainer'); container.innerHTML = '<div class="text-center py-12 text-slate-400 flex flex-col items-center gap-2"><span class="material-icons-outlined animate-spin-reverse">sync</span><span>讀取個案歷程中...</span></div>';
   google.script.run.withSuccessHandler(data => {
       allOverviewRecords = data || [];
@@ -972,9 +981,9 @@ function getFilteredOverviewData() {
     return '';
   }).join('');
 
-  // --- ★ 修正三：列印表格生成 (含標題與姓名) ---
+  // --- 列印表格生成 (含標題與姓名) ---
   const catName = { 'all': '全部', 'doctor': '醫師看診', 'treatment': '物理治療', 'maintenance': '保養項目', 'tracking': '個管追蹤' };
-  const clientName = currentClient ? currentClient['姓名'] : ''; // 取得個案姓名
+  const clientName = currentClient ? currentClient['姓名'] : ''; 
 
   let tableHtml = `
     <!-- 標題區塊：標題置中，姓名靠右 -->
@@ -1058,7 +1067,6 @@ function loadClientImages() {
   const container = document.getElementById('imageGalleryContainer');
   const countText = document.getElementById('img-stats-text');
 
-  /* ★★★ 修改處：animate-spin -> animate-spin-reverse ★★★ */
   container.innerHTML = '<div class="col-span-full flex flex-col items-center justify-center py-20 text-slate-300"><span class="material-icons-outlined text-4xl animate-spin-reverse mb-3">sync</span><p>讀取影像中...</p></div>';
   if(countText) countText.textContent = '讀取中...';
 
@@ -1139,7 +1147,6 @@ function startUpload() {
   const remark = document.getElementById('fileRemark').value;
 
   btn.disabled = true;
-  /* ★★★ 修改處：animate-spin -> animate-spin-reverse ★★★ */
   btn.innerHTML = '<span class="material-icons-outlined animate-spin-reverse mr-2">sync</span>上傳中...';
 
   let successCount = 0;
@@ -1255,7 +1262,7 @@ function scrollToTop() {
 }
 
 // ==========================================
-// ★★★ 自訂通知 (Custom Notification) ★★★
+// 自訂通知
 // ==========================================
 
 function showNotification(title, message, type = 'info') {
