@@ -142,7 +142,7 @@ function navTo(viewName) {
   }
   document.getElementById('btn-' + viewName)?.classList.add('active');
 
-  const titles = { 'search':'首頁','basic':'基本資料','images':'影像總覽','treatment':'治療紀錄','maintenance':'保養項目','doctor':'醫師看診','tracking':'個管追蹤','overview':'個案總覽' };
+  const titles = { 'search':'首頁','basic':'基本資料','images':'影像總覽','treatment':'物理治療','maintenance':'保養項目','doctor':'醫師看診','tracking':'個管追蹤','overview':'個案總覽' };
   document.getElementById('pageTitle').textContent = titles[viewName] || '康飛運醫';
 
   if (currentClient) {
@@ -916,7 +916,7 @@ function renderOverviewList() {
           <div class="${headerClass}">
               <div class="flex items-center gap-3">
                   <span class="${badgeClass} bg-emerald-50 text-emerald-600">${i.date}</span>
-                  <span class="text-sm font-black text-slate-700">治療紀錄</span>
+                  <span class="text-sm font-black text-slate-700">物理治療</span>
                   ${i.item ? `<span class="text-[10px] font-bold text-slate-500 bg-slate-100 px-2 py-0.5 rounded border border-slate-200">${i.item}</span>` : ''}
               </div>
               <div class="text-xs font-bold text-slate-500 flex items-center gap-1">
@@ -972,7 +972,7 @@ function renderOverviewList() {
   }).join('');
 
   // --- 列印表格生成 ---
-  const catName = { 'all': '全部', 'doctor': '醫師看診', 'treatment': '治療紀錄', 'maintenance': '保養項目', 'tracking': '個管追蹤' };
+  const catName = { 'all': '全部', 'doctor': '醫師看診', 'treatment': '物理治療', 'maintenance': '保養項目', 'tracking': '個管追蹤' };
   let tableHtml = `
     <div style="margin-bottom: 10px; font-weight: bold; font-size: 12px; border-bottom: 1px solid #000; padding-bottom: 5px;">
         列印日期：${new Date().toISOString().split('T')[0]} ｜ 篩選條件：${catName[currentOverviewCategory] || '全部'} ｜ 資料筆數：${f.length}
@@ -1006,7 +1006,7 @@ function renderOverviewList() {
        if(i.remark && i.remark!=='--') content += `<br><b>[備註]</b> ${i.remark}`;
     }
     else if (i.category === 'treatment') {
-       typeName = '治療紀錄';
+       typeName = '物理治療';
        if(i.item) typeName += `<br><small>(${i.item})</small>`;
        if(i.complaint) content += `<b>[主訴]</b> ${i.complaint}<br>`;
        content += `${i.content}`;

@@ -142,7 +142,7 @@
       <div class="pb-2 px-3 text-[10px] font-bold text-slate-500 uppercase tracking-widest">MENU</div>
       <button id="btn-basic" onclick="navTo('basic')" class="nav-btn w-full flex items-center gap-3 px-4 py-2.5 rounded-xl transition hover:bg-slate-800 text-left">基本資料</button>
       <button id="btn-images" onclick="navTo('images')" class="nav-btn w-full flex items-center gap-3 px-4 py-2.5 rounded-xl transition hover:bg-slate-800 text-left">影像總覽</button>
-      <button id="btn-treatment" onclick="navTo('treatment')" class="nav-btn w-full flex items-center gap-3 px-4 py-2.5 rounded-xl transition hover:bg-slate-800 text-left">治療紀錄</button>
+      <button id="btn-treatment" onclick="navTo('treatment')" class="nav-btn w-full flex items-center gap-3 px-4 py-2.5 rounded-xl transition hover:bg-slate-800 text-left">物理治療</button>
       <button id="btn-maintenance" onclick="navTo('maintenance')" class="nav-btn w-full flex items-center gap-3 px-4 py-2.5 rounded-xl transition hover:bg-slate-800 text-left">保養項目</button>
       <button id="btn-doctor" onclick="navTo('doctor')" class="nav-btn w-full flex items-center gap-3 px-4 py-2.5 rounded-xl transition hover:bg-slate-800 text-left">醫師看診</button>
       <button id="btn-tracking" onclick="navTo('tracking')" class="nav-btn w-full flex items-center gap-3 px-4 py-2.5 rounded-xl transition hover:bg-slate-800 text-left">個管追蹤</button>
@@ -586,10 +586,10 @@
            <div class="flex flex-col xl:flex-row justify-between items-start xl:items-center gap-4">
               <div class="flex flex-wrap items-center gap-2 bg-slate-50 p-1 rounded-2xl border border-slate-100">
                  <button onclick="setOverviewCategory('all')" id="filter-btn-all" class="px-4 py-2 rounded-xl text-sm font-bold bg-white text-slate-800 shadow-sm ring-1 ring-slate-200 transition">全部</button>
+                 <button onclick="setOverviewCategory('treatment')" id="filter-btn-treatment" class="px-4 py-2 rounded-xl text-sm font-bold text-slate-500 hover:bg-white hover:text-slate-700 hover:shadow-sm transition"><span class="material-icons-outlined text-[16px] align-middle mr-1">healing</span>物理治療</button>
                  <button onclick="setOverviewCategory('doctor')" id="filter-btn-doctor" class="px-4 py-2 rounded-xl text-sm font-bold text-slate-500 hover:bg-white hover:text-slate-700 hover:shadow-sm transition"><span class="material-icons-outlined text-[16px] align-middle mr-1">medical_services</span>醫師看診</button>
                  <button onclick="setOverviewCategory('maintenance')" id="filter-btn-maintenance" class="px-4 py-2 rounded-xl text-sm font-bold text-slate-500 hover:bg-white hover:text-slate-700 hover:shadow-sm transition"><span class="material-icons-outlined text-[16px] align-middle mr-1">stars</span>保養項目</button>
                  <button onclick="setOverviewCategory('tracking')" id="filter-btn-tracking" class="px-4 py-2 rounded-xl text-sm font-bold text-slate-500 hover:bg-white hover:text-slate-700 hover:shadow-sm transition"><span class="material-icons-outlined text-[16px] align-middle mr-1">fact_check</span>個管追蹤</button>
-                 <button onclick="setOverviewCategory('treatment')" id="filter-btn-treatment" class="px-4 py-2 rounded-xl text-sm font-bold text-slate-500 hover:bg-white hover:text-slate-700 hover:shadow-sm transition"><span class="material-icons-outlined text-[16px] align-middle mr-1">healing</span>治療紀錄</button>
               </div>
               <div class="flex items-center gap-3 w-full xl:w-auto bg-slate-50 p-2 rounded-2xl border border-slate-100 flex-shrink-0">
                  <span class="text-xs font-bold text-slate-400 pl-2 hidden md:inline">日期</span>

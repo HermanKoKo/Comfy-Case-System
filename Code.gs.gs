@@ -594,7 +594,7 @@ function getCaseOverviewData(clientId) {
             id: 'T-' + formatDateForJSON(row[idxDate]), 
             date: formatDateForJSON(row[idxDate]),
             category: 'treatment', 
-            categoryName: '治療紀錄',
+            categoryName: '物理治療',
             staff: row[idxStaff],
             item: (idxItem > -1) ? row[idxItem] : "",
             complaint: (idxComplaint > -1) ? row[idxComplaint] : "",
