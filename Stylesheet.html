@@ -40,19 +40,15 @@
   .flatpickr-calendar {
     font-family: 'Noto Sans TC', sans-serif !important;
     border: none !important;
-    border-radius: 16px !important; /* 稍微縮小圓角以符合緊湊感 */
-    /* ★★★ 修正重點：減少內距，讓整體看起來更緊湊，不再有大量留白 */
+    border-radius: 16px !important;
     padding: 8px !important; 
-    width: auto !important; /* 讓寬度自適應內容 */
+    width: auto !important;
     background: #fff !important;
     box-shadow: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1) !important;
-    
-    /* 確保浮動層級最高 */
     z-index: 99999 !important;
-    margin-top: 8px !important; /* 與輸入框保持一點距離 */
+    margin-top: 8px !important;
   }
   
-  /* 標題區域微調 */
   .flatpickr-months {
     padding-top: 5px !important;
     padding-bottom: 5px !important;
@@ -66,7 +62,7 @@
   .flatpickr-current-month span.cur-month {
     font-weight: 700 !important;
     color: #334155 !important;
-    margin-right: 5px !important; /* 月份與年份的間距 */
+    margin-right: 5px !important;
   }
   
   .flatpickr-current-month input.cur-year {
@@ -74,7 +70,6 @@
     color: #334155 !important;
   }
 
-  /* 星期標題 */
   .flatpickr-weekdays {
     margin-top: 5px !important;
   }
@@ -85,22 +80,21 @@
     font-size: 13px !important;
   }
 
-  /* 日期格子 */
   .flatpickr-day {
-    border-radius: 10px !important; /* 圓角方形 */
+    border-radius: 10px !important;
     border: 1px solid transparent !important;
     color: #475569 !important;
     font-weight: 500 !important;
     font-size: 14px !important;
-    margin: 2px !important; /* 減少格子間距 */
-    height: 36px !important; /* 固定高度，避免過大 */
+    margin: 2px !important;
+    height: 36px !important;
     line-height: 36px !important;
     width: 36px !important;
     max-width: 36px !important;
     transition: all 0.2s !important;
   }
 
-  /* === 選取狀態樣式 (Solid Green) - 這是「被選中」的日期 === */
+  /* === 選取狀態樣式 (Solid Green) === */
   .flatpickr-day.selected, 
   .flatpickr-day.startRange, 
   .flatpickr-day.endRange, 
@@ -119,35 +113,31 @@
   .flatpickr-day.selected.nextMonthDay, 
   .flatpickr-day.startRange.nextMonthDay, 
   .flatpickr-day.endRange.nextMonthDay {
-    background: #10b981 !important; /* 實心綠色 */
+    background: #10b981 !important;
     border-color: #10b981 !important; 
     color: #fff !important; 
     box-shadow: 0 4px 6px -1px rgba(16, 185, 129, 0.3);
   }
 
-  /* === 今天樣式 (Today) - 這是「今天」但未被選中時的樣式 === */
-  /* ★★★ 修正處：讓今天呈現綠色外框 (類似圖 1 的風格) */
+  /* === 今天樣式 (Today) === */
   .flatpickr-day.today { 
     border: 2px solid #10b981 !important; 
     color: #10b981 !important;
     background: transparent !important;
   }
   
-  /* 如果「今天」同時被「選中」，則使用實心綠 */
   .flatpickr-day.today.selected {
     background: #10b981 !important;
     color: #fff !important;
     border-color: #10b981 !important;
   }
 
-  /* 滑鼠懸停 */
   .flatpickr-day:hover {
     background: #ecfdf5 !important; 
     color: #059669 !important;
     border-color: transparent !important;
   }
 
-  /* 綠點指示 (用於顯示有事件的日期) */
   .flatpickr-day.has-record::after {
     content: ''; position: absolute; bottom: 3px; width: 4px; height: 4px;
     background-color: #10b981; border-radius: 50%; left: 0; right: 0; margin: 0 auto;
@@ -156,7 +146,7 @@
     background-color: #fff;
   }
 
-  /* === 側邊欄日曆樣式 (保持並優化) === */
+  /* === 側邊欄日曆樣式 === */
   .cal-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; }
   .cal-title-btn { font-weight: 700; color: #334155; font-size: 0.9rem; padding: 6px 12px; border-radius: 8px; cursor: pointer; transition: all 0.2s; display: flex; align-items: center; gap: 4px; }
   .cal-title-btn:hover { background-color: #f1f5f9; color: #10b981; }
@@ -197,5 +187,20 @@
   input[type="date"]::-webkit-calendar-picker-indicator {
       display: none;
       -webkit-appearance: none;
+  }
+
+  /* === ★★★ 新增：自訂 Modal 動畫 ★★★ === */
+  .modal-animate-in {
+    animation: modalIn 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  }
+
+  @keyframes modalIn {
+    0% { opacity: 0; transform: scale(0.95); }
+    100% { opacity: 1; transform: scale(1); }
+  }
+
+  /* 自訂文字陰影 (用於 Lightbox 標題) */
+  .text-shadow-sm {
+    text-shadow: 0 1px 2px rgba(0,0,0,0.5);
   }
 </style>

@@ -17,7 +17,6 @@
       if (typeof flatpickr !== "undefined") {
         flatpickr.setDefaults({
           locale: "zh_tw",
-          // ★★★ 修正處：設定為自動置中，避免靠左或靠右超出邊界
           position: "auto center",
           disableMobile: "true"
         });
@@ -30,7 +29,6 @@
   
   <style>
     /* 其他通用樣式保持不變 */
-    /* ★★★ 修正處：確保月曆浮在最上層，壓過所有卡片和側邊欄 */
     .flatpickr-calendar { z-index: 99999 !important; }
 
     /* 列印樣式 */
@@ -74,7 +72,6 @@
       animation: bounce-in 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
     }
 
-    /* 針對嵌入式 (static) 月曆的樣式微調 (保留以防萬一) */
     .flatpickr-calendar.static {
         margin-top: 5px !important; 
         box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05) !important;
@@ -262,7 +259,6 @@
                  </div>
                  
                  <input type="hidden" name="個案編號" class="auto-fill-id">
-                 <!-- ★ 修改：新增隱藏的編輯 ID 欄位 -->
                  <input type="hidden" id="edit_id_treatment" name="record_id" value="">
                  
                  <div class="grid grid-cols-1 md:grid-cols-3 gap-2">
@@ -302,7 +298,6 @@
                    <textarea id="inputNextPlan" class="w-full px-5 py-2.5 bg-slate-50 border border-slate-100 rounded-2xl outline-none focus:border-emerald-500 transition-all h-14 resize-none"></textarea>
                  </div>
                  
-                 <!-- ★ 修改：新增取消編輯按鈕 (預設隱藏) -->
                  <div id="edit-cancel-treatment" class="hidden mb-1">
                     <button type="button" onclick="cancelEdit('treatment')" class="w-full bg-slate-400 hover:bg-slate-500 text-white font-bold py-2 rounded-2xl transition shadow-sm border border-slate-400">
                         取消編輯模式
@@ -340,7 +335,6 @@
           </div>
           <form id="maintenanceForm" class="p-5 space-y-3">
             <input type="hidden" name="個案編號" class="auto-fill-id">
-            <!-- ★ 修改：新增隱藏的編輯 ID 欄位 -->
             <input type="hidden" id="edit_id_maintenance" name="record_id" value="">
 
             <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -387,7 +381,6 @@
                <textarea name="備註" rows="3" class="w-full px-4 py-2 bg-white border border-slate-200 rounded-3xl focus:border-orange-500 outline-none transition-all resize-none" placeholder="請輸入保養相關備註..."></textarea>
             </div>
             <div class="flex justify-end items-center pt-2 gap-4">
-              <!-- ★ 修改：新增取消編輯按鈕 -->
               <div id="edit-cancel-maintenance" class="hidden">
                   <button type="button" onclick="cancelEdit('maintenance')" class="text-slate-400 font-bold hover:text-slate-600 underline transition">取消編輯</button>
               </div>
@@ -422,7 +415,6 @@
             <h3 class="text-lg font-bold text-violet-600 mb-3 border-b border-violet-50 pb-2">新增紀錄</h3>
             <form id="trackingForm" onsubmit="event.preventDefault(); submitForm('tracking');">
               <input type="hidden" name="個案編號" class="auto-fill-id">
-              <!-- ★ 修改：新增隱藏的編輯 ID 欄位 -->
               <input type="hidden" id="edit_id_tracking" name="record_id" value="">
 
               <div class="mb-2 space-y-1">
@@ -450,7 +442,6 @@
                           class="w-full px-4 py-2 bg-slate-50 border border-slate-200 rounded-2xl outline-none focus:border-violet-500 transition-all resize-none"></textarea>
               </div>
 
-              <!-- ★ 修改：新增取消編輯按鈕 -->
               <div id="edit-cancel-tracking" class="hidden mb-2">
                    <button type="button" onclick="cancelEdit('tracking')" class="w-full bg-slate-400 hover:bg-slate-500 text-white font-bold py-2 rounded-2xl transition shadow-sm border border-slate-400">
                         取消編輯模式
@@ -492,7 +483,6 @@
           </div>
           <form id="doctorForm" class="p-5 space-y-3">
             <input type="hidden" name="個案編號" class="auto-fill-id">
-            <!-- ★ 修改：新增隱藏的編輯 ID 欄位 -->
             <input type="hidden" id="edit_id_doctor" name="record_id" value="">
 
             <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -528,7 +518,6 @@
             </div>
             
             <div class="flex justify-end pt-3 border-t border-slate-50 gap-4">
-               <!-- ★ 修改：新增取消編輯按鈕 -->
                <div id="edit-cancel-doctor" class="hidden self-center">
                   <button type="button" onclick="cancelEdit('doctor')" class="text-slate-400 font-bold hover:text-slate-600 underline transition">取消編輯</button>
                </div>
@@ -576,7 +565,6 @@
            </div>
         </div>
         <div id="overviewListContainer" class="min-h-[300px] space-y-4">
-           <!-- 加上 print:hidden -->
            <div class="flex flex-col items-center justify-center py-20 bg-white rounded-[2.5rem] border-2 border-dashed border-slate-100 print:hidden">
               <div class="w-16 h-16 bg-slate-50 rounded-full flex items-center justify-center mb-4">
                  <span class="material-icons-outlined text-3xl text-slate-300">manage_search</span>
@@ -588,7 +576,7 @@
     </div>
   </main>
 
-  <!-- Modal: 新增個案 (已加上 no-print) -->
+  <!-- Modal: 新增個案 -->
   <div id="addClientModal" class="hidden fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 no-print">
      <div class="bg-white w-full max-w-3xl rounded-[2.5rem] overflow-hidden shadow-2xl">
         <div class="px-6 py-4 border-b border-slate-100 flex justify-between items-center bg-white sticky top-0 z-10">
@@ -596,7 +584,6 @@
            <button onclick="closeModal('addClientModal')" class="text-slate-300 hover:text-slate-500 transition text-3xl leading-none">&times;</button>
         </div>
         <form id="addClientForm" class="p-6 space-y-4 max-h-[80vh] overflow-y-auto custom-scrollbar">
-           <!-- ★ 第一排：姓名、生日 -->
            <div class="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-4">
               <div class="flex items-center gap-3">
                  <label class="w-28 shrink-0 text-sm font-bold text-slate-500 text-right">姓名 <span class="text-red-400">*</span></label>
@@ -608,7 +595,6 @@
               </div>
            </div>
 
-           <!-- ★ 第二排：身分證、電話 -->
            <div class="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-4">
               <div class="flex items-center gap-3">
                  <label class="w-28 shrink-0 text-sm font-bold text-slate-500 text-right">身分證字號 <span class="text-red-400">*</span></label>
@@ -620,7 +606,6 @@
               </div>
            </div>
 
-           <!-- ★ 第三排：緊急聯絡人、緊急聯絡電話 (已上移) -->
            <div class="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-4">
               <div class="flex items-center gap-3">
                  <label class="w-28 shrink-0 text-sm font-bold text-slate-500 text-right">緊急聯絡人</label>
@@ -632,7 +617,6 @@
               </div>
            </div>
 
-           <!-- ★ 第四排：負責治療師 (已下移) -->
            <div class="flex items-center gap-3">
               <label class="w-28 shrink-0 text-sm font-bold text-slate-500 text-right">負責治療師</label>
               <div class="relative flex-1">
@@ -643,7 +627,6 @@
               </div>
            </div>
 
-           <!-- ★ 第五排：慢性病 -->
            <div>
               <label class="text-xs font-bold text-slate-400 ml-1 block mb-1">慢性病或特殊疾病</label>
               <textarea id="addChronic" rows="3" class="w-full px-4 py-3 bg-slate-50 border border-slate-100 rounded-xl outline-none focus:bg-white focus:border-emerald-500 transition-all resize-none"></textarea>
@@ -658,7 +641,7 @@
      </div>
   </div>
 
-  <!-- Modal: 上傳影像 (已加上 no-print) -->
+  <!-- Modal: 上傳影像 -->
   <div id="uploadImageModal" class="hidden fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[60] flex items-center justify-center p-4 no-print">
      <div class="bg-white w-full max-w-lg rounded-[2.5rem] overflow-hidden shadow-2xl relative">
         <div class="p-6 border-b border-slate-100 flex justify-between items-center">
@@ -667,7 +650,6 @@
         </div>
         
         <div class="p-6 space-y-4">
-           <!-- 上傳內容保持不變 -->
            <div onclick="document.getElementById('uploadInput').click()" class="relative w-full h-40 rounded-3xl border-2 border-dashed border-slate-200 bg-slate-50 hover:bg-slate-100 transition flex flex-col items-center justify-center group cursor-pointer">
               <input type="file" id="uploadInput" accept="image/*" multiple class="hidden" onchange="previewFiles(this)">
               <div class="p-4 bg-white rounded-full shadow-sm mb-2 group-hover:scale-110 transition text-emerald-500">
@@ -692,9 +674,8 @@
      </div>
   </div>
   
-  <!-- Lightbox 燈箱 (保持不變) -->
+  <!-- Lightbox 燈箱 -->
   <div id="imageLightbox" class="fixed inset-0 z-[100] hidden bg-black/95 backdrop-blur-sm transition-opacity duration-300" onclick="if(event.target === this) closeLightbox()">
-      <!-- ... Lightbox 內容 ... -->
       <button onclick="closeLightbox()" class="absolute top-6 right-6 text-white/80 hover:text-white transition p-2 bg-black/20 rounded-full z-[110]">
           <span class="material-icons-outlined text-4xl">close</span>
       </button>
@@ -715,7 +696,6 @@
   
   <!-- Script Override -->
   <script>
-    // ★ 修改：renderTreatmentList 加入編輯按鈕邏輯
     function renderTreatmentList(logs) {
       const c = document.getElementById('historyListContainer');
       const countBadge = document.getElementById('treatmentHistoryCount');
@@ -730,7 +710,6 @@
       }
       
       c.innerHTML = logs.map(l => {
-        // ★ 建立安全的資料字串，供編輯函式使用
         const dataStr = encodeURIComponent(JSON.stringify(l));
         return `
         <div class="bg-white p-5 rounded-[2rem] shadow-sm border border-slate-100 card-hover relative overflow-hidden group print:break-inside-avoid print:border print:border-slate-200 print:shadow-none print:rounded-none">
@@ -739,7 +718,6 @@
                 <div class="flex justify-between items-center mb-3">
                     <div class="flex items-center gap-2">
                         <span class="text-xs font-bold text-slate-500 font-mono bg-slate-100 px-2 py-1 rounded-lg print:bg-white print:border print:border-slate-200">${l['治療日期']}</span>
-                        <!-- ★★★ 新增編輯按鈕 ★★★ -->
                         <button onclick="startEdit('treatment', JSON.parse(decodeURIComponent('${dataStr}')))" class="text-slate-400 hover:text-emerald-500 transition px-2 print:hidden" title="編輯紀錄">
                             <span class="material-icons-outlined text-sm">edit</span>
                         </button>
@@ -781,15 +759,9 @@
       }).join('');
     }
     
-    // ==========================================
-    // 回到頂部按鈕邏輯
-    // ==========================================
-    // 監聽內容區域的捲動事件
     document.getElementById('contentArea').addEventListener('scroll', function() {
       const btn = document.getElementById('btnBackToTop');
       if (!btn) return;
-      
-      // 當捲動超過 300px 時顯示按鈕
       if (this.scrollTop > 300) {
         btn.classList.remove('hidden');
         btn.classList.add('animate-bounce-in');
@@ -811,5 +783,34 @@
   <button id="btnBackToTop" onclick="scrollToTop()" class="hidden fixed bottom-8 right-8 z-50 bg-slate-700 text-white w-12 h-12 rounded-full shadow-lg hover:bg-slate-600 hover:shadow-xl hover:-translate-y-1 transition-all duration-300 flex items-center justify-center print:hidden">
     <span class="material-icons-outlined text-2xl">arrow_upward</span>
   </button>
+
+  <!-- ★★★ 新增：自定義通知 Modal ★★★ -->
+  <div id="custom-modal" class="hidden fixed inset-0 z-[200] flex items-center justify-center px-4 bg-slate-900/60 backdrop-blur-sm transition-opacity duration-300 no-print">
+      <div class="bg-white rounded-[2.5rem] shadow-2xl max-w-sm w-full p-6 transform transition-all scale-100 relative overflow-hidden">
+          <!-- 背景裝飾圓形 -->
+          <div class="absolute -top-10 -right-10 w-32 h-32 bg-slate-50 rounded-full z-0"></div>
+
+          <div class="relative z-10 text-center space-y-4">
+              <!-- 動態圖示區域 -->
+              <div id="modal-icon-container" class="mx-auto flex items-center justify-center w-16 h-16 rounded-full bg-slate-100 mb-2">
+                  <span id="modal-icon" class="material-icons-outlined text-3xl text-slate-500">info</span>
+              </div>
+
+              <!-- 文字內容 -->
+              <div class="space-y-2">
+                  <h3 id="modal-title" class="text-xl font-black text-slate-800 tracking-tight">提示</h3>
+                  <p id="modal-message" class="text-slate-500 text-sm font-medium leading-relaxed">請確認操作內容。</p>
+              </div>
+
+              <!-- 按鈕 -->
+              <div class="pt-2">
+                   <button id="modal-confirm-btn" onclick="closeNotification()" class="w-full py-3.5 px-4 bg-emerald-500 hover:bg-emerald-600 text-white font-bold rounded-2xl shadow-lg shadow-emerald-500/20 transition-all active:scale-95">
+                      確定
+                   </button>
+              </div>
+          </div>
+      </div>
+  </div>
+
 </body>
 </html>

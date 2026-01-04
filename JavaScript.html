@@ -99,7 +99,10 @@ function loadTreatmentItems() {
 // 導覽與頁面切換
 // ==========================================
 function navTo(viewName) {
-  if (!currentClient && viewName !== 'search') { alert("請先選取個案。"); return; }
+  if (!currentClient && viewName !== 'search') { 
+      showNotification('提示', '請先選取個案以進行操作。', 'info'); 
+      return; 
+  }
   
   const views = ['search', 'basic', 'images', 'treatment', 'maintenance', 'doctor', 'tracking', 'overview'];
   views.forEach(v => {
@@ -166,8 +169,14 @@ function submitNewClient() {
     chronic: document.getElementById('addChronic').value.trim()
   };
 
-  if (!data.name || !data.dob || !data.idNo || !data.phone) { alert("請填寫所有必填欄位 (*)！"); return; }
-  if (data.idNo.length < 2) { alert("身分證字號格式錯誤"); return; }
+  if (!data.name || !data.dob || !data.idNo || !data.phone) { 
+      showNotification('資料缺漏', '請填寫所有必填欄位 (*)', 'error'); 
+      return; 
+  }
+  if (data.idNo.length < 2) { 
+      showNotification('格式錯誤', '身分證字號格式錯誤', 'error'); 
+      return; 
+  }
   
   const secondChar = data.idNo.charAt(1);
   if (secondChar === '1') data.gender = '男';
@@ -181,10 +190,21 @@ function submitNewClient() {
     .withSuccessHandler(function(res) {
       btn.disabled = false;
       btn.innerHTML = originalText;
-      if (res.success) { alert("個案建立成功！"); document.getElementById('addClientForm').reset(); closeModal('addClientModal'); selectClient(res.fullData); } 
-      else { alert("建立失敗：" + res.message); }
+      if (res.success) { 
+          showNotification('成功', '個案建立成功！', 'success'); 
+          document.getElementById('addClientForm').reset(); 
+          closeModal('addClientModal'); 
+          selectClient(res.fullData); 
+      } 
+      else { 
+          showNotification('建立失敗', res.message, 'error'); 
+      }
     })
-    .withFailureHandler(function(e) { btn.disabled = false; btn.innerHTML = originalText; alert("系統錯誤：" + e.message); })
+    .withFailureHandler(function(e) { 
+        btn.disabled = false; 
+        btn.innerHTML = originalText; 
+        showNotification('系統錯誤', e.message, 'error'); 
+    })
     .createNewClient(data);
 }
 
@@ -304,55 +324,37 @@ function selectClient(c) {
 // ★★★ 編輯功能相關函式 (修復 ID 判斷) ★★★
 // ==========================================
 
-/**
- * 智慧尋找 ID 的輔助函式
- * 用來解決 Google Sheets 標題大小寫不一致的問題 (例如 紀錄id vs 紀錄ID)
- */
 function findIdFromData(data) {
     if (!data) return "";
-    
-    // 1. 常見的 ID 欄位名稱 (精確比對)
     const candidates = ['紀錄id', '紀錄ID', '追蹤ID', '追蹤id', '影像ID', '影像id', 'id', 'ID', 'Id', 'RecordId', 'record_id'];
     for (const key of candidates) {
         if (data[key] !== undefined && data[key] !== "") return data[key];
     }
-    
-    // 2. 模糊比對 (忽略大小寫與空白)
     const keys = Object.keys(data);
     for (const key of keys) {
         const cleanKey = key.replace(/\s+/g, '').toLowerCase();
-        // 只要欄位名稱包含 'id' 且不是 '個案編號' 這種，通常就是主鍵
         if (cleanKey === '紀錄id' || cleanKey === '追蹤id' || cleanKey === '影像id' || cleanKey === 'id') {
             return data[key];
         }
     }
-    
-    // 3. 如果資料是陣列 (Array) 且有值，假設第一欄是 ID (某些舊函式可能回傳陣列)
     if (Array.isArray(data) && data.length > 0) return data[0];
-    
     return "";
 }
 
-/**
- * 啟動編輯模式
- */
 function startEdit(type, data) {
-  console.log("Start Edit Data:", data); // 除錯用：在 Console 顯示傳入的資料
+  console.log("Start Edit Data:", data); 
 
-  // ★ 1. 使用智慧搜尋取得 ID
   let id = findIdFromData(data);
   
   if (!id) {
-     alert("系統錯誤：無法讀取此筆紀錄的 ID。請確認資料庫中是否有「紀錄id」或「追蹤ID」欄位。");
+     showNotification('資料錯誤', '無法讀取此筆紀錄的 ID。請確認資料庫中是否有「紀錄id」或「追蹤ID」欄位。', 'error');
      console.error("ID not found in object:", data);
      return;
   }
   
-  // 設定隱藏欄位
   const idField = document.getElementById('edit_id_' + type);
   if (idField) idField.value = id;
 
-  // 2. 顯示取消按鈕 & 改變提交按鈕文字
   const cancelDiv = document.getElementById('edit-cancel-' + type);
   if (cancelDiv) cancelDiv.classList.remove('hidden');
 
@@ -366,7 +368,6 @@ function startEdit(type, data) {
     submitBtn.classList.add('bg-amber-500', 'hover:bg-amber-600', 'text-white');
   }
 
-  // 3. 回填資料 & 捲動
   try {
     if (type === 'treatment') {
         if(document.getElementById('treatmentDate')._flatpickr)
@@ -422,9 +423,6 @@ function startEdit(type, data) {
   }
 }
 
-/**
- * 取消編輯模式
- */
 function cancelEdit(type) {
   document.getElementById('edit_id_' + type).value = "";
   document.getElementById('edit-cancel-' + type).classList.add('hidden');
@@ -441,7 +439,6 @@ function cancelEdit(type) {
   if(type === 'maintenance' && document.getElementById('maintenanceDate')._flatpickr) document.getElementById('maintenanceDate')._flatpickr.setDate(today);
   if(type === 'tracking' && document.getElementById('trackDate')._flatpickr) document.getElementById('trackDate')._flatpickr.setDate(today);
 
-  // 還原個案編號
   document.querySelectorAll('.auto-fill-id').forEach(el => el.value = currentClient ? currentClient['個案編號'] : "");
 
   const submitBtn = getSubmitBtn(type);
@@ -475,7 +472,10 @@ function getSubmitBtn(type) {
 // 表單提交 (★ 修改版：支援編輯模式)
 // ==========================================
 function submitForm(type) {
-  if (!currentClient) { alert("系統錯誤：未選取個案，請重新搜尋。"); return; }
+  if (!currentClient) { 
+      showNotification('流程錯誤', '未選取個案，請重新搜尋。', 'error'); 
+      return; 
+  }
   
   const clientId = currentClient['個案編號'];
   const editIdField = document.getElementById('edit_id_' + type);
@@ -495,7 +495,7 @@ function submitForm(type) {
       btn.disabled = false; 
       btn.innerHTML = ot;
       if (res.success) { 
-          alert(res.message); 
+          showNotification('成功', res.message, 'success'); 
           if (isEdit) {
              cancelEdit(type);
           } else {
@@ -505,7 +505,7 @@ function submitForm(type) {
           if(reloadFunc) reloadFunc(); 
           fetchCalendarData(); 
       } else { 
-          alert(res.message); 
+          showNotification('錯誤', res.message, 'error'); 
       }
   };
 
@@ -525,7 +525,10 @@ function submitForm(type) {
       nursingRecord: document.getElementById('nursingRecord').value, 
       remark: document.getElementById('doctorRemark').value 
     };
-    if (!d.date || !d.doctor) { alert("請填寫日期與醫師"); if(btn){btn.disabled=false; btn.innerHTML=ot;} return; }
+    if (!d.date || !d.doctor) { 
+        showNotification('欄位未填', '請填寫日期與醫師', 'warning'); 
+        if(btn){btn.disabled=false; btn.innerHTML=ot;} return; 
+    }
   } 
   else if (type === 'treatment') {
     d = { 
@@ -544,7 +547,10 @@ function submitForm(type) {
       content: document.getElementById('inputContent').value,
       nextPlan: document.getElementById('inputNextPlan').value
     };
-    if (!d['治療日期'] || !d['執行治療師']) { alert("請填寫日期與治療師"); if(btn){btn.disabled=false; btn.innerHTML=ot;} return; }
+    if (!d['治療日期'] || !d['執行治療師']) { 
+        showNotification('欄位未填', '請填寫日期與治療師', 'warning'); 
+        if(btn){btn.disabled=false; btn.innerHTML=ot;} return; 
+    }
   } 
   else if (type === 'maintenance') {
     const f = document.getElementById('maintenanceForm');
@@ -560,7 +566,10 @@ function submitForm(type) {
       temp: f.querySelector('input[name="體溫"]').value, 
       remark: f.querySelector('textarea[name="備註"]').value 
     };
-    if (!d.date || !d.staff || !d.item) { alert("請完整填寫必填欄位"); if(btn){btn.disabled=false; btn.innerHTML=ot;} return; }
+    if (!d.date || !d.staff || !d.item) { 
+        showNotification('欄位未填', '請完整填寫必填欄位', 'warning'); 
+        if(btn){btn.disabled=false; btn.innerHTML=ot;} return; 
+    }
   } 
   else if (type === 'tracking') {
     d = { 
@@ -571,7 +580,10 @@ function submitForm(type) {
       trackType: document.getElementById('trackType').value, 
       content: document.getElementById('trackContent').value 
     };
-    if (!d.trackDate || !d.trackStaff || !d.trackType || !d.content) { alert("請完整填寫追蹤資料"); if(btn){btn.disabled=false; btn.innerHTML=ot;} return; }
+    if (!d.trackDate || !d.trackStaff || !d.trackType || !d.content) { 
+        showNotification('欄位未填', '請完整填寫追蹤資料', 'warning'); 
+        if(btn){btn.disabled=false; btn.innerHTML=ot;} return; 
+    }
   }
 
   if (isEdit) {
@@ -595,7 +607,7 @@ function getReloadFunc(type) {
 }
 
 // ==========================================
-// 歷史列表載入與渲染 (★ 修改版：加入編輯按鈕)
+// 歷史列表載入與渲染
 // ==========================================
 
 function loadTrackingHistory() {
@@ -968,7 +980,10 @@ function previewFiles(input) {
 }
 
 function startUpload() {
-  if (filesToUpload.length === 0) { alert("請先選擇檔案"); return; }
+  if (filesToUpload.length === 0) { 
+      showNotification('提示', '請先選擇檔案', 'info'); 
+      return; 
+  }
   const btn = document.getElementById('btnStartUpload');
   const originalText = btn.innerHTML;
   const remark = document.getElementById('fileRemark').value;
@@ -980,7 +995,7 @@ function startUpload() {
   
   const processNext = (idx) => {
       if (idx >= filesToUpload.length) {
-         alert(`上傳完成！成功 ${successCount} / ${filesToUpload.length}`);
+         showNotification('上傳完成', '成功 ' + successCount + ' / ' + filesToUpload.length, 'success');
          btn.disabled = false; 
          btn.innerHTML = originalText;
          closeModal('uploadImageModal');
@@ -1012,7 +1027,10 @@ function startUpload() {
 }
 
 function openUploadModal() {
-  if (!currentClient) { alert("請先選取個案"); return; }
+  if (!currentClient) { 
+      showNotification('提示', '請先選取個案', 'info'); 
+      return; 
+  }
   document.getElementById('uploadInput').value = '';
   document.getElementById('fileRemark').value = '';
   document.getElementById('previewList').innerHTML = '';
@@ -1083,5 +1101,66 @@ function scrollToTop() {
     top: 0,
     behavior: 'smooth' 
   });
+}
+
+// ==========================================
+// ★★★ 自訂通知 (Custom Notification) ★★★
+// ==========================================
+
+/**
+ * 顯示自訂通知視窗
+ * @param {string} title - 標題
+ * @param {string} message - 內容訊息
+ * @param {string} type - 類型 ('success', 'error', 'info', 'warning')
+ */
+function showNotification(title, message, type = 'info') {
+  const modal = document.getElementById('custom-modal');
+  const titleEl = document.getElementById('modal-title');
+  const msgEl = document.getElementById('modal-message');
+  const iconEl = document.getElementById('modal-icon');
+  const iconContainer = document.getElementById('modal-icon-container');
+  const btn = document.getElementById('modal-confirm-btn');
+
+  if (!modal) return;
+
+  titleEl.innerText = title;
+  msgEl.innerText = message;
+
+  // 重置樣式
+  iconContainer.className = 'mx-auto flex items-center justify-center w-16 h-16 rounded-full mb-2';
+  btn.className = 'w-full py-3.5 px-4 font-bold rounded-2xl shadow-lg transition-all active:scale-95 text-white';
+
+  if (type === 'success') {
+      iconEl.innerText = 'check_circle';
+      iconEl.className = 'material-icons-outlined text-3xl text-emerald-600';
+      iconContainer.classList.add('bg-emerald-100');
+      btn.classList.add('bg-emerald-500', 'hover:bg-emerald-600', 'shadow-emerald-500/20');
+  } else if (type === 'error') {
+      iconEl.innerText = 'error';
+      iconEl.className = 'material-icons-outlined text-3xl text-rose-600';
+      iconContainer.classList.add('bg-rose-100');
+      btn.classList.add('bg-rose-500', 'hover:bg-rose-600', 'shadow-rose-500/20');
+  } else if (type === 'warning') {
+      iconEl.innerText = 'warning';
+      iconEl.className = 'material-icons-outlined text-3xl text-amber-600';
+      iconContainer.classList.add('bg-amber-100');
+      btn.classList.add('bg-amber-500', 'hover:bg-amber-600', 'shadow-amber-500/20');
+  } else {
+      // Info / Default
+      iconEl.innerText = 'info';
+      iconEl.className = 'material-icons-outlined text-3xl text-slate-500';
+      iconContainer.classList.add('bg-slate-100');
+      btn.classList.add('bg-slate-700', 'hover:bg-slate-800', 'shadow-slate-500/20');
+  }
+
+  modal.classList.remove('hidden');
+}
+
+/**
+ * 關閉自訂通知視窗
+ */
+function closeNotification() {
+  const modal = document.getElementById('custom-modal');
+  if (modal) modal.classList.add('hidden');
 }
 </script>
