@@ -321,7 +321,7 @@ function selectClient(c) {
 }
 
 // ==========================================
-// ★★★ 編輯功能相關函式 (修復 ID 判斷) ★★★
+// ★★★ 編輯功能相關函式 ★★★
 // ==========================================
 
 function findIdFromData(data) {
@@ -342,13 +342,9 @@ function findIdFromData(data) {
 }
 
 function startEdit(type, data) {
-  console.log("Start Edit Data:", data); 
-
   let id = findIdFromData(data);
-  
   if (!id) {
-     showNotification('資料錯誤', '無法讀取此筆紀錄的 ID。請確認資料庫中是否有「紀錄id」或「追蹤ID」欄位。', 'error');
-     console.error("ID not found in object:", data);
+     showNotification('資料錯誤', '無法讀取此筆紀錄的 ID。', 'error');
      return;
   }
   
@@ -378,7 +374,6 @@ function startEdit(type, data) {
         document.getElementById('inputComplaint').value = data['當日主訴'] || data['complaint'] || "";
         document.getElementById('inputContent').value = data['治療內容'] || data['content'] || "";
         document.getElementById('inputNextPlan').value = data['備註/下次治療'] || data['nextPlan'] || "";
-        
         document.getElementById('view-treatment').scrollIntoView({ behavior: 'smooth' });
     } 
     else if (type === 'doctor') {
@@ -469,7 +464,7 @@ function getSubmitBtn(type) {
 }
 
 // ==========================================
-// 表單提交 (★ 修改版：支援編輯模式)
+// 表單提交
 // ==========================================
 function submitForm(type) {
   if (!currentClient) { 
@@ -783,7 +778,7 @@ function loadDoctorHistory() {
 }
 
 // ==========================================
-// 個案總覽
+// 個案總覽 (★ 修改版：包含列印表格生成 ★)
 // ==========================================
 function loadOverviewData() {
   const container = document.getElementById('overviewListContainer'); container.innerHTML = '<div class="text-center py-12 text-slate-400 flex flex-col items-center gap-2"><span class="material-icons-outlined animate-spin">sync</span><span>讀取個案歷程中...</span></div>';
@@ -794,115 +789,220 @@ function loadOverviewData() {
   }).withFailureHandler(err => { container.innerHTML = `<div class="text-red-500 text-center py-10">載入失敗: ${err.message}</div>`; }).getCaseOverviewData(currentClient['個案編號']);
 }
 
+// ★★★ 補全：篩選類別設定函式 ★★★
+function setOverviewCategory(cat) {
+  currentOverviewCategory = cat;
+  
+  // 更新按鈕樣式
+  document.querySelectorAll('[id^="filter-btn-"]').forEach(btn => {
+     if(btn.id === 'filter-btn-' + cat) {
+         btn.classList.remove('bg-white', 'text-slate-800', 'text-slate-500', 'hover:bg-white', 'hover:text-slate-700', 'shadow-sm', 'ring-1', 'ring-slate-200');
+         btn.classList.add('bg-slate-800', 'text-white', 'shadow-md');
+     } else {
+         btn.classList.remove('bg-slate-800', 'text-white', 'shadow-md');
+         btn.classList.add('bg-white', 'text-slate-500', 'hover:bg-white', 'hover:text-slate-700'); 
+         // 這裡為了保持原設計的簡潔，非選取狀態設為淺灰
+     }
+  });
+  
+  renderOverviewList();
+}
+
+// ★★★ 補全：取得篩選後資料函式 ★★★
+function getFilteredOverviewData() {
+  let data = allOverviewRecords;
+  
+  if (currentOverviewCategory !== 'all') {
+      data = data.filter(i => i.category === currentOverviewCategory);
+  }
+  
+  const s = document.getElementById('overviewStartDate').value;
+  const e = document.getElementById('overviewEndDate').value;
+  
+  if(s && e) {
+      data = data.filter(i => i.date >= s && i.date <= e);
+  }
+  return data;
+}
+
+// ★★★ 修改：同時生成「螢幕卡片」與「列印表格」 ★★★
 function renderOverviewList() {
   const c = document.getElementById('overviewListContainer'); 
+  const printTable = document.getElementById('overviewPrintTable'); // 列印容器
   const f = getFilteredOverviewData();
   
   document.getElementById('overviewStats').textContent = `共 ${f.length} 筆紀錄`;
   
+  // 1. 若無資料
   if (!f.length) { 
-    c.innerHTML = `<div class="flex flex-col items-center justify-center py-24 bg-white rounded-[2.5rem] border border-slate-100"><div class="w-16 h-16 bg-slate-50 rounded-full flex items-center justify-center mb-4 text-slate-300"><span class="material-icons-outlined text-3xl">search_off</span></div><p class="text-slate-400 font-bold">無符合資料</p></div>`; 
+    c.innerHTML = `<div class="flex flex-col items-center justify-center py-24 bg-white rounded-[2.5rem] border border-slate-100"><div class="w-16 h-16 bg-slate-50 rounded-full flex items-center justify-center mb-4 text-slate-300"><span class="material-icons-outlined text-3xl">search_off</span></div><p class="text-slate-400 font-bold">無符合資料</p></div>`;
+    printTable.innerHTML = `<p style="text-align:center; padding: 20px;">無符合資料</p>`; 
     return; 
   }
   
+  // 2. 生成螢幕顯示用的卡片 HTML
   c.innerHTML = f.map(i => {
-    const cardClass = "bg-white border border-slate-100 rounded-[2rem] p-5 shadow-sm mb-4 card-hover relative overflow-hidden group print:break-inside-avoid print:mb-4 print:border-slate-300 print:p-3";
-    const headerClass = "flex justify-between items-center mb-3 pb-2 border-b border-slate-50 pl-3 print:mb-1 print:pb-1 print:border-slate-300";
-    const badgeClass = "text-xs font-bold px-3 py-1 rounded-full font-mono print:bg-white print:text-black print:border print:border-slate-300";
+    const cardClass = "bg-white border border-slate-100 rounded-[2rem] p-5 shadow-sm mb-4 card-hover relative overflow-hidden group print:hidden"; // print:hidden 確保螢幕版卡片不被印出
+    const headerClass = "flex justify-between items-center mb-3 pb-2 border-b border-slate-50 pl-3";
+    const badgeClass = "text-xs font-bold px-3 py-1 rounded-full font-mono";
     
     if (i.category === 'doctor') {
       return `
       <div class="${cardClass}">
-          <div class="absolute left-0 top-0 bottom-0 w-1.5 bg-blue-500 opacity-80 print:hidden"></div>
+          <div class="absolute left-0 top-0 bottom-0 w-1.5 bg-blue-500 opacity-80"></div>
           <div class="${headerClass}">
               <div class="flex items-center gap-3">
                   <span class="${badgeClass} bg-blue-50 text-blue-600">${i.date}</span>
-                  <span class="text-sm font-black text-slate-700 print:text-black">醫師看診</span>
+                  <span class="text-sm font-black text-slate-700">醫師看診</span>
               </div>
-              <div class="text-xs font-bold text-slate-500 flex items-center gap-3 print:text-black">
-                  <div class="flex items-center gap-1"><span class="material-icons-outlined text-sm text-slate-400 print:hidden">person</span> ${i.doctor||'--'}</div>
-                  <div class="flex items-center gap-1"><span class="material-icons-outlined text-sm text-slate-400 print:hidden">person</span> ${i.nurse||'--'}</div>
+              <div class="text-xs font-bold text-slate-500 flex items-center gap-3">
+                  <div class="flex items-center gap-1"><span class="material-icons-outlined text-sm text-slate-400">person</span> ${i.doctor||'--'}</div>
+                  <div class="flex items-center gap-1"><span class="material-icons-outlined text-sm text-slate-400">person</span> ${i.nurse||'--'}</div>
               </div>
           </div>
-          <div class="pl-3 grid grid-cols-1 md:grid-cols-2 gap-3 text-sm mb-2 print:gap-1">
-              <div class="bg-blue-50/40 p-2.5 rounded-xl border border-blue-50 print:bg-white print:border-slate-300"><span class="text-blue-600 font-black text-xs mr-1 print:text-black">S</span> <span class="text-slate-700 leading-snug print:text-black">${i.s||'--'}</span></div>
-              <div class="bg-indigo-50/40 p-2.5 rounded-xl border border-indigo-50 print:bg-white print:border-slate-300"><span class="text-indigo-600 font-black text-xs mr-1 print:text-black">O</span> <span class="text-slate-700 leading-snug print:text-black">${i.o||'--'}</span></div>
-              <div class="bg-amber-50/40 p-2.5 rounded-xl border border-amber-50 print:bg-white print:border-slate-300"><span class="text-amber-600 font-black text-xs mr-1 print:text-black">A</span> <span class="text-slate-700 leading-snug print:text-black">${i.a||'--'}</span></div>
-              <div class="bg-emerald-50/40 p-2.5 rounded-xl border border-emerald-50 print:bg-white print:border-slate-300"><span class="text-emerald-600 font-black text-xs mr-1 print:text-black">P</span> <span class="text-slate-700 leading-snug print:text-black">${i.p||'--'}</span></div>
+          <div class="pl-3 grid grid-cols-1 md:grid-cols-2 gap-3 text-sm mb-2">
+              <div class="bg-blue-50/40 p-2.5 rounded-xl border border-blue-50"><span class="text-blue-600 font-black text-xs mr-1">S</span> <span class="text-slate-700 leading-snug">${i.s||'--'}</span></div>
+              <div class="bg-indigo-50/40 p-2.5 rounded-xl border border-indigo-50"><span class="text-indigo-600 font-black text-xs mr-1">O</span> <span class="text-slate-700 leading-snug">${i.o||'--'}</span></div>
+              <div class="bg-amber-50/40 p-2.5 rounded-xl border border-amber-50"><span class="text-amber-600 font-black text-xs mr-1">A</span> <span class="text-slate-700 leading-snug">${i.a||'--'}</span></div>
+              <div class="bg-emerald-50/40 p-2.5 rounded-xl border border-emerald-50"><span class="text-emerald-600 font-black text-xs mr-1">P</span> <span class="text-slate-700 leading-snug">${i.p||'--'}</span></div>
           </div>
           <div class="pl-3 space-y-2">
-              ${i.nursingRecord && i.nursingRecord !== '--' ? `<div class="bg-rose-50/50 p-3 rounded-xl text-sm border border-rose-100 print:bg-white print:border-slate-300"><div class="flex items-center gap-1.5 mb-1 text-rose-600 font-black text-xs print:text-black"><span class="material-icons-outlined text-[14px] print:hidden">favorite</span> 護理紀錄</div><div class="text-slate-600 leading-snug whitespace-pre-wrap pl-1 print:text-black">${i.nursingRecord}</div></div>` : ''}
-              ${i.remark && i.remark !== '--' ? `<div class="bg-slate-50 p-2.5 rounded-xl text-xs text-slate-500 border border-slate-100 flex gap-2 items-start print:bg-white print:border-slate-300"><span class="font-bold shrink-0 bg-slate-200 px-1.5 rounded text-[10px] text-slate-600 print:bg-white print:text-black print:border">Note</span><span class="leading-snug print:text-black">${i.remark}</span></div>` : ''}
+              ${i.nursingRecord && i.nursingRecord !== '--' ? `<div class="bg-rose-50/50 p-3 rounded-xl text-sm border border-rose-100"><div class="flex items-center gap-1.5 mb-1 text-rose-600 font-black text-xs"><span class="material-icons-outlined text-[14px]">favorite</span> 護理紀錄</div><div class="text-slate-600 leading-snug whitespace-pre-wrap pl-1">${i.nursingRecord}</div></div>` : ''}
+              ${i.remark && i.remark !== '--' ? `<div class="bg-slate-50 p-2.5 rounded-xl text-xs text-slate-500 border border-slate-100 flex gap-2 items-start"><span class="font-bold shrink-0 bg-slate-200 px-1.5 rounded text-[10px] text-slate-600">Note</span><span class="leading-snug">${i.remark}</span></div>` : ''}
           </div>
       </div>`;
     } 
     else if (i.category === 'treatment') {
       return `
       <div class="${cardClass}">
-          <div class="absolute left-0 top-0 bottom-0 w-1.5 bg-emerald-500 opacity-80 print:hidden"></div>
+          <div class="absolute left-0 top-0 bottom-0 w-1.5 bg-emerald-500 opacity-80"></div>
           <div class="${headerClass}">
               <div class="flex items-center gap-3">
                   <span class="${badgeClass} bg-emerald-50 text-emerald-600">${i.date}</span>
-                  <span class="text-sm font-black text-slate-700 print:text-black">治療紀錄</span>
-                  ${i.item ? `<span class="text-[10px] font-bold text-slate-500 bg-slate-100 px-2 py-0.5 rounded border border-slate-200 print:bg-white print:text-black">${i.item}</span>` : ''}
+                  <span class="text-sm font-black text-slate-700">治療紀錄</span>
+                  ${i.item ? `<span class="text-[10px] font-bold text-slate-500 bg-slate-100 px-2 py-0.5 rounded border border-slate-200">${i.item}</span>` : ''}
               </div>
-              <div class="text-xs font-bold text-slate-500 flex items-center gap-1 print:text-black">
-                  <span class="material-icons-outlined text-sm text-slate-400 print:hidden">person</span> ${i.staff||'--'}
+              <div class="text-xs font-bold text-slate-500 flex items-center gap-1">
+                  <span class="material-icons-outlined text-sm text-slate-400">person</span> ${i.staff||'--'}
               </div>
           </div>
-          <div class="pl-3 space-y-3 print:space-y-1">
-              ${i.complaint ? `<div><div class="text-[10px] font-bold text-slate-400 mb-1 print:text-black">當日主訴</div><div class="text-sm text-slate-700 whitespace-pre-wrap leading-relaxed print:text-black">${i.complaint}</div></div>` : ''}
-              <div><div class="text-[10px] font-bold text-slate-400 mb-1 print:text-black">治療內容</div><div class="text-sm text-slate-700 whitespace-pre-wrap leading-relaxed print:text-black">${i.content}</div></div>
-              ${i.nextPlan ? `<div class="bg-amber-50 p-2.5 rounded-xl border border-amber-100 print:bg-white print:border-slate-300"><div class="text-[10px] font-bold text-amber-500 uppercase tracking-wider mb-1 flex items-center gap-1 print:text-black"><span class="material-icons-outlined text-[10px] print:hidden">flag</span> 備註 / 下次治療</div><div class="text-xs text-slate-600 whitespace-pre-wrap leading-snug print:text-black">${i.nextPlan}</div></div>` : ''}
+          <div class="pl-3 space-y-3">
+              ${i.complaint ? `<div><div class="text-[10px] font-bold text-slate-400 mb-1">當日主訴</div><div class="text-sm text-slate-700 whitespace-pre-wrap leading-relaxed">${i.complaint}</div></div>` : ''}
+              <div><div class="text-[10px] font-bold text-slate-400 mb-1">治療內容</div><div class="text-sm text-slate-700 whitespace-pre-wrap leading-relaxed">${i.content}</div></div>
+              ${i.nextPlan ? `<div class="bg-amber-50 p-2.5 rounded-xl border border-amber-100"><div class="text-[10px] font-bold text-amber-500 uppercase tracking-wider mb-1 flex items-center gap-1"><span class="material-icons-outlined text-[10px]">flag</span> 備註 / 下次治療</div><div class="text-xs text-slate-600 whitespace-pre-wrap leading-snug">${i.nextPlan}</div></div>` : ''}
           </div>
       </div>`;
     }
     else if (i.category === 'maintenance') {
       return `
       <div class="${cardClass}">
-          <div class="absolute left-0 top-0 bottom-0 w-1.5 bg-orange-400 opacity-80 print:hidden"></div>
+          <div class="absolute left-0 top-0 bottom-0 w-1.5 bg-orange-400 opacity-80"></div>
           <div class="${headerClass}">
               <div class="flex items-center gap-3">
                   <span class="${badgeClass} bg-orange-50 text-orange-600">${i.date}</span>
-                  <span class="text-sm font-black text-slate-700 print:text-black">${i.item||'保養'}</span>
+                  <span class="text-sm font-black text-slate-700">${i.item||'保養'}</span>
               </div>
-              <div class="text-xs font-bold text-slate-500 flex items-center gap-1 print:text-black">
-                  <span class="material-icons-outlined text-sm text-slate-400 print:hidden">person</span> ${i.staff||'--'}
+              <div class="text-xs font-bold text-slate-500 flex items-center gap-1">
+                  <span class="material-icons-outlined text-sm text-slate-400">person</span> ${i.staff||'--'}
               </div>
           </div>
           <div class="pl-3 grid grid-cols-4 gap-2 mb-2">
-              <div class="p-2 rounded-xl bg-slate-50 border border-slate-100 flex flex-col items-center justify-center print:bg-white print:border-slate-300"><span class="text-[9px] font-bold text-slate-400 print:text-black">BP</span><span class="text-xs font-black text-slate-700 print:text-black">${i.bp||'-'}</span></div>
-              <div class="p-2 rounded-xl bg-slate-50 border border-slate-100 flex flex-col items-center justify-center print:bg-white print:border-slate-300"><span class="text-[9px] font-bold text-slate-400 print:text-black">SpO2</span><span class="text-xs font-black text-slate-700 print:text-black">${i.spo2||'-'}</span></div>
-              <div class="p-2 rounded-xl bg-slate-50 border border-slate-100 flex flex-col items-center justify-center print:bg-white print:border-slate-300"><span class="text-[9px] font-bold text-slate-400 print:text-black">HR</span><span class="text-xs font-black text-slate-700 print:text-black">${i.hr||'-'}</span></div>
-              <div class="p-2 rounded-xl bg-slate-50 border border-slate-100 flex flex-col items-center justify-center print:bg-white print:border-slate-300"><span class="text-[9px] font-bold text-slate-400 print:text-black">Temp</span><span class="text-xs font-black text-slate-700 print:text-black">${i.temp||'-'}</span></div>
+              <div class="p-2 rounded-xl bg-slate-50 border border-slate-100 flex flex-col items-center justify-center"><span class="text-[9px] font-bold text-slate-400">BP</span><span class="text-xs font-black text-slate-700">${i.bp||'-'}</span></div>
+              <div class="p-2 rounded-xl bg-slate-50 border border-slate-100 flex flex-col items-center justify-center"><span class="text-[9px] font-bold text-slate-400">SpO2</span><span class="text-xs font-black text-slate-700">${i.spo2||'-'}</span></div>
+              <div class="p-2 rounded-xl bg-slate-50 border border-slate-100 flex flex-col items-center justify-center"><span class="text-[9px] font-bold text-slate-400">HR</span><span class="text-xs font-black text-slate-700">${i.hr||'-'}</span></div>
+              <div class="p-2 rounded-xl bg-slate-50 border border-slate-100 flex flex-col items-center justify-center"><span class="text-[9px] font-bold text-slate-400">Temp</span><span class="text-xs font-black text-slate-700">${i.temp||'-'}</span></div>
           </div>
-          ${i.remark && i.remark !== '--' ? `<div class="pl-3 mt-2"><div class="text-xs text-slate-600 bg-orange-50/50 p-2.5 rounded-xl border border-orange-100 flex gap-2 items-start print:bg-white print:border-slate-300"><span class="font-bold text-orange-400 shrink-0 text-[10px] pt-0.5 print:text-black">NOTE</span><span class="leading-snug whitespace-pre-wrap print:text-black">${i.remark}</span></div></div>` : ''}
+          ${i.remark && i.remark !== '--' ? `<div class="pl-3 mt-2"><div class="text-xs text-slate-600 bg-orange-50/50 p-2.5 rounded-xl border border-orange-100 flex gap-2 items-start"><span class="font-bold text-orange-400 shrink-0 text-[10px] pt-0.5">NOTE</span><span class="leading-snug whitespace-pre-wrap">${i.remark}</span></div></div>` : ''}
       </div>`;
     }
     else if (i.category === 'tracking') {
       return `
       <div class="${cardClass}">
-          <div class="absolute left-0 top-0 bottom-0 w-1.5 bg-violet-500 opacity-80 print:hidden"></div>
+          <div class="absolute left-0 top-0 bottom-0 w-1.5 bg-violet-500 opacity-80"></div>
           <div class="${headerClass}">
               <div class="flex items-center gap-3">
                   <span class="${badgeClass} bg-violet-50 text-violet-600">${i.date}</span>
-                  <span class="text-xs font-bold text-white bg-violet-400 px-2 py-0.5 rounded-md print:bg-white print:text-black print:border print:border-slate-300">${i.type||'追蹤'}</span>
+                  <span class="text-xs font-bold text-white bg-violet-400 px-2 py-0.5 rounded-md">${i.type||'追蹤'}</span>
               </div>
-              <div class="text-xs font-bold text-slate-500 flex items-center gap-1 print:text-black">
-                  <span class="material-icons-outlined text-sm text-slate-400 print:hidden">person</span> ${i.staff||'--'}
+              <div class="text-xs font-bold text-slate-500 flex items-center gap-1">
+                  <span class="material-icons-outlined text-sm text-slate-400">person</span> ${i.staff||'--'}
               </div>
           </div>
-          <div class="pl-3 text-sm text-slate-700 leading-relaxed whitespace-pre-line print:text-black">${i.content}</div>
+          <div class="pl-3 text-sm text-slate-700 leading-relaxed whitespace-pre-line">${i.content}</div>
       </div>`;
     }
     return '';
   }).join('');
+
+  // 3. 生成列印專用表格 HTML (黑白、格線、簡單文字)
+  // 定義翻譯名稱
+  const catName = { 'all': '全部', 'doctor': '醫師看診', 'treatment': '治療紀錄', 'maintenance': '保養項目', 'tracking': '個管追蹤' };
+  
+  let tableHtml = `
+    <div style="margin-bottom: 10px; font-weight: bold; font-size: 12px; border-bottom: 1px solid #000; padding-bottom: 5px;">
+        列印日期：${new Date().toISOString().split('T')[0]} ｜ 篩選條件：${catName[currentOverviewCategory] || '全部'} ｜ 資料筆數：${f.length}
+    </div>
+    <table class="print-table">
+        <thead>
+            <tr>
+                <th width="12%">日期</th>
+                <th width="10%">類別</th>
+                <th width="65%">內容摘要</th>
+                <th width="13%">執行人員</th>
+            </tr>
+        </thead>
+        <tbody>`;
+
+  f.forEach(i => {
+    let typeName = '';
+    let content = '';
+    
+    if (i.category === 'doctor') {
+       typeName = '醫師看診';
+       content = `
+       <b>[S]</b> ${i.s||'-'}<br>
+       <b>[O]</b> ${i.o||'-'}<br>
+       <b>[A]</b> ${i.a||'-'}<br>
+       <b>[P]</b> ${i.p||'-'}`;
+       if(i.nursingRecord && i.nursingRecord!=='--') content += `<br><b>[護理]</b> ${i.nursingRecord}`;
+       if(i.remark && i.remark!=='--') content += `<br><b>[備註]</b> ${i.remark}`;
+    } 
+    else if (i.category === 'treatment') {
+       typeName = '治療紀錄';
+       if(i.item) typeName += `<br><small>(${i.item})</small>`;
+       if(i.complaint) content += `<b>[主訴]</b> ${i.complaint}<br>`;
+       content += `${i.content}`;
+       if(i.nextPlan) content += `<br><b>[備註]</b> ${i.nextPlan}`;
+    }
+    else if (i.category === 'maintenance') {
+       typeName = '保養項目';
+       if(i.item) typeName += `<br><small>(${i.item})</small>`;
+       content = `BP: ${i.bp||'-'} / SpO2: ${i.spo2||'-'} / HR: ${i.hr||'-'} / T: ${i.temp||'-'}`;
+       if(i.remark && i.remark!=='--') content += `<br><b>[備註]</b> ${i.remark}`;
+    }
+    else if (i.category === 'tracking') {
+       typeName = '個管追蹤';
+       if(i.type) typeName += `<br><small>(${i.type})</small>`;
+       content = i.content;
+    }
+
+    tableHtml += `
+      <tr>
+          <td>${i.date}</td>
+          <td>${typeName}</td>
+          <td>${content}</td>
+          <td>${i.staff||i.doctor||'--'}</td>
+      </tr>`;
+  });
+
+  tableHtml += `</tbody></table>`;
+  printTable.innerHTML = tableHtml;
 }
 
 function printOverviewReport() { handlePrint(); } 
 
 // ==========================================
-// ★★★ 新增：影像載入與上傳邏輯 ★★★
+// 影像載入與上傳邏輯
 // ==========================================
 
 function loadClientImages() {

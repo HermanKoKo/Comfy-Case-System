@@ -266,14 +266,12 @@
                       <label class="text-xs font-bold text-slate-400 shrink-0">治療日期</label>
                       <input type="date" id="treatmentDate" required class="w-full px-3 py-2.5 bg-slate-50 border border-slate-100 rounded-2xl outline-none focus:border-emerald-500 transition-all cursor-pointer font-bold text-slate-700 text-sm">
                     </div>
-                    <!-- 修改：移除外層 wrapper 與 span，直接在 select 加入 class -->
                     <div class="flex items-center gap-2">
                       <label class="text-xs font-bold text-slate-400 shrink-0">治療師</label>
                       <select id="inputTherapist" required class="custom-select-arrow w-full px-3 py-2.5 bg-slate-50 border border-slate-100 rounded-2xl outline-none focus:border-emerald-500 transition-all cursor-pointer appearance-none font-bold text-slate-700 text-sm pr-10">
                            <option value="" disabled selected>請選擇治療師</option>
                       </select>
                     </div>
-                    <!-- 修改：移除外層 wrapper 與 span，直接在 select 加入 class -->
                     <div class="flex items-center gap-2">
                       <label class="text-xs font-bold text-slate-400 shrink-0">治療項目</label>
                       <select id="inputTreatmentItem" class="custom-select-arrow w-full px-3 py-2.5 bg-slate-50 border border-slate-100 rounded-2xl outline-none focus:border-emerald-500 transition-all cursor-pointer appearance-none font-bold text-slate-700 text-sm pr-10">
@@ -341,7 +339,6 @@
               </div>
               <div class="space-y-1">
                 <label class="text-sm font-bold text-slate-400 block ml-1">執行人員</label>
-                <!-- 修改：加入 appearance-none, pr-10, custom-select-arrow -->
                 <select id="selectMaintStaff" name="執行人員" required 
                   class="custom-select-arrow w-full px-4 py-2 bg-white border border-slate-200 rounded-2xl focus:border-orange-500 outline-none transition-all cursor-pointer appearance-none pr-10">
                   <option value="" disabled selected>載入中...</option>
@@ -349,7 +346,6 @@
               </div>
               <div class="space-y-1">
                 <label class="text-sm font-bold text-slate-400 block ml-1">保養項目</label>
-                <!-- 修改：加入 appearance-none, pr-10, custom-select-arrow -->
                 <select id="selectMaintItem" name="保養項目" required 
                   class="custom-select-arrow w-full px-4 py-2 bg-white border border-slate-200 rounded-2xl focus:border-orange-500 outline-none transition-all cursor-pointer appearance-none pr-10">
                   <option value="" disabled selected>載入中...</option>
@@ -398,72 +394,6 @@
             </div>
           </div>
         </div>
-      </div><!-- 個管追蹤視圖 -->
-      <div id="view-tracking" class="hidden max-w-6xl mx-auto space-y-4">
-        <div class="flex justify-between items-center mb-2 no-print">
-          <h3 class="text-2xl font-bold text-violet-700 flex items-center gap-3">
-             <span class="material-icons-outlined text-3xl">fact_check</span>
-             個管追蹤紀錄
-          </h3>
-        </div>
-        <div class="grid grid-cols-1 lg:grid-cols-3 gap-4">
-          <div class="lg:col-span-1 bg-white rounded-[2.5rem] p-5 shadow-sm border border-slate-100 h-fit no-print">
-            <h3 class="text-lg font-bold text-violet-600 mb-3 border-b border-violet-50 pb-2">新增紀錄</h3>
-            <form id="trackingForm" onsubmit="event.preventDefault(); submitForm('tracking');">
-              <input type="hidden" name="個案編號" class="auto-fill-id">
-              <input type="hidden" id="edit_id_tracking" name="record_id" value="">
-
-              <div class="mb-2 space-y-1">
-                <label class="block text-sm font-bold text-slate-400 ml-1">追蹤日期</label>
-                <input type="text" id="trackDate" name="trackDate" required
-                       class="w-full px-4 py-2 bg-slate-50 border border-slate-200 rounded-2xl outline-none focus:border-violet-500 transition-all cursor-pointer">
-              </div>
-              <div class="mb-2 space-y-1">
-                <label class="block text-sm font-bold text-slate-400 ml-1">追蹤人員</label>
-                <!-- 修改：加入 appearance-none, pr-10, custom-select-arrow -->
-                <select id="trackStaff" name="trackStaff" required
-                        class="custom-select-arrow w-full px-4 py-2 bg-slate-50 border border-slate-200 rounded-2xl outline-none focus:border-violet-500 transition-all cursor-pointer appearance-none pr-10">
-                  <option value="" disabled selected>載入中...</option>
-                </select>
-              </div>
-              <div class="mb-2 space-y-1">
-                <label class="block text-sm font-bold text-slate-400 ml-1">追蹤項目</label>
-                <!-- 修改：加入 appearance-none, pr-10, custom-select-arrow -->
-                <select id="trackType" name="trackType" required
-                        class="custom-select-arrow w-full px-4 py-2 bg-slate-50 border border-slate-200 rounded-2xl outline-none focus:border-violet-500 transition-all cursor-pointer appearance-none pr-10">
-                  <option value="" disabled selected>載入中...</option>
-                </select>
-              </div>
-              <div class="mb-3 space-y-1">
-                <label class="block text-sm font-bold text-slate-400 ml-1">追蹤內容</label>
-                <textarea id="trackContent" name="content" rows="5" required placeholder="請輸入追蹤情形、個案回饋或備註..."
-                          class="w-full px-4 py-2 bg-slate-50 border border-slate-200 rounded-2xl outline-none focus:border-violet-500 transition-all resize-none"></textarea>
-              </div>
-
-              <div id="edit-cancel-tracking" class="hidden mb-2">
-                   <button type="button" onclick="cancelEdit('tracking')" class="w-full bg-slate-400 hover:bg-slate-500 text-white font-bold py-2 rounded-2xl transition shadow-sm border border-slate-400">
-                        取消編輯模式
-                   </button>
-              </div>
-
-              <button type="submit" 
-                      class="w-full text-white bg-violet-600 hover:bg-violet-700 font-bold rounded-2xl px-5 py-3 text-center transition-all shadow-lg shadow-violet-500/20 active:scale-95">
-                儲存追蹤紀錄
-              </button>
-            </form>
-          </div>
-          <div class="lg:col-span-2">
-            <h3 class="text-lg font-bold text-slate-700 mb-3 ml-2 flex items-center gap-2">
-              <span class="w-1.5 h-5 bg-violet-500 rounded-full print:hidden"></span> 歷史紀錄
-            </h3>
-            <div id="trackingHistoryList" class="space-y-3 max-h-[700px] overflow-y-auto pr-2 custom-scrollbar print:max-h-none print:overflow-visible">
-              <div class="text-center text-slate-400 py-10 bg-white/50 border-2 border-dashed border-slate-100 rounded-[2.5rem] print:hidden">
-                <span class="material-icons-outlined text-4xl mb-2">history</span>
-                <p>尚無追蹤紀錄</p>
-              </div>
-            </div>
-          </div>
-        </div>
       </div>
 
       <!-- 醫師看診視圖 -->
@@ -488,12 +418,10 @@
                 <label class="text-sm font-bold text-slate-400 block mb-1">日期</label>
                 <input type="date" id="doctorConsultDate" class="w-full px-4 py-2 bg-slate-50 border border-slate-100 rounded-2xl focus:border-emerald-500 outline-none transition-all">
               </div>
-              <!-- 修改：加入 appearance-none, pr-10, custom-select-arrow -->
               <div>
                   <label class="text-sm font-bold text-slate-400 block mb-1">看診醫師</label>
                   <select id="selectDoctor" class="custom-select-arrow w-full px-4 py-2 bg-slate-50 border border-slate-100 rounded-2xl focus:border-emerald-500 outline-none transition-all appearance-none pr-10"></select>
               </div>
-              <!-- 修改：加入 appearance-none, pr-10, custom-select-arrow -->
               <div>
                   <label class="text-sm font-bold text-slate-400 block mb-1">護理師</label>
                   <select id="selectNurse" class="custom-select-arrow w-full px-4 py-2 bg-slate-50 border border-slate-100 rounded-2xl focus:border-emerald-500 outline-none transition-all appearance-none pr-10"></select>
@@ -532,9 +460,7 @@
           </form>
         </div>
         <div id="doctorHistoryList" class="space-y-4 mt-6"></div>
-      </div>
-
-      <!-- 個案總覽 -->
+      </div><!-- 個案總覽 -->
       <div id="view-overview" class="hidden max-w-6xl mx-auto space-y-4">
         <div class="bg-white rounded-[2.5rem] shadow-sm border border-slate-100 p-5 no-print">
            <div class="flex justify-between items-center mb-4 border-b border-slate-50 pb-3">
@@ -546,6 +472,11 @@
                  <p id="overviewStats" class="text-slate-400 text-sm mt-1 ml-1">共 0 筆紀錄</p>
               </div>
               <div class="flex items-center gap-3">
+                 <!-- ★★★ 新增：儲存/列印按鈕 (no-print) ★★★ -->
+                 <button onclick="window.print()" class="no-print flex items-center gap-2 bg-slate-800 text-white px-4 py-2 rounded-xl text-sm font-bold shadow-lg hover:bg-slate-700 transition active:scale-95">
+                    <span class="material-icons-outlined text-lg">print</span>
+                    儲存/列印
+                 </button>
               </div>
            </div>
            <div class="flex flex-col xl:flex-row justify-between items-start xl:items-center gap-4">
@@ -570,6 +501,8 @@
               </div>
            </div>
         </div>
+        
+        <!-- 螢幕顯示用的卡片列表 -->
         <div id="overviewListContainer" class="min-h-[300px] space-y-4">
            <div class="flex flex-col items-center justify-center py-20 bg-white rounded-[2.5rem] border-2 border-dashed border-slate-100 print:hidden">
               <div class="w-16 h-16 bg-slate-50 rounded-full flex items-center justify-center mb-4">
@@ -578,6 +511,12 @@
               <h4 class="text-lg font-bold text-slate-400">請選擇篩選條件查看紀錄</h4>
            </div>
         </div>
+
+        <!-- ★★★ 新增：列印專用表格容器 (螢幕隱藏，列印顯示) ★★★ -->
+        <div id="overviewPrintTable" class="hidden print:block w-full mt-4">
+            <!-- 內容將由 JavaScript 動態生成 -->
+        </div>
+
       </div>
     </div>
   </main>
@@ -625,7 +564,7 @@
 
            <div class="flex items-center gap-3">
               <label class="w-28 shrink-0 text-sm font-bold text-slate-500 text-right">負責治療師</label>
-              <!-- 修改：移除 relative class, 移除 span, 加入 select 的 style -->
+              <!-- 保持修改：移除 relative class, 移除 span, 加入 select 的 custom-select-arrow style -->
               <div class="flex-1">
                  <select id="addTherapist" class="custom-select-arrow w-full px-4 py-2.5 bg-slate-50 border border-slate-100 rounded-xl outline-none focus:bg-white focus:border-emerald-500 transition-all appearance-none cursor-pointer pr-10">
                     <option value="" disabled selected>載入中...</option>
