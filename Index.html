@@ -31,21 +31,42 @@
     /* 其他通用樣式保持不變 */
     .flatpickr-calendar { z-index: 99999 !important; }
 
-    /* 列印樣式 */
+    /* 列印樣式 - 已針對去除空白頁進行修正 */
     @media print {
       @page { margin: 1cm; size: A4; }
-      body, main { height: auto !important; overflow: visible !important; background-color: white !important; }
-      .no-print, button, .material-icons-outlined { display: none !important; }
+      
+      /* 強制重置容器高度與顯示模式，解決空白頁問題 */
+      html, body, main, #contentArea {
+        height: auto !important;
+        min-height: 0 !important;
+        overflow: visible !important;
+        display: block !important; /* 關鍵：取消 Flexbox 佈局 */
+        background-color: white !important;
+      }
+
+      /* 隱藏不必要的元素 */
+      .no-print, button, .material-icons-outlined, #sidebar, #btnBackToTop { 
+        display: none !important; 
+      }
+
+      /* 表格與卡片樣式優化 */
       .card-hover, .bg-white, .rounded-\[2rem\], .rounded-\[2\.5rem\], .shadow-sm {
         box-shadow: none !important;
-        border-radius: 4px !important;
+        border-radius: 0 !important; /* 移除圓角 */
         background-color: white !important;
         border: 1px solid #ddd !important;
         margin-bottom: 10px !important;
         padding: 10px !important;
         transform: none !important;
       }
-      .card-hover, .group, div { break-inside: avoid !important; }
+
+      /* 防止內容被切斷 */
+      .card-hover, .group, div, tr, td, tbody { 
+        break-inside: avoid !important; 
+        page-break-inside: avoid !important;
+      }
+
+      /* 顏色調整 */
       .text-slate-400, .text-slate-500, .text-slate-600 { color: #333 !important; }
       .text-slate-300 { color: #999 !important; }
       [class*="bg-"][class*="-50"] {
@@ -59,7 +80,18 @@
         color: #000 !important;
         padding: 2px 6px !important;
       }
-      #print-header { display: flex !important; border-bottom: 2px solid #000 !important; margin-bottom: 15px !important; }
+
+      /* 標題列設定 */
+      #print-header { 
+        display: flex !important; 
+        width: 100% !important;
+        justify-content: space-between !important;
+        align-items: center !important;
+        border-bottom: 2px solid #000 !important; 
+        margin-bottom: 15px !important; 
+        padding-bottom: 10px !important;
+      }
+      
       #overviewListContainer, #historyListContainer { min-height: 0 !important; height: auto !important; }
     }
     
@@ -79,18 +111,22 @@
     }
   </style>
 </head>
-<body class="bg-[#f8fafc] font-sans text-slate-900 antialiased h-screen overflow-hidden flex print:h-auto print:overflow-visible">
+<!-- Body 加入 print:block 以覆蓋 flex，解決列印版面跑版問題 -->
+<body class="bg-[#f8fafc] font-sans text-slate-900 antialiased h-screen overflow-hidden flex print:block print:h-auto print:overflow-visible">
 
-  <!-- ★★★ 列印專用頁首 (已修正) ★★★ -->
+  <!-- ★★★ 列印專用頁首 (已確認包含姓名欄位) ★★★ -->
   <div id="print-header" class="hidden print:flex flex-row justify-between items-center border-b-2 border-slate-800 pb-2 mb-4 w-full bg-white">
-    <div class="text-xs w-1/3">
+    <!-- 左側：日期 -->
+    <div class="text-xs w-1/3 text-left">
       <span class="font-bold text-slate-600">列印日期：</span>
       <span id="print-date-display" class="font-mono"></span>
     </div>
-    <div class="text-xl font-black text-center tracking-widest text-slate-800 w-1/3">
+    <!-- 中間：診所名稱 -->
+    <div class="text-xl font-black text-center tracking-widest text-slate-800 w-1/3 whitespace-nowrap">
       康飛運醫 物理治療所
     </div>
-    <div class="text-xs text-right w-1/3">
+    <!-- 右側：個案姓名 (將由 JS 填入) -->
+    <div class="text-xs text-right w-1/3 flex justify-end">
       <div id="print-patient-info" class="font-bold text-lg text-emerald-700"></div>
     </div>
   </div>
@@ -120,8 +156,10 @@
         <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M12 4v16m8-8H4"></path></svg> 新增個案
       </button>
     </div>
-  </aside><!-- Main -->
-  <main id="main-content" class="flex-1 flex flex-col h-screen overflow-hidden print:h-auto print:overflow-visible print:block">
+  </aside>
+  
+  <!-- Main -->
+  <main id="main-content" class="flex-1 flex flex-col h-screen overflow-hidden print:block print:h-auto print:overflow-visible">
     <header class="bg-white border-b border-slate-200 px-6 py-3 flex justify-between items-center flex-shrink-0 shadow-sm z-10 no-print">
       <h2 id="pageTitle" class="text-lg font-bold text-slate-800">首頁</h2>
       <div id="topBarClientInfo" class="hidden flex items-center gap-2 bg-slate-50 pl-4 pr-1 py-1 rounded-full border border-slate-100 shadow-sm">

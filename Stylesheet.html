@@ -38,12 +38,15 @@
       margin: 0 !important; 
       padding: 0 !important; 
       background-color: white !important;
-      display: block !important; /* 取消 flex 佈局 */
+      display: block !important; /* 取消 flex 佈局，防止強制分頁 */
     }
     
-    /* 3. 確保列印標頭顯示並啟用 Flex (以支援垂直置中) */
+    /* 3. 確保列印標頭顯示並啟用 Flex (以支援左右對齊) */
     #print-header { 
         display: flex !important; 
+        width: 100% !important;
+        justify-content: space-between !important; /* 關鍵：確保姓名靠右 */
+        align-items: center !important;
         border-bottom: 2px solid #000 !important; 
         margin-bottom: 15px !important; 
     }
@@ -81,6 +84,7 @@
     /* 避免表格內容被切斷 */
     .print-table tr {
       page-break-inside: avoid;
+      break-inside: avoid;
     }
 
     /* 其他樣式重置 */
@@ -88,6 +92,12 @@
     .bg-slate-50 { background-color: #fff !important; }
     .shadow-sm, .shadow-md, .shadow-lg, .shadow-xl { box-shadow: none !important; }
     .rounded-\[2rem\], .rounded-\[2\.5rem\], .rounded-xl, .rounded-2xl { border-radius: 0 !important; }
+    
+    /* 確保所有元素在列印時都不會強制分頁 */
+    * {
+       break-before: auto !important;
+       page-break-before: auto !important;
+    }
   }
 
   /* === Flatpickr 日曆優化 (針對圖 1 風格修正) === */

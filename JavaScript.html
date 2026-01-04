@@ -219,13 +219,13 @@ function handlePrint() {
   const dateEl = document.getElementById('print-date-display');
   if(dateEl) dateEl.innerText = dateStr;
   
+  // ★ 修改：在標題右側顯示個案姓名
   const infoEl = document.getElementById('print-patient-info');
   if (infoEl) {
       if (currentClient) { 
-          // ★ 修改：只顯示個案姓名 (移除生日)
           infoEl.innerText = currentClient['姓名']; 
       } else { 
-          infoEl.innerText = "個案列表"; 
+          infoEl.innerText = ""; // 若無選擇個案則留白
       }
   }
   window.print();
