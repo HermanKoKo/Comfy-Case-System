@@ -210,7 +210,8 @@ function submitNewClient() {
   else data.gender = '其他';
 
   btn.disabled = true;
-  btn.innerHTML = '<span class="material-icons-outlined animate-spin">sync</span> 建立中...';
+  /* ★★★ 修改處：animate-spin -> animate-spin-reverse ★★★ */
+  btn.innerHTML = '<span class="material-icons-outlined animate-spin-reverse">sync</span> 建立中...';
 
   google.script.run
     .withSuccessHandler(function(res) {
@@ -299,7 +300,8 @@ function handleSearch(keyword) {
   const kw = keyword || document.getElementById('searchInput').value.trim();
   if (!kw) return;
   const container = document.getElementById('searchResults');
-  container.innerHTML = '<div class="text-center py-8 text-slate-400 flex flex-col items-center gap-2"><span class="material-icons-outlined animate-spin">sync</span><span>搜尋中...</span></div>';
+  /* ★★★ 修改處：animate-spin -> animate-spin-reverse ★★★ */
+  container.innerHTML = '<div class="text-center py-8 text-slate-400 flex flex-col items-center gap-2"><span class="material-icons-outlined animate-spin-reverse">sync</span><span>搜尋中...</span></div>';
 
   google.script.run.withSuccessHandler(data => {
       container.innerHTML = '';
@@ -523,7 +525,8 @@ function submitForm(type) {
   if(safeBtn) btn = safeBtn;
 
   const ot = btn ? btn.innerHTML : "儲存";
-  if(btn) { btn.disabled = true; btn.innerHTML = '<span class="material-icons-outlined animate-spin">sync</span> 處理中...'; }
+  /* ★★★ 修改處：animate-spin -> animate-spin-reverse ★★★ */
+  if(btn) { btn.disabled = true; btn.innerHTML = '<span class="material-icons-outlined animate-spin-reverse">sync</span> 處理中...'; }
 
   const onSuccess = (res, formId, reloadFunc) => {
       btn.disabled = false;
@@ -759,9 +762,7 @@ function loadMaintenanceHistory() {
       </div>`;
     }).join('');
   }).getMaintenanceHistory(currentClient['個案編號']);
-}
-
-function loadDoctorHistory() {
+}function loadDoctorHistory() {
   const c = document.getElementById('doctorHistoryList'); c.innerHTML = '<div class="text-center py-10 text-slate-400">讀取中...</div>';
   google.script.run.withSuccessHandler(logs => {
     if(!logs || !logs.length) { c.innerHTML = '<div class="py-12 text-center text-slate-300 bg-white rounded-[2rem] border border-slate-100">尚無看診紀錄</div>'; return; }
@@ -825,7 +826,8 @@ function loadDoctorHistory() {
 // 個案總覽
 // ==========================================
 function loadOverviewData() {
-  const container = document.getElementById('overviewListContainer'); container.innerHTML = '<div class="text-center py-12 text-slate-400 flex flex-col items-center gap-2"><span class="material-icons-outlined animate-spin">sync</span><span>讀取個案歷程中...</span></div>';
+  /* ★★★ 修改處：animate-spin -> animate-spin-reverse ★★★ */
+  const container = document.getElementById('overviewListContainer'); container.innerHTML = '<div class="text-center py-12 text-slate-400 flex flex-col items-center gap-2"><span class="material-icons-outlined animate-spin-reverse">sync</span><span>讀取個案歷程中...</span></div>';
   google.script.run.withSuccessHandler(data => {
       allOverviewRecords = data || [];
       allCalendarEvents = data || [];
@@ -1056,7 +1058,8 @@ function loadClientImages() {
   const container = document.getElementById('imageGalleryContainer');
   const countText = document.getElementById('img-stats-text');
 
-  container.innerHTML = '<div class="col-span-full flex flex-col items-center justify-center py-20 text-slate-300"><span class="material-icons-outlined text-4xl animate-spin mb-3">sync</span><p>讀取影像中...</p></div>';
+  /* ★★★ 修改處：animate-spin -> animate-spin-reverse ★★★ */
+  container.innerHTML = '<div class="col-span-full flex flex-col items-center justify-center py-20 text-slate-300"><span class="material-icons-outlined text-4xl animate-spin-reverse mb-3">sync</span><p>讀取影像中...</p></div>';
   if(countText) countText.textContent = '讀取中...';
 
   const clientId = currentClient['個案編號'];
@@ -1136,7 +1139,8 @@ function startUpload() {
   const remark = document.getElementById('fileRemark').value;
 
   btn.disabled = true;
-  btn.innerHTML = '<span class="material-icons-outlined animate-spin mr-2">sync</span>上傳中...';
+  /* ★★★ 修改處：animate-spin -> animate-spin-reverse ★★★ */
+  btn.innerHTML = '<span class="material-icons-outlined animate-spin-reverse mr-2">sync</span>上傳中...';
 
   let successCount = 0;
 

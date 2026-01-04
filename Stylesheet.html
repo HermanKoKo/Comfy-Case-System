@@ -276,4 +276,14 @@
     background-repeat: no-repeat;
     background-size: 1.25rem;
   }
+
+  /* === ★★★ 新增：逆時針旋轉動畫 (用於 Loading 圖示) ★★★ === */
+  @keyframes spin-reverse {
+    from { transform: rotate(0deg); }
+    to { transform: rotate(-360deg); }
+  }
+
+  .animate-spin-reverse {
+    animation: spin-reverse 1s linear infinite;
+  }
 </style>
