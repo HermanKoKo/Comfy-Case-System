@@ -9,6 +9,7 @@ let currentOverviewCategory = 'all';
 let filesToUpload = [];
 let searchTimer = null;
 let allCalendarEvents = [];
+let isEditingClient = false; // 新增此變數
 
 // ==========================================
 // 初始化與 UI 設定
@@ -181,10 +182,38 @@ function autoDetectGender(input) {
   }
 }
 
+function editClientInfo() {
+  if (!currentClient) return;
+
+  // 1. 設定編輯模式標記
+  isEditingClient = true;
+
+  // 2. 填入資料到表單
+  document.getElementById('addName').value = currentClient['姓名'] || '';
+  document.getElementById('addDob').value = currentClient['生日'] || '';
+  document.getElementById('addIdNo').value = currentClient['身分證字號'] || '';
+  document.getElementById('addPhone').value = currentClient['電話'] || '';
+  document.getElementById('addEmerName').value = currentClient['緊急聯絡人'] || '';
+  document.getElementById('addEmerPhone').value = currentClient['緊急聯絡人電話'] || '';
+  document.getElementById('addTherapist').value = currentClient['負責治療師'] || '';
+  document.getElementById('addChronic').value = currentClient['慢性病或特殊疾病'] || '';
+
+  // 3. 修改 UI 顯示 (標題與按鈕)
+  document.querySelector('#addClientModal h3').textContent = '編輯個案資料';
+  const btn = document.getElementById('btnSubmitClient');
+  btn.innerHTML = '儲存修改';
+  btn.classList.remove('bg-emerald-500', 'hover:bg-emerald-600');
+  btn.classList.add('bg-amber-500', 'hover:bg-amber-600'); // 改為橘黃色以示區別
+
+  // 4. 開啟視窗
+  openModal('addClientModal');
+}
+
 function submitNewClient() {
   const btn = document.getElementById('btnSubmitClient');
-  const originalText = btn.innerHTML;
+  const originalText = btn.innerHTML; // 保存當前按鈕文字
 
+  // 1. 收集表單資料
   const data = {
     name: document.getElementById('addName').value.trim(),
     dob: document.getElementById('addDob').value.trim(),
@@ -197,44 +226,96 @@ function submitNewClient() {
     chronic: document.getElementById('addChronic').value.trim()
   };
 
+  // 2. 驗證
   if (!data.name || !data.dob || !data.idNo || !data.phone) {
       showNotification('資料缺漏', '請填寫所有必填欄位 (*)', 'error');
       return;
   }
-  if (data.idNo.length < 2) {
-      showNotification('格式錯誤', '身分證字號格式錯誤', 'error');
-      return;
-  }
-
+  
+  // 自動判斷性別
   const secondChar = data.idNo.charAt(1);
   if (secondChar === '1') data.gender = '男';
   else if (secondChar === '2') data.gender = '女';
   else data.gender = '其他';
 
   btn.disabled = true;
-  btn.innerHTML = '<span class="material-icons-outlined animate-spin-reverse">sync</span> 建立中...';
+  btn.innerHTML = '<span class="material-icons-outlined animate-spin-reverse">sync</span> 處理中...';
 
-  google.script.run
-    .withSuccessHandler(function(res) {
-      btn.disabled = false;
-      btn.innerHTML = originalText;
-      if (res.success) {
-          showNotification('成功', '個案建立成功！', 'success');
-          document.getElementById('addClientForm').reset();
-          closeModal('addClientModal');
-          selectClient(res.fullData);
+  // ★★★ 關鍵修改：判斷是「編輯」還是「新增」 ★★★
+  if (isEditingClient) {
+      // --- 編輯模式 ---
+      data.clientId = currentClient['個案編號']; // 補上 ID
+
+      google.script.run
+        .withSuccessHandler(function(res) {
+          btn.disabled = false;
+          btn.innerHTML = originalText;
+          
+          if (res.success) {
+              showNotification('成功', '資料已更新！', 'success');
+              
+              // 更新前端的 currentClient 資料
+              currentClient = { ...currentClient, ...res.updatedData };
+              
+              // 重新渲染基本資料頁面
+              renderBasicInfo();
+              document.getElementById('headerClientName').textContent = currentClient['姓名'];
+              document.getElementById('headerClientDob').textContent = currentClient['生日'];
+              
+              closeModal('addClientModal');
+              resetAddClientModalUI(); // 重置 UI 狀態
+          } else {
+              showNotification('更新失敗', res.message, 'error');
+          }
+        })
+        .withFailureHandler(function(e) {
+            btn.disabled = false;
+            btn.innerHTML = originalText;
+            showNotification('系統錯誤', e.message, 'error');
+        })
+        .updateClientBasicInfo(data); // 呼叫後端新函式
+
+  } else {
+      // --- 新增模式 (維持原邏輯) ---
+      if (data.idNo.length < 2) { // 新增時才嚴格檢查身分證格式 (編輯時可能無法修改)
+         showNotification('格式錯誤', '身分證字號格式錯誤', 'error');
+         btn.disabled = false; btn.innerHTML = originalText; return;
       }
-      else {
-          showNotification('建立失敗', res.message, 'error');
-      }
-    })
-    .withFailureHandler(function(e) {
-        btn.disabled = false;
-        btn.innerHTML = originalText;
-        showNotification('系統錯誤', e.message, 'error');
-    })
-    .createNewClient(data);
+
+      google.script.run
+        .withSuccessHandler(function(res) {
+          btn.disabled = false;
+          btn.innerHTML = originalText;
+          if (res.success) {
+              showNotification('成功', '個案建立成功！', 'success');
+              document.getElementById('addClientForm').reset();
+              closeModal('addClientModal');
+              selectClient(res.fullData);
+          } else {
+              showNotification('建立失敗', res.message, 'error');
+          }
+        })
+        .withFailureHandler(function(e) {
+            btn.disabled = false;
+            btn.innerHTML = originalText;
+            showNotification('系統錯誤', e.message, 'error');
+        })
+        .createNewClient(data);
+  }
 }
+
+function resetAddClientModalUI() {
+  isEditingClient = false;
+  document.getElementById('addClientForm').reset();
+  
+  // 還原標題與按鈕樣式
+  document.querySelector('#addClientModal h3').textContent = '新增個案資料';
+  const btn = document.getElementById('btnSubmitClient');
+  btn.innerHTML = '建立個案資料';
+  btn.classList.add('bg-emerald-500', 'hover:bg-emerald-600');
+  btn.classList.remove('bg-amber-500', 'hover:bg-amber-600');
+}
+
 
 // ==========================================
 // 列印功能
@@ -1201,7 +1282,14 @@ function openUploadModal() {
 // 工具函式
 // ==========================================
 function resetSearch() { currentClient = null; document.getElementById('topBarClientInfo').classList.add('hidden'); navTo('search'); }
-function closeModal(id) { document.getElementById(id).classList.add('hidden'); }
+function closeModal(id) { 
+  document.getElementById(id).classList.add('hidden'); 
+  
+  // 如果關閉的是新增個案視窗，必須重置 UI
+  if (id === 'addClientModal') {
+    resetAddClientModalUI();
+  }
+}
 function openModal(id) { document.getElementById(id).classList.remove('hidden'); }
 
 // ==========================================

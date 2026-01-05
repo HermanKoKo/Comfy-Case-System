@@ -923,3 +923,71 @@ function updateRecord(type, formData) {
     lock.releaseLock();
   }
 }
+
+/**
+ * 更新個案基本資料 (由前端 editClientInfo 觸發)
+ */
+function updateClientBasicInfo(data) {
+  const lock = LockService.getScriptLock();
+  try {
+    lock.waitLock(10000);
+    
+    // 1. 取得個案資料表
+    const sheet = getSheetHelper(CONFIG.SHEETS.CLIENT);
+    const rows = sheet.getDataRange().getDisplayValues();
+    
+    // 2. 尋找目標個案所在的列
+    let rowIndex = -1;
+    const targetId = String(data.clientId).trim();
+    
+    // 從第 1 列 (Index 1) 開始遍歷，略過標題
+    for (let i = 1; i < rows.length; i++) {
+      if (String(rows[i][0]).replace(/^'/, '').trim() === targetId) {
+        rowIndex = i + 1; // 轉為實際 Row Number (1-based)
+        break;
+      }
+    }
+    
+    if (rowIndex === -1) {
+      throw new Error("找不到此個案編號: " + targetId);
+    }
+    
+    // 3. 更新欄位 (依據 createNewClient 的欄位順序)
+    // A:編號(1), B:姓名(2), C:生日(3), D:身分證(4), E:電話(5), 
+    // F:性別(6), G:緊急聯絡人(7), H:緊急電話(8), I:治療師(9), J:慢性病(10)
+    
+    sheet.getRange(rowIndex, 2).setValue(data.name);      // 姓名
+    sheet.getRange(rowIndex, 3).setValue(data.dob);       // 生日
+    sheet.getRange(rowIndex, 4).setValue(data.idNo);      // 身分證
+    sheet.getRange(rowIndex, 5).setValue("'" + data.phone); // 電話
+    sheet.getRange(rowIndex, 6).setValue(data.gender);    // 性別
+    sheet.getRange(rowIndex, 7).setValue(data.emerName);  // 緊急聯絡人
+    sheet.getRange(rowIndex, 8).setValue("'" + data.emerPhone); // 緊急電話
+    sheet.getRange(rowIndex, 9).setValue(data.therapist); // 治療師
+    sheet.getRange(rowIndex, 10).setValue(data.chronic);  // 慢性病
+    
+    // 4. 回傳更新後的完整資料給前端
+    return {
+      success: true,
+      message: "基本資料更新成功",
+      updatedData: {
+        '個案編號': data.clientId,
+        '姓名': data.name,
+        '生日': data.dob,
+        '身分證字號': data.idNo,
+        '電話': data.phone,
+        '性別': data.gender,
+        '緊急聯絡人': data.emerName,
+        '緊急聯絡人電話': data.emerPhone,
+        '負責治療師': data.therapist,
+        '慢性病或特殊疾病': data.chronic,
+        '狀態': 'Active' // 預設狀態
+      }
+    };
+    
+  } catch (e) {
+    return { success: false, message: "更新失敗: " + e.toString() };
+  } finally {
+    lock.releaseLock();
+  }
+}
