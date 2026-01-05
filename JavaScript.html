@@ -532,6 +532,8 @@ function startEdit(type, data) {
         f.querySelector('input[name="血氧"]').value = data['血氧'] || "";
         f.querySelector('input[name="心律"]').value = data['心律'] || "";
         f.querySelector('input[name="體溫"]').value = data['體溫'] || "";
+        // ★ 修改處：加入呼吸速率回填
+        f.querySelector('input[name="呼吸速率"]').value = data['呼吸速率'] || "";
         f.querySelector('textarea[name="備註"]').value = data['備註'] || "";
         document.getElementById('view-maintenance').scrollIntoView({ behavior: 'smooth' });
     }
@@ -701,6 +703,8 @@ function submitForm(type) {
       spo2: f.querySelector('input[name="血氧"]').value,
       hr: f.querySelector('input[name="心律"]').value,
       temp: f.querySelector('input[name="體溫"]').value,
+      // ★ 修改處：加入呼吸速率收集
+      rr: f.querySelector('input[name="呼吸速率"]').value,
       remark: f.querySelector('textarea[name="備註"]').value
     };
     if (!d.date || !d.staff || !d.item) {
@@ -835,6 +839,7 @@ function loadMaintenanceHistory() {
 
     c.innerHTML = logs.map(l => {
       const dataStr = encodeURIComponent(JSON.stringify(l));
+      // ★ 修改處：調整為 grid-cols-5 並加入 RR 顯示
       return `
       <div class="bg-white p-6 rounded-[2rem] shadow-sm border border-slate-100 card-hover mb-4 flex flex-col md:flex-row gap-4 items-center print:break-inside-avoid print:mb-4 print:border print:border-slate-300 relative group">
         <button onclick="startEdit('maintenance', JSON.parse(decodeURIComponent('${dataStr}')))" class="absolute top-4 right-4 text-slate-300 hover:text-orange-500 transition print:hidden" title="編輯">
@@ -848,11 +853,12 @@ function loadMaintenanceHistory() {
              <span class="material-icons-outlined text-sm text-slate-400 print:hidden">person</span>${l['執行人員']||'--'}
           </div>
         </div>
-        <div class="w-full grid grid-cols-4 gap-2 text-center">
+        <div class="w-full grid grid-cols-5 gap-2 text-center">
+          <div class="p-2 rounded-xl bg-slate-50 print:bg-white print:border print:border-slate-300"><div class="text-[9px] font-bold text-slate-400 mb-1 print:text-black">Temp</div><div class="text-sm font-black text-slate-700 print:text-black">${l['體溫']||'-'}</div></div>
+          <div class="p-2 rounded-xl bg-slate-50 print:bg-white print:border print:border-slate-300"><div class="text-[9px] font-bold text-slate-400 mb-1 print:text-black">HR</div><div class="text-sm font-black text-slate-700 print:text-black">${l['心律']||'-'}</div></div>
+          <div class="p-2 rounded-xl bg-slate-50 print:bg-white print:border print:border-slate-300"><div class="text-[9px] font-bold text-slate-400 mb-1 print:text-black">RR</div><div class="text-sm font-black text-slate-700 print:text-black">${l['呼吸速率']||'-'}</div></div>
           <div class="p-2 rounded-xl bg-slate-50 print:bg-white print:border print:border-slate-300"><div class="text-[9px] font-bold text-slate-400 mb-1 print:text-black">BP</div><div class="text-sm font-black text-slate-700 print:text-black">${l['血壓']||'-'}</div></div>
           <div class="p-2 rounded-xl bg-slate-50 print:bg-white print:border print:border-slate-300"><div class="text-[9px] font-bold text-slate-400 mb-1 print:text-black">SpO2</div><div class="text-sm font-black text-slate-700 print:text-black">${l['血氧']||'-'}</div></div>
-          <div class="p-2 rounded-xl bg-slate-50 print:bg-white print:border print:border-slate-300"><div class="text-[9px] font-bold text-slate-400 mb-1 print:text-black">HR</div><div class="text-sm font-black text-slate-700 print:text-black">${l['心律']||'-'}</div></div>
-          <div class="p-2 rounded-xl bg-slate-50 print:bg-white print:border print:border-slate-300"><div class="text-[9px] font-bold text-slate-400 mb-1 print:text-black">Temp</div><div class="text-sm font-black text-slate-700 print:text-black">${l['體溫']||'-'}</div></div>
         </div>
       </div>`;
     }).join('');
@@ -1028,6 +1034,7 @@ function getFilteredOverviewData() {
       </div>`;
     }
     else if (i.category === 'maintenance') {
+      // ★ 修改處：調整 grid 與加入 RR
       return `
       <div class="${cardClass}">
           <div class="absolute left-0 top-0 bottom-0 w-1.5 bg-orange-400 opacity-80"></div>
@@ -1040,11 +1047,12 @@ function getFilteredOverviewData() {
                   <span class="material-icons-outlined text-sm text-slate-400">person</span> ${i.staff||'--'}
               </div>
           </div>
-          <div class="pl-3 grid grid-cols-4 gap-2 mb-2">
+          <div class="pl-3 grid grid-cols-5 gap-2 mb-2">
+              <div class="p-2 rounded-xl bg-slate-50 border border-slate-100 flex flex-col items-center justify-center"><span class="text-[9px] font-bold text-slate-400">Temp</span><span class="text-xs font-black text-slate-700">${i.temp||'-'}</span></div>
+              <div class="p-2 rounded-xl bg-slate-50 border border-slate-100 flex flex-col items-center justify-center"><span class="text-[9px] font-bold text-slate-400">HR</span><span class="text-xs font-black text-slate-700">${i.hr||'-'}</span></div>
+              <div class="p-2 rounded-xl bg-slate-50 border border-slate-100 flex flex-col items-center justify-center"><span class="text-[9px] font-bold text-slate-400">RR</span><span class="text-xs font-black text-slate-700">${i.rr||'-'}</span></div>
               <div class="p-2 rounded-xl bg-slate-50 border border-slate-100 flex flex-col items-center justify-center"><span class="text-[9px] font-bold text-slate-400">BP</span><span class="text-xs font-black text-slate-700">${i.bp||'-'}</span></div>
               <div class="p-2 rounded-xl bg-slate-50 border border-slate-100 flex flex-col items-center justify-center"><span class="text-[9px] font-bold text-slate-400">SpO2</span><span class="text-xs font-black text-slate-700">${i.spo2||'-'}</span></div>
-              <div class="p-2 rounded-xl bg-slate-50 border border-slate-100 flex flex-col items-center justify-center"><span class="text-[9px] font-bold text-slate-400">HR</span><span class="text-xs font-black text-slate-700">${i.hr||'-'}</span></div>
-              <div class="p-2 rounded-xl bg-slate-50 border border-slate-100 flex flex-col items-center justify-center"><span class="text-[9px] font-bold text-slate-400">Temp</span><span class="text-xs font-black text-slate-700">${i.temp||'-'}</span></div>
           </div>
           ${i.remark && i.remark !== '--' ? `<div class="pl-3 mt-2"><div class="text-xs text-slate-600 bg-orange-50/50 p-2.5 rounded-xl border border-orange-100 flex gap-2 items-start"><span class="font-bold text-orange-400 shrink-0 text-[10px] pt-0.5">NOTE</span><span class="leading-snug">${i.remark}</span></div></div>` : ''}
       </div>`;
@@ -1122,7 +1130,8 @@ function getFilteredOverviewData() {
     else if (i.category === 'maintenance') {
        typeName = '保養項目';
        if(i.item) typeName += `<br><small>(${i.item})</small>`;
-       content = `BP: ${i.bp||'-'} / SpO2: ${i.spo2||'-'} / HR: ${i.hr||'-'} / T: ${i.temp||'-'}`;
+       // ★ 修改處：列印報表也加入 RR
+       content = `T: ${i.temp||'-'} / HR: ${i.hr||'-'} / RR: ${i.rr||'-'} / BP: ${i.bp||'-'} / SpO2: ${i.spo2||'-'}`;
        if(i.remark && i.remark!=='--') content += `<br><b>[備註]</b> ${i.remark}`;
     }
     else if (i.category === 'tracking') {

@@ -1,4 +1,3 @@
-
 /**
  * ==========================================
  * 設定檔 (Config.gs)
@@ -480,6 +479,8 @@ function saveMaintenanceRecord(data) {
       data.spo2,
       data.hr,
       data.temp,
+      // ★ 修改處：加入呼吸速率 (J欄, Index 9)
+      data.rr,
       data.remark,
       new Date()
     ];
@@ -546,7 +547,9 @@ function getCaseOverviewData(clientId) {
             spo2: row[6],
             hr: row[7],
             temp: row[8],
-            remark: row[9]
+            // ★ 修改處：讀取 J 欄的呼吸速率 (Index 9)
+            rr: row[9],
+            remark: row[10]
           });
         }
       });
@@ -906,7 +909,10 @@ function updateRecord(type, formData) {
        sheet.getRange(rowIndex, 7).setValue(formData.spo2);
        sheet.getRange(rowIndex, 8).setValue(formData.hr);
        sheet.getRange(rowIndex, 9).setValue(formData.temp);
-       sheet.getRange(rowIndex, 10).setValue(formData.remark);
+       // ★ 修改處：寫入呼吸速率 (J欄, 索引10)
+       sheet.getRange(rowIndex, 10).setValue(formData.rr);
+       // ★ 修改處：備註順延至 K欄 (索引11)
+       sheet.getRange(rowIndex, 11).setValue(formData.remark);
     } 
     else if (type === 'tracking') {
        sheet.getRange(rowIndex, 3).setValue(formData.trackDate);

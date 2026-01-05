@@ -373,24 +373,41 @@
                 </select>
               </div>
             </div>
-            <div class="grid grid-cols-1 md:grid-cols-4 gap-4 p-3 bg-slate-50/50 rounded-[2rem] border border-slate-100">
-              <div class="space-y-1">
-                <label class="text-xs font-bold text-slate-400 flex items-center gap-1.5 ml-1">血壓 (mmHg)</label>
-                <input type="text" name="血壓" placeholder="120/80" class="w-full px-4 py-2 bg-white border border-slate-200 rounded-2xl focus:border-orange-500 outline-none transition-all">
-              </div>
-              <div class="space-y-1">
-                <label class="text-xs font-bold text-slate-400 flex items-center gap-1.5 ml-1">血氧 (%)</label>
-                <input type="text" name="血氧" placeholder="98" class="w-full px-4 py-2 bg-white border border-slate-200 rounded-2xl focus:border-orange-500 outline-none transition-all">
-              </div>
-              <div class="space-y-1">
-                <label class="text-xs font-bold text-slate-400 flex items-center gap-1.5 ml-1">心律 (bpm)</label>
-                <input type="text" name="心律" placeholder="72" class="w-full px-4 py-2 bg-white border border-slate-200 rounded-2xl focus:border-orange-500 outline-none transition-all">
-              </div>
+            
+            <!-- ★★★ 修改重點：調整順序並新增呼吸速率 ★★★ -->
+            <div class="grid grid-cols-1 md:grid-cols-5 gap-4 p-3 bg-slate-50/50 rounded-[2rem] border border-slate-100">
+              
+              <!-- 1. 體溫 -->
               <div class="space-y-1">
                 <label class="text-xs font-bold text-slate-400 flex items-center gap-1.5 ml-1">體溫 (°C)</label>
                 <input type="text" name="體溫" placeholder="36.5" class="w-full px-4 py-2 bg-white border border-slate-200 rounded-2xl focus:border-orange-500 outline-none transition-all">
               </div>
+
+              <!-- 2. 心律 -->
+              <div class="space-y-1">
+                <label class="text-xs font-bold text-slate-400 flex items-center gap-1.5 ml-1">心律 (bpm)</label>
+                <input type="text" name="心律" placeholder="72" class="w-full px-4 py-2 bg-white border border-slate-200 rounded-2xl focus:border-orange-500 outline-none transition-all">
+              </div>
+
+              <!-- 3. 呼吸速率 (新增) -->
+              <div class="space-y-1">
+                <label class="text-xs font-bold text-slate-400 flex items-center gap-1.5 ml-1">呼吸速率 (bpm)</label>
+                <input type="text" name="呼吸速率" placeholder="16" class="w-full px-4 py-2 bg-white border border-slate-200 rounded-2xl focus:border-orange-500 outline-none transition-all">
+              </div>
+
+              <!-- 4. 血壓 -->
+              <div class="space-y-1">
+                <label class="text-xs font-bold text-slate-400 flex items-center gap-1.5 ml-1">血壓 (mmHg)</label>
+                <input type="text" name="血壓" placeholder="120/80" class="w-full px-4 py-2 bg-white border border-slate-200 rounded-2xl focus:border-orange-500 outline-none transition-all">
+              </div>
+
+              <!-- 5. 血氧 -->
+              <div class="space-y-1">
+                <label class="text-xs font-bold text-slate-400 flex items-center gap-1.5 ml-1">血氧 (%)</label>
+                <input type="text" name="血氧" placeholder="98" class="w-full px-4 py-2 bg-white border border-slate-200 rounded-2xl focus:border-orange-500 outline-none transition-all">
+              </div>
             </div>
+
             <div class="space-y-1">
                <label class="text-sm font-bold text-slate-400 block ml-1">備註</label>
                <textarea name="備註" rows="3" class="w-full px-4 py-2 bg-white border border-slate-200 rounded-3xl focus:border-orange-500 outline-none transition-all resize-none" placeholder="請輸入保養相關備註..."></textarea>
