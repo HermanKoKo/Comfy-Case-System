@@ -337,16 +337,24 @@
          </div>
       </div>
 
-      <!-- 保養項目視圖 -->
+      <!-- 保養項目視圖 (已修改) -->
       <div id="view-maintenance" class="hidden max-w-5xl mx-auto space-y-4">
         <div class="bg-white rounded-[2.5rem] shadow-sm border border-slate-100 overflow-hidden no-print">
-          <div class="px-6 py-4 border-b border-slate-50 flex items-center gap-3">
-             <div class="p-2.5 bg-orange-50 rounded-2xl text-orange-500">
-               <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path>
-               </svg>
+          <!-- ★ 修改：增加 justify-between 並加入上傳按鈕 -->
+          <div class="px-6 py-4 border-b border-slate-50 flex items-center justify-between gap-3">
+             <div class="flex items-center gap-3">
+               <div class="p-2.5 bg-orange-50 rounded-2xl text-orange-500">
+                 <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path>
+                 </svg>
+               </div>
+               <h3 class="font-black text-slate-800 text-lg">新增保養紀錄</h3>
              </div>
-             <h3 class="font-black text-slate-800 text-lg">新增保養紀錄</h3>
+             <!-- 新增的上傳按鈕 -->
+             <button type="button" onclick="openUploadModal()" class="flex items-center gap-2 bg-white border border-slate-200 hover:border-emerald-500 hover:text-emerald-600 text-slate-600 px-3 py-1.5 rounded-xl font-bold transition shadow-sm active:scale-95 text-xs">
+                <span class="material-icons-outlined text-base">cloud_upload</span>
+                上傳檔案
+             </button>
           </div>
           <form id="maintenanceForm" class="p-5 space-y-3">
             <input type="hidden" name="個案編號" class="auto-fill-id">
@@ -374,7 +382,6 @@
               </div>
             </div>
             
-            <!-- ★★★ 修改重點：調整順序並新增呼吸速率 ★★★ -->
             <div class="grid grid-cols-1 md:grid-cols-5 gap-4 p-3 bg-slate-50/50 rounded-[2rem] border border-slate-100">
               
               <!-- 1. 體溫 -->
@@ -432,9 +439,7 @@
             </div>
           </div>
         </div>
-      </div>
-
-      <!-- 個管追蹤視圖 -->
+      </div><!-- 個管追蹤視圖 (已修改) -->
       <div id="view-tracking" class="hidden max-w-6xl mx-auto space-y-4">
         <div class="flex justify-between items-center mb-2 no-print">
           <h3 class="text-2xl font-bold text-violet-700 flex items-center gap-3">
@@ -444,7 +449,16 @@
         </div>
         <div class="grid grid-cols-1 lg:grid-cols-3 gap-4">
           <div class="lg:col-span-1 bg-white rounded-[2.5rem] p-5 shadow-sm border border-slate-100 h-fit no-print">
-            <h3 class="text-lg font-bold text-violet-600 mb-3 border-b border-violet-50 pb-2">新增紀錄</h3>
+            
+            <!-- ★ 修改：將標題包入 flex 容器並加入上傳按鈕 -->
+            <div class="flex justify-between items-center mb-3 border-b border-violet-50 pb-2">
+                <h3 class="text-lg font-bold text-violet-600">新增紀錄</h3>
+                <button type="button" onclick="openUploadModal()" class="flex items-center gap-2 bg-white border border-slate-200 hover:border-emerald-500 hover:text-emerald-600 text-slate-600 px-3 py-1.5 rounded-xl font-bold transition shadow-sm active:scale-95 text-xs">
+                    <span class="material-icons-outlined text-base">cloud_upload</span>
+                    上傳檔案
+                </button>
+            </div>
+
             <form id="trackingForm" onsubmit="event.preventDefault(); submitForm('tracking');">
               <input type="hidden" name="個案編號" class="auto-fill-id">
               <input type="hidden" id="edit_id_tracking" name="record_id" value="">
@@ -498,7 +512,9 @@
             </div>
           </div>
         </div>
-      </div><!-- 醫師看診視圖 -->
+      </div>
+      
+      <!-- 醫師看診視圖 -->
       <div id="view-doctor" class="hidden max-w-5xl mx-auto space-y-4">
         <div class="bg-white rounded-[2.5rem] shadow-sm border border-slate-100 overflow-hidden no-print">
           <div class="px-6 py-3 bg-slate-50 border-b border-slate-100 flex justify-between items-center">
