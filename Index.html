@@ -107,13 +107,13 @@
 
 <body class="bg-[#f8fafc] font-sans text-slate-900 antialiased h-screen overflow-hidden flex print:block print:h-auto print:overflow-visible">
 
-  <!-- ★★★ Sidebar (修改重點：手機隱藏並浮動，電腦固定) ★★★ -->
+  <!-- ★★★ Sidebar (手機隱藏並浮動，電腦固定) ★★★ -->
   <aside id="sidebar" class="w-64 bg-[#1e293b] text-white flex-col flex-shrink-0 shadow-xl no-print hidden md:flex fixed inset-y-0 left-0 z-50 md:static h-full transition-all">
     <div class="p-5 flex justify-between items-center">
       <h1 class="text-xl font-bold tracking-tight flex items-center gap-2">
         <span class="bg-emerald-500 w-2 h-6 rounded-full"></span> 康飛運醫
       </h1>
-      <!-- ★ 手機版關閉選單按鈕 -->
+      <!-- 手機版關閉選單按鈕 -->
       <button onclick="toggleSidebar()" class="md:hidden text-slate-400 hover:text-white transition p-1">
         <span class="material-icons-outlined text-2xl">close</span>
       </button>
@@ -140,10 +140,10 @@
   
   <!-- Main -->
   <main id="main-content" class="flex-1 flex flex-col h-screen overflow-hidden print:block print:h-auto print:overflow-visible">
-    <!-- ★★★ Header (修改重點：加入漢堡選單按鈕) ★★★ -->
+    <!-- ★★★ Header ★★★ -->
     <header class="bg-white border-b border-slate-200 px-6 py-3 flex justify-between items-center flex-shrink-0 shadow-sm z-10 no-print">
       <div class="flex items-center gap-4">
-         <!-- ★ 手機版漢堡選單按鈕 -->
+         <!-- 手機版漢堡選單按鈕 -->
          <button onclick="toggleSidebar()" class="text-slate-500 hover:text-emerald-500 md:hidden transition p-1">
             <span class="material-icons-outlined text-2xl">menu</span>
          </button>
@@ -151,6 +151,7 @@
       </div>
       <div id="topBarClientInfo" class="hidden flex items-center gap-2 bg-slate-50 pl-4 pr-1 py-1 rounded-full border border-slate-100 shadow-sm">
         <span id="headerClientName" class="font-bold text-emerald-600 text-sm">--</span>
+        <!-- 目標修正位置：生日格式將透過底部 Script 自動修正 -->
         <span id="headerClientDob" class="text-xs text-slate-500 font-mono bg-white px-3 py-1 rounded-full shadow-sm">--</span>
       </div>
     </header>
@@ -164,13 +165,15 @@
           <p class="text-slate-500">請先搜尋個案，或點擊新增個案</p>
         </div>
         <div class="w-full relative group">
-          <input type="text" id="searchInput" oninput="handleSearchDebounced(this.value)" placeholder="輸入姓名或電話..." class="w-full px-6 py-3 bg-white border-2 border-slate-100 rounded-3xl shadow-xl focus:border-emerald-500 outline-none transition text-lg">
+          <input type="text" id="searchInput" oninput="handleSearchDebounced(this.value)" placeholder="輸入姓名或電話" class="w-full px-6 py-3 bg-white border-2 border-slate-100 rounded-3xl shadow-xl focus:border-emerald-500 outline-none transition text-lg">
           <button onclick="handleSearch()" class="absolute right-3 top-1/2 -translate-y-1/2 bg-emerald-500 text-white p-2.5 rounded-2xl shadow-lg hover:bg-emerald-600 transition">
             <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
           </button>
         </div>
         <div id="searchResults" class="w-full space-y-3"></div>
-      </div><!-- 基本資料 -->
+      </div>
+
+      <!-- 基本資料 -->
       <div id="view-basic" class="hidden max-w-4xl mx-auto space-y-4">
         <div class="flex justify-between items-end no-print">
           <div>
@@ -335,12 +338,9 @@
              </div>
              <div id="historyListContainer" class="space-y-3 min-h-[200px] print:space-y-4"></div>
          </div>
-      </div>
-
-      <!-- 保養項目視圖 (已修改) -->
+      </div><!-- 保養項目視圖 (已修改：移除 placeholder) -->
       <div id="view-maintenance" class="hidden max-w-5xl mx-auto space-y-4">
         <div class="bg-white rounded-[2.5rem] shadow-sm border border-slate-100 overflow-hidden no-print">
-          <!-- ★ 修改：增加 justify-between 並加入上傳按鈕 -->
           <div class="px-6 py-4 border-b border-slate-50 flex items-center justify-between gap-3">
              <div class="flex items-center gap-3">
                <div class="p-2.5 bg-orange-50 rounded-2xl text-orange-500">
@@ -350,7 +350,6 @@
                </div>
                <h3 class="font-black text-slate-800 text-lg">新增保養紀錄</h3>
              </div>
-             <!-- 新增的上傳按鈕 -->
              <button type="button" onclick="openUploadModal()" class="flex items-center gap-2 bg-white border border-slate-200 hover:border-emerald-500 hover:text-emerald-600 text-slate-600 px-3 py-1.5 rounded-xl font-bold transition shadow-sm active:scale-95 text-xs">
                 <span class="material-icons-outlined text-base">cloud_upload</span>
                 上傳檔案
@@ -384,40 +383,40 @@
             
             <div class="grid grid-cols-1 md:grid-cols-5 gap-4 p-3 bg-slate-50/50 rounded-[2rem] border border-slate-100">
               
-              <!-- 1. 體溫 -->
+              <!-- 1. 體溫 (已移除 placeholder) -->
               <div class="space-y-1">
                 <label class="text-xs font-bold text-slate-400 flex items-center gap-1.5 ml-1">體溫 (°C)</label>
-                <input type="text" name="體溫" placeholder="36.5" class="w-full px-4 py-2 bg-white border border-slate-200 rounded-2xl focus:border-orange-500 outline-none transition-all">
+                <input type="text" name="體溫" class="w-full px-4 py-2 bg-white border border-slate-200 rounded-2xl focus:border-orange-500 outline-none transition-all">
               </div>
 
-              <!-- 2. 心律 -->
+              <!-- 2. 心律 (已移除 placeholder) -->
               <div class="space-y-1">
                 <label class="text-xs font-bold text-slate-400 flex items-center gap-1.5 ml-1">心律 (bpm)</label>
-                <input type="text" name="心律" placeholder="72" class="w-full px-4 py-2 bg-white border border-slate-200 rounded-2xl focus:border-orange-500 outline-none transition-all">
+                <input type="text" name="心律"  class="w-full px-4 py-2 bg-white border border-slate-200 rounded-2xl focus:border-orange-500 outline-none transition-all">
               </div>
 
-              <!-- 3. 呼吸速率 (新增) -->
+              <!-- 3. 呼吸速率 (已移除 placeholder) -->
               <div class="space-y-1">
                 <label class="text-xs font-bold text-slate-400 flex items-center gap-1.5 ml-1">呼吸速率 (bpm)</label>
-                <input type="text" name="呼吸速率" placeholder="16" class="w-full px-4 py-2 bg-white border border-slate-200 rounded-2xl focus:border-orange-500 outline-none transition-all">
+                <input type="text" name="呼吸速率"  class="w-full px-4 py-2 bg-white border border-slate-200 rounded-2xl focus:border-orange-500 outline-none transition-all">
               </div>
 
-              <!-- 4. 血壓 -->
+              <!-- 4. 血壓 (已移除 placeholder) -->
               <div class="space-y-1">
                 <label class="text-xs font-bold text-slate-400 flex items-center gap-1.5 ml-1">血壓 (mmHg)</label>
-                <input type="text" name="血壓" placeholder="120/80" class="w-full px-4 py-2 bg-white border border-slate-200 rounded-2xl focus:border-orange-500 outline-none transition-all">
+                <input type="text" name="血壓" class="w-full px-4 py-2 bg-white border border-slate-200 rounded-2xl focus:border-orange-500 outline-none transition-all">
               </div>
 
-              <!-- 5. 血氧 -->
+              <!-- 5. 血氧 (已移除 placeholder) -->
               <div class="space-y-1">
                 <label class="text-xs font-bold text-slate-400 flex items-center gap-1.5 ml-1">血氧 (%)</label>
-                <input type="text" name="血氧" placeholder="98" class="w-full px-4 py-2 bg-white border border-slate-200 rounded-2xl focus:border-orange-500 outline-none transition-all">
+                <input type="text" name="血氧"  class="w-full px-4 py-2 bg-white border border-slate-200 rounded-2xl focus:border-orange-500 outline-none transition-all">
               </div>
             </div>
 
             <div class="space-y-1">
                <label class="text-sm font-bold text-slate-400 block ml-1">備註</label>
-               <textarea name="備註" rows="3" class="w-full px-4 py-2 bg-white border border-slate-200 rounded-3xl focus:border-orange-500 outline-none transition-all resize-none" placeholder="請輸入保養相關備註..."></textarea>
+               <textarea name="備註" rows="3" class="w-full px-4 py-2 bg-white border border-slate-200 rounded-3xl focus:border-orange-500 outline-none transition-all resize-none" placeholder="請輸入相關備註..."></textarea>
             </div>
             <div class="flex justify-end items-center pt-2 gap-4">
               <div id="edit-cancel-maintenance" class="hidden">
@@ -439,7 +438,9 @@
             </div>
           </div>
         </div>
-      </div><!-- 個管追蹤視圖 (已修改) -->
+      </div>
+
+      <!-- 個管追蹤視圖 -->
       <div id="view-tracking" class="hidden max-w-6xl mx-auto space-y-4">
         <div class="flex justify-between items-center mb-2 no-print">
           <h3 class="text-2xl font-bold text-violet-700 flex items-center gap-3">
@@ -450,7 +451,6 @@
         <div class="grid grid-cols-1 lg:grid-cols-3 gap-4">
           <div class="lg:col-span-1 bg-white rounded-[2.5rem] p-5 shadow-sm border border-slate-100 h-fit no-print">
             
-            <!-- ★ 修改：將標題包入 flex 容器並加入上傳按鈕 -->
             <div class="flex justify-between items-center mb-3 border-b border-violet-50 pb-2">
                 <h3 class="text-lg font-bold text-violet-600">新增紀錄</h3>
                 <button type="button" onclick="openUploadModal()" class="flex items-center gap-2 bg-white border border-slate-200 hover:border-emerald-500 hover:text-emerald-600 text-slate-600 px-3 py-1.5 rounded-xl font-bold transition shadow-sm active:scale-95 text-xs">
@@ -636,9 +636,7 @@
 
       </div>
     </div>
-  </main>
-
-  <!-- Modal: 新增個案 -->
+  </main><!-- Modal: 新增個案 -->
   <div id="addClientModal" class="hidden fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 no-print">
      <div class="bg-white w-full max-w-3xl rounded-[2.5rem] overflow-hidden shadow-2xl">
         <div class="px-6 py-4 border-b border-slate-100 flex justify-between items-center bg-white sticky top-0 z-10">
@@ -838,6 +836,39 @@
         behavior: 'smooth'
       });
     }
+
+    // ★★★ 自動修正生日格式 (YYYYMMDD -> YYYY-MM-DD) ★★★
+    // 透過監聽 headerClientDob 元素的變化，當外部 JS 填入資料時自動觸發修正
+    const dobObserver = new MutationObserver(function(mutations) {
+      mutations.forEach(function(mutation) {
+        if (mutation.type === 'childList' || mutation.type === 'characterData') {
+          const target = mutation.target;
+          // 如果變更的是文字節點，取其父元素
+          const el = target.nodeType === 3 ? target.parentNode : target;
+
+          if (el.id === 'headerClientDob') {
+            const original = el.textContent.trim();
+            // 檢查是否為 8 碼純數字 (例如 20040514)
+            if (/^\d{8}$/.test(original)) {
+              // 切割並重組字串
+              const formatted = original.substring(0, 4) + '-' +
+                                original.substring(4, 6) + '-' +
+                                original.substring(6, 8);
+              // 防止無窮迴圈：只有在內容真的不同時才更新
+              if (el.textContent !== formatted) {
+                el.textContent = formatted;
+              }
+            }
+          }
+        }
+      });
+    });
+
+    // 開始監聽 ID 為 headerClientDob 的元素
+    const dobElement = document.getElementById('headerClientDob');
+    if (dobElement) {
+      dobObserver.observe(dobElement, { childList: true, characterData: true, subtree: true });
+    }
   </script>
 
   <!-- 回到頂部按鈕 -->
@@ -845,7 +876,7 @@
     <span class="material-icons-outlined text-2xl">arrow_upward</span>
   </button>
 
-  <!-- ★★★ 新增：自定義通知 Modal ★★★ -->
+  <!-- 自定義通知 Modal -->
   <div id="custom-modal" class="hidden fixed inset-0 z-[200] flex items-center justify-center px-4 bg-slate-900/60 backdrop-blur-sm transition-opacity duration-300 no-print">
       <div class="bg-white rounded-[2.5rem] shadow-2xl max-w-sm w-full p-6 transform transition-all scale-100 relative overflow-hidden">
           <!-- 背景裝飾圓形 -->
