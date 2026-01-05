@@ -124,10 +124,16 @@ function loadTreatmentItems() {
     }).getTreatmentItemsFromSystem();
 }
 
-// ==========================================
-// 導覽與頁面切換
-// ==========================================
 function navTo(viewName) {
+  // ★ 新增：手機版點擊選單後，自動收起側邊欄
+  if (window.innerWidth < 768) {
+      const sidebar = document.getElementById('sidebar');
+      if (sidebar && !sidebar.classList.contains('hidden')) {
+          sidebar.classList.add('hidden');
+      }
+  }
+
+  // --- 以下維持原有邏輯 ---
   if (!currentClient && viewName !== 'search') {
       showNotification('提示', '請先選取個案以進行操作。', 'info');
       return;
@@ -1282,6 +1288,7 @@ function openUploadModal() {
 // 工具函式
 // ==========================================
 function resetSearch() { currentClient = null; document.getElementById('topBarClientInfo').classList.add('hidden'); navTo('search'); }
+
 function closeModal(id) { 
   document.getElementById(id).classList.add('hidden'); 
   
@@ -1290,6 +1297,17 @@ function closeModal(id) {
     resetAddClientModalUI();
   }
 }
+
+function toggleSidebar() {
+  const sidebar = document.getElementById('sidebar');
+  if (sidebar) {
+    // 切換 hidden 類別：
+    // 如果有 hidden (隱藏中) -> 移除 (顯示)
+    // 如果沒 hidden (顯示中) -> 加入 (隱藏)
+    sidebar.classList.toggle('hidden');
+  }
+}
+
 function openModal(id) { document.getElementById(id).classList.remove('hidden'); }
 
 // ==========================================

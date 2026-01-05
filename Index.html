@@ -31,28 +31,25 @@
     /* 其他通用樣式保持不變 */
     .flatpickr-calendar { z-index: 99999 !important; }
 
-    /* 列印樣式 - 已針對去除空白頁進行修正 */
+    /* 列印樣式 */
     @media print {
       @page { margin: 1cm; size: A4; }
       
-      /* 強制重置容器高度與顯示模式，解決空白頁問題 */
       html, body, main, #contentArea {
         height: auto !important;
         min-height: 0 !important;
         overflow: visible !important;
-        display: block !important; /* 關鍵：取消 Flexbox 佈局 */
+        display: block !important;
         background-color: white !important;
       }
 
-      /* 隱藏不必要的元素 */
       .no-print, button, .material-icons-outlined, #sidebar, #btnBackToTop { 
         display: none !important; 
       }
 
-      /* 表格與卡片樣式優化 */
       .card-hover, .bg-white, .rounded-\[2rem\], .rounded-\[2\.5rem\], .shadow-sm {
         box-shadow: none !important;
-        border-radius: 0 !important; /* 移除圓角 */
+        border-radius: 0 !important;
         background-color: white !important;
         border: 1px solid #ddd !important;
         margin-bottom: 10px !important;
@@ -60,13 +57,11 @@
         transform: none !important;
       }
 
-      /* 防止內容被切斷 */
       .card-hover, .group, div, tr, td, tbody { 
         break-inside: avoid !important; 
         page-break-inside: avoid !important;
       }
 
-      /* 顏色調整 */
       .text-slate-400, .text-slate-500, .text-slate-600 { color: #333 !important; }
       .text-slate-300 { color: #999 !important; }
       [class*="bg-"][class*="-50"] {
@@ -81,7 +76,6 @@
         padding: 2px 6px !important;
       }
 
-      /* 標題列設定 */
       #print-header { 
         display: flex !important; 
         width: 100% !important;
@@ -95,7 +89,6 @@
       #overviewListContainer, #historyListContainer { min-height: 0 !important; height: auto !important; }
     }
     
-    /* 回到頂部按鈕動畫 */
     @keyframes bounce-in {
       0% { opacity: 0; transform: scale(0.5) translateY(20px); }
       100% { opacity: 1; transform: scale(1) translateY(0); }
@@ -111,15 +104,19 @@
     }
   </style>
 </head>
-<!-- Body 加入 print:block 以覆蓋 flex，解決列印版面跑版問題 -->
+
 <body class="bg-[#f8fafc] font-sans text-slate-900 antialiased h-screen overflow-hidden flex print:block print:h-auto print:overflow-visible">
 
-  <!-- Sidebar -->
-  <aside id="sidebar" class="w-64 bg-[#1e293b] text-white flex flex-col flex-shrink-0 z-20 shadow-xl no-print">
-    <div class="p-5">
+  <!-- ★★★ Sidebar (修改重點：手機隱藏並浮動，電腦固定) ★★★ -->
+  <aside id="sidebar" class="w-64 bg-[#1e293b] text-white flex-col flex-shrink-0 shadow-xl no-print hidden md:flex fixed inset-y-0 left-0 z-50 md:static h-full transition-all">
+    <div class="p-5 flex justify-between items-center">
       <h1 class="text-xl font-bold tracking-tight flex items-center gap-2">
         <span class="bg-emerald-500 w-2 h-6 rounded-full"></span> 康飛運醫
       </h1>
+      <!-- ★ 手機版關閉選單按鈕 -->
+      <button onclick="toggleSidebar()" class="md:hidden text-slate-400 hover:text-white transition p-1">
+        <span class="material-icons-outlined text-2xl">close</span>
+      </button>
     </div>
     <nav class="flex-1 px-3 space-y-1 overflow-y-auto custom-scrollbar">
       <div class="pb-2 px-3 text-[10px] font-bold text-slate-500 uppercase tracking-widest">MENU</div>
@@ -143,8 +140,15 @@
   
   <!-- Main -->
   <main id="main-content" class="flex-1 flex flex-col h-screen overflow-hidden print:block print:h-auto print:overflow-visible">
+    <!-- ★★★ Header (修改重點：加入漢堡選單按鈕) ★★★ -->
     <header class="bg-white border-b border-slate-200 px-6 py-3 flex justify-between items-center flex-shrink-0 shadow-sm z-10 no-print">
-      <h2 id="pageTitle" class="text-lg font-bold text-slate-800">首頁</h2>
+      <div class="flex items-center gap-4">
+         <!-- ★ 手機版漢堡選單按鈕 -->
+         <button onclick="toggleSidebar()" class="text-slate-500 hover:text-emerald-500 md:hidden transition p-1">
+            <span class="material-icons-outlined text-2xl">menu</span>
+         </button>
+         <h2 id="pageTitle" class="text-lg font-bold text-slate-800">首頁</h2>
+      </div>
       <div id="topBarClientInfo" class="hidden flex items-center gap-2 bg-slate-50 pl-4 pr-1 py-1 rounded-full border border-slate-100 shadow-sm">
         <span id="headerClientName" class="font-bold text-emerald-600 text-sm">--</span>
         <span id="headerClientDob" class="text-xs text-slate-500 font-mono bg-white px-3 py-1 rounded-full shadow-sm">--</span>
@@ -166,9 +170,7 @@
           </button>
         </div>
         <div id="searchResults" class="w-full space-y-3"></div>
-      </div>
-
-      <!-- 基本資料 -->
+      </div><!-- 基本資料 -->
       <div id="view-basic" class="hidden max-w-4xl mx-auto space-y-4">
         <div class="flex justify-between items-end no-print">
           <div>
@@ -285,7 +287,6 @@
                       <label class="text-xs font-bold text-slate-400 shrink-0">治療日期</label>
                       <input type="date" id="treatmentDate" required class="w-full px-3 py-2.5 bg-slate-50 border border-slate-100 rounded-2xl outline-none focus:border-emerald-500 transition-all cursor-pointer font-bold text-slate-700 text-sm">
                     </div>
-                    <!-- 修正一：確認此處 ID 為 inputTherapist 且標籤為 select -->
                     <div class="flex items-center gap-2">
                       <label class="text-xs font-bold text-slate-400 shrink-0">治療師</label>
                       <select id="inputTherapist" required class="custom-select-arrow w-full px-3 py-2.5 bg-slate-50 border border-slate-100 rounded-2xl outline-none focus:border-emerald-500 transition-all cursor-pointer appearance-none font-bold text-slate-700 text-sm pr-10">
@@ -480,9 +481,7 @@
             </div>
           </div>
         </div>
-      </div>
-
-      <!-- 醫師看診視圖 -->
+      </div><!-- 醫師看診視圖 -->
       <div id="view-doctor" class="hidden max-w-5xl mx-auto space-y-4">
         <div class="bg-white rounded-[2.5rem] shadow-sm border border-slate-100 overflow-hidden no-print">
           <div class="px-6 py-3 bg-slate-50 border-b border-slate-100 flex justify-between items-center">
