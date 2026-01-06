@@ -97,6 +97,15 @@
       animation: bounce-in 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
     }
 
+    /* ★★★ 修改：新增逆時針旋轉動畫 ★★★ */
+    @keyframes spin-reverse {
+      from { transform: rotate(360deg); }
+      to { transform: rotate(0deg); }
+    }
+    .animate-spin-reverse {
+      animation: spin-reverse 1s linear infinite;
+    }
+
     .flatpickr-calendar.static {
         margin-top: 5px !important; 
         box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05) !important;
@@ -151,7 +160,7 @@
       </div>
       <div id="topBarClientInfo" class="hidden flex items-center gap-2 bg-slate-50 pl-4 pr-1 py-1 rounded-full border border-slate-100 shadow-sm">
         <span id="headerClientName" class="font-bold text-emerald-600 text-sm">--</span>
-        <!-- 目標修正位置：生日格式將透過底部 Script 自動修正 -->
+        <!-- 此處生日格式由底部 Script 自動修正 -->
         <span id="headerClientDob" class="text-xs text-slate-500 font-mono bg-white px-3 py-1 rounded-full shadow-sm">--</span>
       </div>
     </header>
@@ -170,6 +179,7 @@
             <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
           </button>
         </div>
+        <!-- 搜尋結果內容將由 Script 格式化 -->
         <div id="searchResults" class="w-full space-y-3"></div>
       </div>
 
@@ -208,6 +218,7 @@
           <div class="grid grid-cols-1 md:grid-cols-3 border-t border-slate-50 print:grid-cols-3 print:border-slate-200">
             <div class="p-5 border-b md:border-b-0 md:border-r border-slate-50 print:p-2 print:border-slate-200">
               <label class="block text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">出生日期</label>
+              <!-- 此處顯示格式由底部 Script 自動修正 -->
               <div id="display-birthday" class="text-lg font-bold text-slate-700 print:text-sm">--</div>
             </div>
             <div class="p-5 border-b md:border-b-0 md:border-r border-slate-50 print:p-2 print:border-slate-200">
@@ -261,13 +272,12 @@
         </div>
         <div id="imageGalleryContainer" class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 min-h-[400px]">
            <div class="col-span-full flex flex-col items-center justify-center py-20 text-slate-300 print:hidden">
-              <span class="material-icons-outlined text-4xl animate-spin mb-3">sync</span>
+              <!-- ★★★ 修改：Icon 旋轉方向改為逆時針 (animate-spin-reverse) ★★★ -->
+              <span class="material-icons-outlined text-4xl animate-spin-reverse mb-3">sync</span>
               <p>讀取影像中...</p>
            </div>
         </div>
-      </div>
-
-      <!-- 治療紀錄視圖 -->
+      </div><!-- 治療紀錄視圖 -->
       <div id="view-treatment" class="hidden max-w-6xl mx-auto space-y-6">
          <div class="grid grid-cols-1 lg:grid-cols-12 gap-4 no-print">
             <div class="lg:col-span-12">
@@ -303,17 +313,19 @@
                       </select>
                     </div>
                  </div>
+                 
+                 <!-- ★★★ 修改：放大輸入框 (增加 rows, 移除固定 h-14/h-full) ★★★ -->
                  <div class="space-y-1">
                    <label class="text-xs font-bold text-slate-400 ml-1">當日主訴</label>
-                   <textarea id="inputComplaint" class="w-full px-5 py-2.5 bg-slate-50 border border-slate-100 rounded-2xl outline-none focus:border-emerald-500 transition-all h-14 resize-none"></textarea>
+                   <textarea id="inputComplaint" rows="6" class="w-full px-5 py-2.5 bg-slate-50 border border-slate-100 rounded-2xl outline-none focus:border-emerald-500 transition-all resize-none"></textarea>
                  </div>
-                 <div class="space-y-1 flex-1 flex flex-col">
+                 <div class="space-y-1">
                    <label class="text-xs font-bold text-slate-400 ml-1">治療內容</label>
-                   <textarea id="inputContent" required class="w-full px-5 py-2.5 bg-slate-50 border border-slate-100 rounded-2xl outline-none focus:border-emerald-500 transition-all h-full resize-none"></textarea>
+                   <textarea id="inputContent" required rows="15" class="w-full px-5 py-2.5 bg-slate-50 border border-slate-100 rounded-2xl outline-none focus:border-emerald-500 transition-all resize-none"></textarea>
                  </div>
                  <div class="space-y-1">
                    <label class="text-xs font-bold text-slate-400 ml-1">備註 / 下次治療</label>
-                   <textarea id="inputNextPlan" class="w-full px-5 py-2.5 bg-slate-50 border border-slate-100 rounded-2xl outline-none focus:border-emerald-500 transition-all h-14 resize-none"></textarea>
+                   <textarea id="inputNextPlan" rows="6" class="w-full px-5 py-2.5 bg-slate-50 border border-slate-100 rounded-2xl outline-none focus:border-emerald-500 transition-all resize-none"></textarea>
                  </div>
                  
                  <div id="edit-cancel-treatment" class="hidden mb-1">
@@ -338,7 +350,9 @@
              </div>
              <div id="historyListContainer" class="space-y-3 min-h-[200px] print:space-y-4"></div>
          </div>
-      </div><!-- 保養項目視圖 (已修改：移除 placeholder) -->
+      </div>
+
+      <!-- 保養項目視圖 -->
       <div id="view-maintenance" class="hidden max-w-5xl mx-auto space-y-4">
         <div class="bg-white rounded-[2.5rem] shadow-sm border border-slate-100 overflow-hidden no-print">
           <div class="px-6 py-4 border-b border-slate-50 flex items-center justify-between gap-3">
@@ -383,31 +397,26 @@
             
             <div class="grid grid-cols-1 md:grid-cols-5 gap-4 p-3 bg-slate-50/50 rounded-[2rem] border border-slate-100">
               
-              <!-- 1. 體溫 (已移除 placeholder) -->
               <div class="space-y-1">
                 <label class="text-xs font-bold text-slate-400 flex items-center gap-1.5 ml-1">體溫 (°C)</label>
                 <input type="text" name="體溫" class="w-full px-4 py-2 bg-white border border-slate-200 rounded-2xl focus:border-orange-500 outline-none transition-all">
               </div>
 
-              <!-- 2. 心律 (已移除 placeholder) -->
               <div class="space-y-1">
                 <label class="text-xs font-bold text-slate-400 flex items-center gap-1.5 ml-1">心律 (bpm)</label>
                 <input type="text" name="心律"  class="w-full px-4 py-2 bg-white border border-slate-200 rounded-2xl focus:border-orange-500 outline-none transition-all">
               </div>
 
-              <!-- 3. 呼吸速率 (已移除 placeholder) -->
               <div class="space-y-1">
                 <label class="text-xs font-bold text-slate-400 flex items-center gap-1.5 ml-1">呼吸速率 (bpm)</label>
                 <input type="text" name="呼吸速率"  class="w-full px-4 py-2 bg-white border border-slate-200 rounded-2xl focus:border-orange-500 outline-none transition-all">
               </div>
 
-              <!-- 4. 血壓 (已移除 placeholder) -->
               <div class="space-y-1">
                 <label class="text-xs font-bold text-slate-400 flex items-center gap-1.5 ml-1">血壓 (mmHg)</label>
                 <input type="text" name="血壓" class="w-full px-4 py-2 bg-white border border-slate-200 rounded-2xl focus:border-orange-500 outline-none transition-all">
               </div>
 
-              <!-- 5. 血氧 (已移除 placeholder) -->
               <div class="space-y-1">
                 <label class="text-xs font-bold text-slate-400 flex items-center gap-1.5 ml-1">血氧 (%)</label>
                 <input type="text" name="血氧"  class="w-full px-4 py-2 bg-white border border-slate-200 rounded-2xl focus:border-orange-500 outline-none transition-all">
@@ -837,38 +846,77 @@
       });
     }
 
-    // ★★★ 自動修正生日格式 (YYYYMMDD -> YYYY-MM-DD) ★★★
-    // 透過監聽 headerClientDob 元素的變化，當外部 JS 填入資料時自動觸發修正
-    const dobObserver = new MutationObserver(function(mutations) {
+    // ★★★ 自動修正與格式化邏輯 (生日與電話) ★★★
+    
+    // 輔助函式：YYYYMMDD -> YYYY-MM-DD
+    function formatYmd(str) {
+       str = str ? str.trim() : '';
+       if (/^\d{8}$/.test(str)) {
+         return str.substring(0, 4) + '-' + str.substring(4, 6) + '-' + str.substring(6, 8);
+       }
+       return str;
+    }
+
+    // 輔助函式：09xxxxxxxx -> 09xx-xxx-xxx
+    function formatPhone(str) {
+       str = str ? str.trim() : '';
+       if (/^09\d{8}$/.test(str)) {
+          return str.substring(0, 4) + '-' + str.substring(4, 7) + '-' + str.substring(7, 10);
+       }
+       return str;
+    }
+
+    // 透過監聽器自動格式化 (headerClientDob, display-birthday)
+    const clientInfoObserver = new MutationObserver(function(mutations) {
       mutations.forEach(function(mutation) {
         if (mutation.type === 'childList' || mutation.type === 'characterData') {
-          const target = mutation.target;
-          // 如果變更的是文字節點，取其父元素
-          const el = target.nodeType === 3 ? target.parentNode : target;
-
-          if (el.id === 'headerClientDob') {
-            const original = el.textContent.trim();
-            // 檢查是否為 8 碼純數字 (例如 20040514)
-            if (/^\d{8}$/.test(original)) {
-              // 切割並重組字串
-              const formatted = original.substring(0, 4) + '-' +
-                                original.substring(4, 6) + '-' +
-                                original.substring(6, 8);
-              // 防止無窮迴圈：只有在內容真的不同時才更新
-              if (el.textContent !== formatted) {
-                el.textContent = formatted;
+           const target = mutation.target.nodeType === 3 ? mutation.target.parentNode : mutation.target;
+           const original = target.textContent;
+           
+           // Header 生日 & 基本資料生日
+           if ((target.id === 'headerClientDob' || target.id === 'display-birthday') && /^\d{8}$/.test(original.trim())) {
+              const formatted = formatYmd(original);
+              if (original !== formatted) {
+                 target.textContent = formatted;
               }
-            }
-          }
+           }
         }
       });
     });
 
-    // 開始監聽 ID 為 headerClientDob 的元素
-    const dobElement = document.getElementById('headerClientDob');
-    if (dobElement) {
-      dobObserver.observe(dobElement, { childList: true, characterData: true, subtree: true });
-    }
+    const obsConfig = { childList: true, characterData: true, subtree: true };
+    const headerDobEl = document.getElementById('headerClientDob');
+    if (headerDobEl) clientInfoObserver.observe(headerDobEl, obsConfig);
+    
+    const basicDobEl = document.getElementById('display-birthday');
+    if (basicDobEl) clientInfoObserver.observe(basicDobEl, obsConfig);
+
+    // ★★★ 監聽搜尋結果，自動格式化生日與電話 ★★★
+    const searchObserver = new MutationObserver(function(mutations) {
+        mutations.forEach(function(m) {
+            m.addedNodes.forEach(function(node) {
+                if(node.nodeType === 1) { // 元素節點
+                    // 尋找該節點下的所有文字節點並進行取代
+                    const walker = document.createTreeWalker(node, NodeFilter.SHOW_TEXT, null, false);
+                    let textNode;
+                    while(textNode = walker.nextNode()) {
+                        const val = textNode.nodeValue.trim();
+                        // 檢查電話 (09xxxxxxxx)
+                        if (/^09\d{8}$/.test(val)) {
+                            textNode.nodeValue = formatPhone(val);
+                        }
+                        // 檢查生日 (8碼數字，且非電話)
+                        else if (/^\d{8}$/.test(val)) {
+                            textNode.nodeValue = formatYmd(val);
+                        }
+                    }
+                }
+            });
+        });
+    });
+    const searchContainer = document.getElementById('searchResults');
+    if(searchContainer) searchObserver.observe(searchContainer, { childList: true, subtree: true });
+
   </script>
 
   <!-- 回到頂部按鈕 -->
