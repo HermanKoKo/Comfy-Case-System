@@ -9,7 +9,7 @@ let currentOverviewCategory = 'all';
 let filesToUpload = [];
 let searchTimer = null;
 let allCalendarEvents = [];
-let isEditingClient = false; 
+let isEditingClient = false; // 新增此變數
 
 // ==========================================
 // 初始化與 UI 設定
@@ -95,7 +95,7 @@ function loadSystemStaff() {
     
     setOptions('selectDoctor', staff.doctors, '請選擇醫師');
     
-    // 預設選取 "謝炳賢"
+    // ★★★ 修改處 1：預設選取 "謝炳賢" ★★★
     const docEl = document.getElementById('selectDoctor');
     if(docEl) docEl.value = "謝炳賢";
 
@@ -125,7 +125,7 @@ function loadTreatmentItems() {
 }
 
 function navTo(viewName) {
-  // 手機版點擊選單後，自動收起側邊欄
+  // ★ 新增：手機版點擊選單後，自動收起側邊欄
   if (window.innerWidth < 768) {
       const sidebar = document.getElementById('sidebar');
       if (sidebar && !sidebar.classList.contains('hidden')) {
@@ -133,14 +133,13 @@ function navTo(viewName) {
       }
   }
 
-  // 特別處理：如果是一般頁面且未選個案，阻擋跳轉 (Search 和 Daily Tasks 除外)
-  if (!currentClient && viewName !== 'search' && viewName !== 'daily-tasks') {
+  // --- 以下維持原有邏輯 ---
+  if (!currentClient && viewName !== 'search') {
       showNotification('提示', '請先選取個案以進行操作。', 'info');
       return;
   }
 
-  const views = ['search', 'basic', 'images', 'treatment', 'maintenance', 'doctor', 'tracking', 'overview', 'daily-tasks'];
-  
+  const views = ['search', 'basic', 'images', 'treatment', 'maintenance', 'doctor', 'tracking', 'overview'];
   views.forEach(v => {
     document.getElementById('view-' + v)?.classList.add('hidden');
     document.getElementById('btn-' + v)?.classList.remove('active');
@@ -152,14 +151,9 @@ function navTo(viewName) {
   }
   document.getElementById('btn-' + viewName)?.classList.add('active');
 
-  const titles = { 
-    'search':'首頁', 'basic':'基本資料', 'images':'影像總覽', 
-    'treatment':'物理治療', 'maintenance':'保養項目', 'doctor':'醫師看診', 
-    'tracking':'個管追蹤', 'overview':'個案總覽', 'daily-tasks':'每日追蹤清單' 
-  };
+  const titles = { 'search':'首頁','basic':'基本資料','images':'影像總覽','treatment':'物理治療','maintenance':'保養項目','doctor':'醫師看診','tracking':'個管追蹤','overview':'個案總覽' };
   document.getElementById('pageTitle').textContent = titles[viewName] || '康飛運醫';
 
-  // 如果選中了個案，才執行載入個案相關資料
   if (currentClient) {
     if (['treatment', 'maintenance', 'doctor', 'tracking', 'overview'].includes(viewName)) {
         if (allCalendarEvents.length === 0) {
@@ -183,139 +177,6 @@ function fetchCalendarData() {
 }
 
 // ==========================================
-// ★★★ 新增：每日追蹤清單邏輯 ★★★
-// ==========================================
-
-// 1. 顯示視圖並初始化
-function showDailyTasks() {
-  navTo('daily-tasks');
-  const list = document.getElementById('daily-task-list');
-  // 如果列表為空或顯示載入中，則觸發重新整理
-  if (list.innerHTML.includes('載入中') || list.children.length === 0) {
-    refreshDailyTasks();
-  }
-}
-
-// 2. 呼叫後端取得資料
-function refreshDailyTasks() {
-  const list = document.getElementById('daily-task-list');
-  list.innerHTML = '<tr><td colspan="5" class="p-8 text-center text-slate-400"><div class="flex justify-center items-center gap-2"><span class="material-icons-outlined animate-spin-reverse text-violet-500">sync</span><span>資料讀取中...</span></div></td></tr>';
-
-  google.script.run
-    .withSuccessHandler(renderDailyTasksTable)
-    .withFailureHandler(error => {
-       list.innerHTML = '<tr><td colspan="5" class="p-8 text-center text-rose-400">資料讀取失敗: ' + error.message + '</td></tr>';
-    })
-    .getDailyTasks();
-}
-
-// 3. 渲染表格 (含操作按鈕)
-function renderDailyTasksTable(tasks) {
-  const list = document.getElementById('daily-task-list');
-  list.innerHTML = '';
-
-  if (!tasks || tasks.length === 0) {
-    list.innerHTML = '<tr><td colspan="5" class="p-12 text-center text-slate-400"><div class="flex flex-col items-center gap-2"><span class="material-icons-outlined text-4xl text-emerald-200">task_alt</span><span class="font-bold text-slate-300">太棒了！目前所有追蹤任務皆已完成</span></div></td></tr>';
-    return;
-  }
-
-  const now = new Date();
-  const offset = now.getTimezoneOffset() * 60000;
-  const today = new Date(now.getTime() - offset).toISOString().split('T')[0];
-
-  tasks.forEach(task => {
-    const isOverdue = task.dueDate < today;
-    const isToday = task.dueDate === today;
-    
-    let dateClass = "text-slate-600 font-mono font-bold";
-    let dateLabel = "";
-    
-    if (isOverdue) {
-      dateClass = "text-rose-600 font-mono font-black";
-      dateLabel = "<span class='text-[10px] bg-rose-100 text-rose-600 px-2 py-0.5 rounded ml-2 font-bold'>逾期</span>";
-    } else if (isToday) {
-      dateClass = "text-violet-600 font-mono font-black";
-      dateLabel = "<span class='text-[10px] bg-violet-100 text-violet-600 px-2 py-0.5 rounded ml-2 font-bold'>今日</span>";
-    }
-
-    const row = document.createElement('tr');
-    // 設定 ID 以便操作後移除 DOM
-    row.id = `row-${task.taskKey}`; 
-    row.className = "hover:bg-slate-50 transition-colors group border-b border-slate-50";
-    row.innerHTML = `
-      <td class="p-5 ${dateClass}">
-        ${task.dueDate} ${dateLabel}
-      </td>
-      <td class="p-5 font-bold text-slate-800 text-base">${task.clientName}</td>
-      <td class="p-5">
-        <span class="px-2.5 py-1 rounded-lg text-xs font-bold ${task.tagColor}">
-          ${task.type}
-        </span>
-      </td>
-      <td class="p-5 text-slate-400 text-sm font-mono">${task.sourceDate}</td>
-      <td class="p-5 text-center">
-        <div class="flex items-center justify-center gap-2">
-            <!-- 1. 手動完成按鈕 (僅標記) -->
-            <button onclick="markDone('${task.taskKey}', false)" 
-                    class="p-2 bg-slate-100 text-slate-400 rounded-xl hover:bg-emerald-100 hover:text-emerald-600 transition-all shadow-sm active:scale-95"
-                    title="手動標記為已完成 (不跳轉)">
-                <span class="material-icons-outlined text-lg">check</span>
-            </button>
-            
-            <!-- 2. 前往追蹤按鈕 (自動標記 + 跳轉) -->
-            <button onclick="jumpToTracking('${task.clientId}', '${task.taskKey}')" 
-                    class="px-4 py-2 bg-white border border-slate-200 text-slate-600 rounded-xl hover:bg-violet-50 hover:text-violet-600 hover:border-violet-200 transition-all text-xs font-bold shadow-sm active:scale-95 flex items-center gap-1">
-              <span>前往追蹤</span>
-              <span class="material-icons-outlined text-sm">arrow_forward</span>
-            </button>
-        </div>
-      </td>
-    `;
-    list.appendChild(row);
-  });
-}
-
-// 4. 標記完成邏輯
-function markDone(taskKey, isJump) {
-    // 視覺上先移除該列 (提升體驗)
-    if (!isJump) {
-        const row = document.getElementById(`row-${taskKey}`);
-        if (row) {
-            row.style.opacity = '0';
-            setTimeout(() => row.remove(), 300); // 300ms 動畫後移除
-        }
-    }
-
-    // 背景呼叫後端紀錄
-    google.script.run
-      .withFailureHandler(err => console.error("標記失敗", err))
-      .markTaskAsCompleted(taskKey);
-}
-
-// 5. 跳轉功能的實作 (整合自動標記)
-function jumpToTracking(clientId, taskKey) {
-  // A. 先觸發自動標記為完成
-  markDone(taskKey, true);
-
-  // B. 顯示 Loading 並跳轉
-  showNotification('讀取中', '正在載入個案並切換至追蹤頁面...', 'info');
-  
-  google.script.run
-    .withSuccessHandler(function(clientData) {
-       closeNotification();
-       selectClient(clientData); 
-       navTo('tracking');
-       setTimeout(() => {
-          document.getElementById('view-tracking').scrollIntoView({ behavior: 'smooth' });
-       }, 300);
-    })
-    .withFailureHandler(function(e) {
-       showNotification('錯誤', '無法載入個案: ' + e.message, 'error');
-    })
-    .getClientById(clientId); 
-}
-
-// ==========================================
 // 新增個案相關函式
 // ==========================================
 function autoDetectGender(input) {
@@ -330,8 +191,10 @@ function autoDetectGender(input) {
 function editClientInfo() {
   if (!currentClient) return;
 
+  // 1. 設定編輯模式標記
   isEditingClient = true;
 
+  // 2. 填入資料到表單
   document.getElementById('addName').value = currentClient['姓名'] || '';
   document.getElementById('addDob').value = currentClient['生日'] || '';
   document.getElementById('addIdNo').value = currentClient['身分證字號'] || '';
@@ -341,19 +204,22 @@ function editClientInfo() {
   document.getElementById('addTherapist').value = currentClient['負責治療師'] || '';
   document.getElementById('addChronic').value = currentClient['慢性病或特殊疾病'] || '';
 
+  // 3. 修改 UI 顯示 (標題與按鈕)
   document.querySelector('#addClientModal h3').textContent = '編輯個案資料';
   const btn = document.getElementById('btnSubmitClient');
   btn.innerHTML = '儲存修改';
   btn.classList.remove('bg-emerald-500', 'hover:bg-emerald-600');
-  btn.classList.add('bg-amber-500', 'hover:bg-amber-600'); 
+  btn.classList.add('bg-amber-500', 'hover:bg-amber-600'); // 改為橘黃色以示區別
 
+  // 4. 開啟視窗
   openModal('addClientModal');
 }
 
 function submitNewClient() {
   const btn = document.getElementById('btnSubmitClient');
-  const originalText = btn.innerHTML; 
+  const originalText = btn.innerHTML; // 保存當前按鈕文字
 
+  // 1. 收集表單資料
   const data = {
     name: document.getElementById('addName').value.trim(),
     dob: document.getElementById('addDob').value.trim(),
@@ -366,11 +232,13 @@ function submitNewClient() {
     chronic: document.getElementById('addChronic').value.trim()
   };
 
+  // 2. 驗證
   if (!data.name || !data.dob || !data.idNo || !data.phone) {
       showNotification('資料缺漏', '請填寫所有必填欄位 (*)', 'error');
       return;
   }
   
+  // 自動判斷性別
   const secondChar = data.idNo.charAt(1);
   if (secondChar === '1') data.gender = '男';
   else if (secondChar === '2') data.gender = '女';
@@ -379,8 +247,10 @@ function submitNewClient() {
   btn.disabled = true;
   btn.innerHTML = '<span class="material-icons-outlined animate-spin-reverse">sync</span> 處理中...';
 
+  // ★★★ 關鍵修改：判斷是「編輯」還是「新增」 ★★★
   if (isEditingClient) {
-      data.clientId = currentClient['個案編號']; 
+      // --- 編輯模式 ---
+      data.clientId = currentClient['個案編號']; // 補上 ID
 
       google.script.run
         .withSuccessHandler(function(res) {
@@ -389,13 +259,17 @@ function submitNewClient() {
           
           if (res.success) {
               showNotification('成功', '資料已更新！', 'success');
+              
+              // 更新前端的 currentClient 資料
               currentClient = { ...currentClient, ...res.updatedData };
+              
+              // 重新渲染基本資料頁面
               renderBasicInfo();
               document.getElementById('headerClientName').textContent = currentClient['姓名'];
               document.getElementById('headerClientDob').textContent = currentClient['生日'];
               
               closeModal('addClientModal');
-              resetAddClientModalUI(); 
+              resetAddClientModalUI(); // 重置 UI 狀態
           } else {
               showNotification('更新失敗', res.message, 'error');
           }
@@ -405,10 +279,11 @@ function submitNewClient() {
             btn.innerHTML = originalText;
             showNotification('系統錯誤', e.message, 'error');
         })
-        .updateClientBasicInfo(data); 
+        .updateClientBasicInfo(data); // 呼叫後端新函式
 
   } else {
-      if (data.idNo.length < 2) { 
+      // --- 新增模式 (維持原邏輯) ---
+      if (data.idNo.length < 2) { // 新增時才嚴格檢查身分證格式 (編輯時可能無法修改)
          showNotification('格式錯誤', '身分證字號格式錯誤', 'error');
          btn.disabled = false; btn.innerHTML = originalText; return;
       }
@@ -439,6 +314,7 @@ function resetAddClientModalUI() {
   isEditingClient = false;
   document.getElementById('addClientForm').reset();
   
+  // 還原標題與按鈕樣式
   document.querySelector('#addClientModal h3').textContent = '新增個案資料';
   const btn = document.getElementById('btnSubmitClient');
   btn.innerHTML = '建立個案資料';
@@ -493,9 +369,11 @@ function renderBasicInfo() {
        
        let displayValue = currentClient[dbKey] || '--';
 
-       // 電話格式化 (09xx-xxx-xxx)
+       // ★★★ 修改處 2：電話格式化 (09xx-xxx-xxx) ★★★
        if ((domId === 'display-phone' || domId === 'display-emergency-phone') && displayValue !== '--') {
+          // 移除所有非數字
           const cleanNum = displayValue.toString().replace(/\D/g, '');
+          // 若為 10 碼且以 09 開頭，則進行格式化
           if (cleanNum.length === 10 && cleanNum.startsWith('09')) {
               displayValue = cleanNum.replace(/(\d{4})(\d{3})(\d{3})/, '$1-$2-$3');
           }
@@ -573,9 +451,7 @@ function selectClient(c) {
       itemSelect.value = "1600";
   }
   navTo('treatment');
-}
-
-// ==========================================
+}// ==========================================
 // 編輯功能相關函式
 // ==========================================
 
@@ -646,18 +522,21 @@ function startEdit(type, data) {
         document.getElementById('view-doctor').scrollIntoView({ behavior: 'smooth' });
     }
     else if (type === 'maintenance') {
+        // ★ 修改處：支援中文或英文 Key (相容新版 Code.gs)
         if(document.getElementById('maintenanceDate')._flatpickr)
-        document.getElementById('maintenanceDate')._flatpickr.setDate(data['保養日期']);
+        document.getElementById('maintenanceDate')._flatpickr.setDate(data['保養日期'] || data.date);
 
-        document.getElementById('selectMaintStaff').value = data['執行人員'] || "";
-        document.getElementById('selectMaintItem').value = data['保養項目'] || "";
+        document.getElementById('selectMaintStaff').value = data['執行人員'] || data.staff || "";
+        document.getElementById('selectMaintItem').value = data['保養項目'] || data.item || "";
         const f = document.getElementById('maintenanceForm');
-        f.querySelector('input[name="血壓"]').value = data['血壓'] || "";
-        f.querySelector('input[name="血氧"]').value = data['血氧'] || "";
-        f.querySelector('input[name="心律"]').value = data['心律'] || "";
-        f.querySelector('input[name="體溫"]').value = data['體溫'] || "";
-        f.querySelector('input[name="呼吸速率"]').value = data['呼吸速率'] || "";
-        f.querySelector('textarea[name="備註"]').value = data['備註'] || "";
+        f.querySelector('input[name="血壓"]').value = data['血壓'] || data.bp || "";
+        f.querySelector('input[name="血氧"]').value = data['血氧'] || data.spo2 || "";
+        f.querySelector('input[name="心律"]').value = data['心律'] || data.hr || "";
+        f.querySelector('input[name="體溫"]').value = data['體溫'] || data.temp || "";
+        // ★ 修改處：加入呼吸速率回填 (支援中文與英文 key)
+        f.querySelector('input[name="呼吸速率"]').value = data['呼吸速率'] || data.rr || "";
+        f.querySelector('textarea[name="備註"]').value = data['備註'] || data.remark || "";
+        
         document.getElementById('view-maintenance').scrollIntoView({ behavior: 'smooth' });
     }
     else if (type === 'tracking') {
@@ -683,6 +562,7 @@ function cancelEdit(type) {
   } else {
       document.getElementById(type + 'Form').reset();
       
+      // 取消編輯後，若為治療紀錄，自動帶回負責治療師
       if (type === 'treatment' && currentClient) {
           document.getElementById('inputTherapist').value = currentClient['負責治療師'] || "";
       }
@@ -758,6 +638,7 @@ function submitForm(type) {
              if(formId) document.getElementById(formId).reset();
              document.querySelectorAll('.auto-fill-id').forEach(el => el.value = clientId);
              
+             // 新增成功並重置表單後，自動帶回負責治療師
              if (formId === 'treatmentForm' && currentClient) {
                  document.getElementById('inputTherapist').value = currentClient['負責治療師'] || "";
              }
@@ -795,7 +676,7 @@ function submitForm(type) {
       record_id: editId,
       '個案編號': clientId,
       '治療日期': document.getElementById('treatmentDate').value,
-      '執行治療師': document.getElementById('inputTherapist').value, 
+      '執行治療師': document.getElementById('inputTherapist').value, // Select ID
       '治療項目': document.getElementById('inputTreatmentItem').value,
       '當日主訴': document.getElementById('inputComplaint').value,
       '治療內容': document.getElementById('inputContent').value,
@@ -824,6 +705,7 @@ function submitForm(type) {
       spo2: f.querySelector('input[name="血氧"]').value,
       hr: f.querySelector('input[name="心律"]').value,
       temp: f.querySelector('input[name="體溫"]').value,
+      // ★ 修改處：加入呼吸速率收集
       rr: f.querySelector('input[name="呼吸速率"]').value,
       remark: f.querySelector('textarea[name="備註"]').value
     };
@@ -865,9 +747,7 @@ function getReloadFunc(type) {
     if(type === 'maintenance') return loadMaintenanceHistory;
     if(type === 'tracking') return loadTrackingHistory;
     return null;
-}
-
-// ==========================================
+}// ==========================================
 // 歷史列表載入與渲染
 // ==========================================
 
@@ -959,26 +839,40 @@ function loadMaintenanceHistory() {
 
     c.innerHTML = logs.map(l => {
       const dataStr = encodeURIComponent(JSON.stringify(l));
+      // ★ 修改處：
+      // 1. 使用 l.temp, l.hr 等英文鍵值 (對應 Code.gs 修改)
+      // 2. 加入備註 (remark) 顯示區塊
       return `
-      <div class="bg-white p-6 rounded-[2rem] shadow-sm border border-slate-100 card-hover mb-4 flex flex-col md:flex-row gap-4 items-center print:break-inside-avoid print:mb-4 print:border print:border-slate-300 relative group">
+      <div class="bg-white p-6 rounded-[2rem] shadow-sm border border-slate-100 card-hover mb-4 flex flex-col items-stretch print:break-inside-avoid print:mb-4 print:border print:border-slate-300 relative group">
         <button onclick="startEdit('maintenance', JSON.parse(decodeURIComponent('${dataStr}')))" class="absolute top-4 right-4 text-slate-300 hover:text-orange-500 transition print:hidden" title="編輯">
             <span class="material-icons-outlined text-sm">edit</span>
         </button>
 
-        <div class="w-full md:w-auto flex flex-col gap-1 border-b md:border-b-0 md:border-r border-slate-100 pb-4 md:pb-0 md:pr-6 min-w-[140px] print:border-r print:border-slate-300">
-          <div class="text-sm font-mono text-slate-500 tracking-tight print:text-black">${l['保養日期']||'--'}</div>
-          <span class="px-2.5 py-1 bg-orange-50 text-orange-600 text-[11px] font-bold rounded-lg w-fit mt-1 print:bg-white print:text-black print:border print:border-slate-300">${l['保養項目']||'一般'}</span>
-          <div class="text-xs font-bold text-slate-400 flex items-center gap-1 mt-2 print:text-black">
-             <span class="material-icons-outlined text-sm text-slate-400 print:hidden">person</span>${l['執行人員']||'--'}
-          </div>
+        <div class="flex flex-col md:flex-row gap-4 items-center mb-2">
+            <div class="w-full md:w-auto flex flex-col gap-1 md:pr-6 min-w-[140px]">
+              <div class="text-sm font-mono text-slate-500 tracking-tight print:text-black">${l.date||'--'}</div>
+              <span class="px-2.5 py-1 bg-orange-50 text-orange-600 text-[11px] font-bold rounded-lg w-fit mt-1 print:bg-white print:text-black print:border print:border-slate-300">${l.item||'一般'}</span>
+              <div class="text-xs font-bold text-slate-400 flex items-center gap-1 mt-2 print:text-black">
+                 <span class="material-icons-outlined text-sm text-slate-400 print:hidden">person</span>${l.staff||'--'}
+              </div>
+            </div>
+            
+            <div class="w-full grid grid-cols-5 gap-2 text-center">
+              <div class="p-2 rounded-xl bg-slate-50 print:bg-white print:border print:border-slate-300"><div class="text-[9px] font-bold text-slate-400 mb-1 print:text-black">Temp</div><div class="text-sm font-black text-slate-700 print:text-black">${l.temp||'-'}</div></div>
+              <div class="p-2 rounded-xl bg-slate-50 print:bg-white print:border print:border-slate-300"><div class="text-[9px] font-bold text-slate-400 mb-1 print:text-black">HR</div><div class="text-sm font-black text-slate-700 print:text-black">${l.hr||'-'}</div></div>
+              <div class="p-2 rounded-xl bg-slate-50 print:bg-white print:border print:border-slate-300"><div class="text-[9px] font-bold text-slate-400 mb-1 print:text-black">RR</div><div class="text-sm font-black text-slate-700 print:text-black">${l.rr||'-'}</div></div>
+              <div class="p-2 rounded-xl bg-slate-50 print:bg-white print:border print:border-slate-300"><div class="text-[9px] font-bold text-slate-400 mb-1 print:text-black">BP</div><div class="text-sm font-black text-slate-700 print:text-black">${l.bp||'-'}</div></div>
+              <div class="p-2 rounded-xl bg-slate-50 print:bg-white print:border print:border-slate-300"><div class="text-[9px] font-bold text-slate-400 mb-1 print:text-black">SpO2</div><div class="text-sm font-black text-slate-700 print:text-black">${l.spo2||'-'}</div></div>
+            </div>
         </div>
-        <div class="w-full grid grid-cols-5 gap-2 text-center">
-          <div class="p-2 rounded-xl bg-slate-50 print:bg-white print:border print:border-slate-300"><div class="text-[9px] font-bold text-slate-400 mb-1 print:text-black">Temp</div><div class="text-sm font-black text-slate-700 print:text-black">${l['體溫']||'-'}</div></div>
-          <div class="p-2 rounded-xl bg-slate-50 print:bg-white print:border print:border-slate-300"><div class="text-[9px] font-bold text-slate-400 mb-1 print:text-black">HR</div><div class="text-sm font-black text-slate-700 print:text-black">${l['心律']||'-'}</div></div>
-          <div class="p-2 rounded-xl bg-slate-50 print:bg-white print:border print:border-slate-300"><div class="text-[9px] font-bold text-slate-400 mb-1 print:text-black">RR</div><div class="text-sm font-black text-slate-700 print:text-black">${l['呼吸速率']||'-'}</div></div>
-          <div class="p-2 rounded-xl bg-slate-50 print:bg-white print:border print:border-slate-300"><div class="text-[9px] font-bold text-slate-400 mb-1 print:text-black">BP</div><div class="text-sm font-black text-slate-700 print:text-black">${l['血壓']||'-'}</div></div>
-          <div class="p-2 rounded-xl bg-slate-50 print:bg-white print:border print:border-slate-300"><div class="text-[9px] font-bold text-slate-400 mb-1 print:text-black">SpO2</div><div class="text-sm font-black text-slate-700 print:text-black">${l['血氧']||'-'}</div></div>
+
+        ${l.remark ? `
+        <div class="mt-2 pt-3 border-t border-slate-100 flex items-start gap-2">
+           <span class="text-xs font-bold text-orange-500 whitespace-nowrap pt-0.5">備註</span>
+           <div class="text-sm text-slate-600 leading-snug">${l.remark}</div>
         </div>
+        ` : ''}
+
       </div>`;
     }).join('');
   }).getMaintenanceHistory(currentClient['個案編號']);
@@ -1101,6 +995,7 @@ function renderOverviewList() {
     return;
   }
 
+  // 生成畫面上的卡片列表
   c.innerHTML = f.map((i, index) => {
     const cardClass = `print:break-before-page ${index === 0 ? '' : 'print:break-before-page'} bg-white border border-slate-100 rounded-[2rem] p-5 shadow-sm mb-4 card-hover relative overflow-hidden group print:hidden`;
     const headerClass = "flex justify-between items-center mb-3 pb-2 border-b border-slate-50 pl-3";
@@ -1154,6 +1049,7 @@ function renderOverviewList() {
       </div>`;
     }
     else if (i.category === 'maintenance') {
+      // ★ 修改處：調整 grid 與加入 RR
       return `
       <div class="${cardClass}">
           <div class="absolute left-0 top-0 bottom-0 w-1.5 bg-orange-400 opacity-80"></div>
@@ -1173,7 +1069,8 @@ function renderOverviewList() {
               <div class="p-2 rounded-xl bg-slate-50 border border-slate-100 flex flex-col items-center justify-center"><span class="text-[9px] font-bold text-slate-400">BP</span><span class="text-xs font-black text-slate-700">${i.bp||'-'}</span></div>
               <div class="p-2 rounded-xl bg-slate-50 border border-slate-100 flex flex-col items-center justify-center"><span class="text-[9px] font-bold text-slate-400">SpO2</span><span class="text-xs font-black text-slate-700">${i.spo2||'-'}</span></div>
           </div>
-          ${i.remark && i.remark !== '--' ? `<div class="pl-3 mt-2"><div class="text-xs text-slate-600 bg-orange-50/50 p-2.5 rounded-xl border border-orange-100 flex gap-2 items-start"><span class="font-bold text-orange-400 shrink-0 text-[10px] pt-0.5">NOTE</span><span class="leading-snug">${i.remark}</span></div></div>` : ''}
+          ${i.remark && i.remark !== '--' ? `
+          <div class="pl-3 mt-2"><div class="text-xs text-slate-600 bg-orange-50/50 p-2.5 rounded-xl border border-orange-100 flex gap-2 items-start"><span class="font-bold text-orange-400 shrink-0 text-[10px] pt-0.5">NOTE</span><span class="leading-snug">${i.remark}</span></div></div>` : ''}
       </div>`;
     }
     else if (i.category === 'tracking') {
@@ -1195,10 +1092,12 @@ function renderOverviewList() {
     return '';
   }).join('');
 
+  // --- 列印表格生成 (含標題與姓名) ---
   const catName = { 'all': '全部', 'doctor': '醫師看診', 'treatment': '物理治療', 'maintenance': '保養項目', 'tracking': '個管追蹤' };
   const clientName = currentClient ? currentClient['姓名'] : ''; 
 
   let tableHtml = `
+    <!-- 標題區塊：標題置中，姓名靠右 -->
     <div style="display: flex; justify-content: space-between; align-items: flex-end; margin-bottom: 5px; border-bottom: 2px solid #000; padding-bottom: 5px;">
         <div style="flex: 1;"></div> 
         <div style="flex: 0 0 auto; text-align: center; font-size: 24px; font-weight: bold; letter-spacing: 2px;">康飛運醫 物理治療所</div>
@@ -1220,6 +1119,7 @@ function renderOverviewList() {
         <tbody>`;
 
   f.forEach((i, index) => {
+    // 若為全部或治療分頁，因為內容較多，每一筆後強制分頁(除了第一筆)
     const isPageBreakNeeded = (currentOverviewCategory === 'all' || currentOverviewCategory === 'treatment') && index > 0;
     const rowStyle = isPageBreakNeeded ? 'style="page-break-before: always; border-top: 1px solid #000; padding-top: 10px;"' : 'style="border-top: 1px solid #000; padding-top: 10px;"';
 
@@ -1246,6 +1146,7 @@ function renderOverviewList() {
     else if (i.category === 'maintenance') {
        typeName = '保養項目';
        if(i.item) typeName += `<br><small>(${i.item})</small>`;
+       // ★ 修改處：列印報表也加入 RR
        content = `T: ${i.temp||'-'} / HR: ${i.hr||'-'} / RR: ${i.rr||'-'} / BP: ${i.bp||'-'} / SpO2: ${i.spo2||'-'}`;
        if(i.remark && i.remark!=='--') content += `<br><b>[備註]</b> ${i.remark}`;
     }
