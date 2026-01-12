@@ -97,6 +97,7 @@
       animation: bounce-in 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
     }
 
+    /* ★★★ 修改：新增逆時針旋轉動畫 ★★★ */
     @keyframes spin-reverse {
       from { transform: rotate(360deg); }
       to { transform: rotate(0deg); }
@@ -115,12 +116,13 @@
 
 <body class="bg-[#f8fafc] font-sans text-slate-900 antialiased h-screen overflow-hidden flex print:block print:h-auto print:overflow-visible">
 
-  <!-- Sidebar -->
+  <!-- ★★★ Sidebar (手機隱藏並浮動，電腦固定) ★★★ -->
   <aside id="sidebar" class="w-64 bg-[#1e293b] text-white flex-col flex-shrink-0 shadow-xl no-print hidden md:flex fixed inset-y-0 left-0 z-50 md:static h-full transition-all">
     <div class="p-5 flex justify-between items-center">
       <h1 class="text-xl font-bold tracking-tight flex items-center gap-2">
         <span class="bg-emerald-500 w-2 h-6 rounded-full"></span> 康飛運醫
       </h1>
+      <!-- 手機版關閉選單按鈕 -->
       <button onclick="toggleSidebar()" class="md:hidden text-slate-400 hover:text-white transition p-1">
         <span class="material-icons-outlined text-2xl">close</span>
       </button>
@@ -147,9 +149,10 @@
   
   <!-- Main -->
   <main id="main-content" class="flex-1 flex flex-col h-screen overflow-hidden print:block print:h-auto print:overflow-visible">
-    <!-- Header -->
+    <!-- ★★★ Header ★★★ -->
     <header class="bg-white border-b border-slate-200 px-6 py-3 flex justify-between items-center flex-shrink-0 shadow-sm z-10 no-print">
       <div class="flex items-center gap-4">
+         <!-- 手機版漢堡選單按鈕 -->
          <button onclick="toggleSidebar()" class="text-slate-500 hover:text-emerald-500 md:hidden transition p-1">
             <span class="material-icons-outlined text-2xl">menu</span>
          </button>
@@ -157,6 +160,7 @@
       </div>
       <div id="topBarClientInfo" class="hidden flex items-center gap-2 bg-slate-50 pl-4 pr-1 py-1 rounded-full border border-slate-100 shadow-sm">
         <span id="headerClientName" class="font-bold text-emerald-600 text-sm">--</span>
+        <!-- 此處生日格式由底部 Script 自動修正 -->
         <span id="headerClientDob" class="text-xs text-slate-500 font-mono bg-white px-3 py-1 rounded-full shadow-sm">--</span>
       </div>
     </header>
@@ -175,6 +179,7 @@
             <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
           </button>
         </div>
+        <!-- 搜尋結果內容將由 Script 格式化 -->
         <div id="searchResults" class="w-full space-y-3"></div>
       </div>
 
@@ -213,6 +218,7 @@
           <div class="grid grid-cols-1 md:grid-cols-3 border-t border-slate-50 print:grid-cols-3 print:border-slate-200">
             <div class="p-5 border-b md:border-b-0 md:border-r border-slate-50 print:p-2 print:border-slate-200">
               <label class="block text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">出生日期</label>
+              <!-- 此處顯示格式由底部 Script 自動修正 -->
               <div id="display-birthday" class="text-lg font-bold text-slate-700 print:text-sm">--</div>
             </div>
             <div class="p-5 border-b md:border-b-0 md:border-r border-slate-50 print:p-2 print:border-slate-200">
@@ -266,13 +272,12 @@
         </div>
         <div id="imageGalleryContainer" class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 min-h-[400px]">
            <div class="col-span-full flex flex-col items-center justify-center py-20 text-slate-300 print:hidden">
+              <!-- ★★★ 修改：Icon 旋轉方向改為逆時針 (animate-spin-reverse) ★★★ -->
               <span class="material-icons-outlined text-4xl animate-spin-reverse mb-3">sync</span>
               <p>讀取影像中...</p>
            </div>
         </div>
-      </div>
-
-      <!-- 治療紀錄視圖 -->
+      </div><!-- 治療紀錄視圖 -->
       <div id="view-treatment" class="hidden max-w-6xl mx-auto space-y-6">
          <div class="grid grid-cols-1 lg:grid-cols-12 gap-4 no-print">
             <div class="lg:col-span-12">
@@ -286,8 +291,10 @@
                       上傳檔案
                    </button>
                  </div>
+                 
                  <input type="hidden" name="個案編號" class="auto-fill-id">
                  <input type="hidden" id="edit_id_treatment" name="record_id" value="">
+                 
                  <div class="grid grid-cols-1 md:grid-cols-3 gap-2">
                     <div class="flex items-center gap-2">
                       <label class="text-xs font-bold text-slate-400 shrink-0">治療日期</label>
@@ -306,6 +313,8 @@
                       </select>
                     </div>
                  </div>
+                 
+                 <!-- ★★★ 修改：放大輸入框 (增加 rows, 移除固定 h-14/h-full) ★★★ -->
                  <div class="space-y-1">
                    <label class="text-xs font-bold text-slate-400 ml-1">當日主訴</label>
                    <textarea id="inputComplaint" rows="6" class="w-full px-5 py-2.5 bg-slate-50 border border-slate-100 rounded-2xl outline-none focus:border-emerald-500 transition-all resize-none"></textarea>
@@ -318,11 +327,13 @@
                    <label class="text-xs font-bold text-slate-400 ml-1">備註 / 下次治療</label>
                    <textarea id="inputNextPlan" rows="6" class="w-full px-5 py-2.5 bg-slate-50 border border-slate-100 rounded-2xl outline-none focus:border-emerald-500 transition-all resize-none"></textarea>
                  </div>
+                 
                  <div id="edit-cancel-treatment" class="hidden mb-1">
                     <button type="button" onclick="cancelEdit('treatment')" class="w-full bg-slate-400 hover:bg-slate-500 text-white font-bold py-2 rounded-2xl transition shadow-sm border border-slate-400">
                         取消編輯模式
                     </button>
                  </div>
+
                  <button type="button" onclick="submitForm('treatment')" class="w-full bg-emerald-500 hover:bg-emerald-600 text-white font-black py-3 rounded-2xl shadow-lg shadow-emerald-500/20 transition-all active:scale-[0.98]">
                    儲存治療紀錄
                  </button>
@@ -361,46 +372,57 @@
           <form id="maintenanceForm" class="p-5 space-y-3">
             <input type="hidden" name="個案編號" class="auto-fill-id">
             <input type="hidden" id="edit_id_maintenance" name="record_id" value="">
+
             <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
               <div class="space-y-1">
                 <label class="text-sm font-bold text-slate-400 block ml-1">日期</label>
-                <input type="date" id="maintenanceDate" name="日期" required class="w-full px-4 py-2 bg-white border border-slate-200 rounded-2xl outline-none focus:border-orange-500 transition-all cursor-pointer">
+                <input type="date" id="maintenanceDate" name="日期" required 
+                  class="w-full px-4 py-2 bg-white border border-slate-200 rounded-2xl outline-none focus:border-orange-500 transition-all cursor-pointer">
               </div>
               <div class="space-y-1">
                 <label class="text-sm font-bold text-slate-400 block ml-1">執行人員</label>
-                <select id="selectMaintStaff" name="執行人員" required class="custom-select-arrow w-full px-4 py-2 bg-white border border-slate-200 rounded-2xl focus:border-orange-500 outline-none transition-all cursor-pointer appearance-none pr-10">
+                <select id="selectMaintStaff" name="執行人員" required 
+                  class="custom-select-arrow w-full px-4 py-2 bg-white border border-slate-200 rounded-2xl focus:border-orange-500 outline-none transition-all cursor-pointer appearance-none pr-10">
                   <option value="" disabled selected>載入中...</option>
                 </select>
               </div>
               <div class="space-y-1">
                 <label class="text-sm font-bold text-slate-400 block ml-1">保養項目</label>
-                <select id="selectMaintItem" name="保養項目" required class="custom-select-arrow w-full px-4 py-2 bg-white border border-slate-200 rounded-2xl focus:border-orange-500 outline-none transition-all cursor-pointer appearance-none pr-10">
+                <select id="selectMaintItem" name="保養項目" required 
+                  class="custom-select-arrow w-full px-4 py-2 bg-white border border-slate-200 rounded-2xl focus:border-orange-500 outline-none transition-all cursor-pointer appearance-none pr-10">
                   <option value="" disabled selected>載入中...</option>
                 </select>
               </div>
             </div>
+            
             <div class="grid grid-cols-1 md:grid-cols-5 gap-4 p-3 bg-slate-50/50 rounded-[2rem] border border-slate-100">
+              
               <div class="space-y-1">
                 <label class="text-xs font-bold text-slate-400 flex items-center gap-1.5 ml-1">體溫 (°C)</label>
                 <input type="text" name="體溫" class="w-full px-4 py-2 bg-white border border-slate-200 rounded-2xl focus:border-orange-500 outline-none transition-all">
               </div>
+
               <div class="space-y-1">
                 <label class="text-xs font-bold text-slate-400 flex items-center gap-1.5 ml-1">心律 (bpm)</label>
                 <input type="text" name="心律"  class="w-full px-4 py-2 bg-white border border-slate-200 rounded-2xl focus:border-orange-500 outline-none transition-all">
               </div>
+
               <div class="space-y-1">
                 <label class="text-xs font-bold text-slate-400 flex items-center gap-1.5 ml-1">呼吸速率 (bpm)</label>
                 <input type="text" name="呼吸速率"  class="w-full px-4 py-2 bg-white border border-slate-200 rounded-2xl focus:border-orange-500 outline-none transition-all">
               </div>
+
               <div class="space-y-1">
                 <label class="text-xs font-bold text-slate-400 flex items-center gap-1.5 ml-1">血壓 (mmHg)</label>
                 <input type="text" name="血壓" class="w-full px-4 py-2 bg-white border border-slate-200 rounded-2xl focus:border-orange-500 outline-none transition-all">
               </div>
+
               <div class="space-y-1">
                 <label class="text-xs font-bold text-slate-400 flex items-center gap-1.5 ml-1">血氧 (%)</label>
                 <input type="text" name="血氧"  class="w-full px-4 py-2 bg-white border border-slate-200 rounded-2xl focus:border-orange-500 outline-none transition-all">
               </div>
             </div>
+
             <div class="space-y-1">
                <label class="text-sm font-bold text-slate-400 block ml-1">備註</label>
                <textarea name="備註" rows="3" class="w-full px-4 py-2 bg-white border border-slate-200 rounded-3xl focus:border-orange-500 outline-none transition-all resize-none" placeholder="請輸入相關備註..."></textarea>
@@ -437,6 +459,7 @@
         </div>
         <div class="grid grid-cols-1 lg:grid-cols-3 gap-4">
           <div class="lg:col-span-1 bg-white rounded-[2.5rem] p-5 shadow-sm border border-slate-100 h-fit no-print">
+            
             <div class="flex justify-between items-center mb-3 border-b border-violet-50 pb-2">
                 <h3 class="text-lg font-bold text-violet-600">新增紀錄</h3>
                 <button type="button" onclick="openUploadModal()" class="flex items-center gap-2 bg-white border border-slate-200 hover:border-emerald-500 hover:text-emerald-600 text-slate-600 px-3 py-1.5 rounded-xl font-bold transition shadow-sm active:scale-95 text-xs">
@@ -444,35 +467,44 @@
                     上傳檔案
                 </button>
             </div>
+
             <form id="trackingForm" onsubmit="event.preventDefault(); submitForm('tracking');">
               <input type="hidden" name="個案編號" class="auto-fill-id">
               <input type="hidden" id="edit_id_tracking" name="record_id" value="">
+
               <div class="mb-2 space-y-1">
                 <label class="block text-sm font-bold text-slate-400 ml-1">追蹤日期</label>
-                <input type="text" id="trackDate" name="trackDate" required class="w-full px-4 py-2 bg-slate-50 border border-slate-200 rounded-2xl outline-none focus:border-violet-500 transition-all cursor-pointer">
+                <input type="text" id="trackDate" name="trackDate" required
+                       class="w-full px-4 py-2 bg-slate-50 border border-slate-200 rounded-2xl outline-none focus:border-violet-500 transition-all cursor-pointer">
               </div>
               <div class="mb-2 space-y-1">
                 <label class="block text-sm font-bold text-slate-400 ml-1">追蹤人員</label>
-                <select id="trackStaff" name="trackStaff" required class="custom-select-arrow w-full px-4 py-2 bg-slate-50 border border-slate-200 rounded-2xl outline-none focus:border-violet-500 transition-all cursor-pointer appearance-none pr-10">
+                <select id="trackStaff" name="trackStaff" required
+                        class="custom-select-arrow w-full px-4 py-2 bg-slate-50 border border-slate-200 rounded-2xl outline-none focus:border-violet-500 transition-all cursor-pointer appearance-none pr-10">
                   <option value="" disabled selected>載入中...</option>
                 </select>
               </div>
               <div class="mb-2 space-y-1">
                 <label class="block text-sm font-bold text-slate-400 ml-1">追蹤項目</label>
-                <select id="trackType" name="trackType" required class="custom-select-arrow w-full px-4 py-2 bg-slate-50 border border-slate-200 rounded-2xl outline-none focus:border-violet-500 transition-all cursor-pointer appearance-none pr-10">
+                <select id="trackType" name="trackType" required
+                        class="custom-select-arrow w-full px-4 py-2 bg-slate-50 border border-slate-200 rounded-2xl outline-none focus:border-violet-500 transition-all cursor-pointer appearance-none pr-10">
                   <option value="" disabled selected>載入中...</option>
                 </select>
               </div>
               <div class="mb-3 space-y-1">
                 <label class="block text-sm font-bold text-slate-400 ml-1">追蹤內容</label>
-                <textarea id="trackContent" name="content" rows="5" required placeholder="請輸入追蹤情形、個案回饋或備註..." class="w-full px-4 py-2 bg-slate-50 border border-slate-200 rounded-2xl outline-none focus:border-violet-500 transition-all resize-none"></textarea>
+                <textarea id="trackContent" name="content" rows="5" required placeholder="請輸入追蹤情形、個案回饋或備註..."
+                          class="w-full px-4 py-2 bg-slate-50 border border-slate-200 rounded-2xl outline-none focus:border-violet-500 transition-all resize-none"></textarea>
               </div>
+
               <div id="edit-cancel-tracking" class="hidden mb-2">
                    <button type="button" onclick="cancelEdit('tracking')" class="w-full bg-slate-400 hover:bg-slate-500 text-white font-bold py-2 rounded-2xl transition shadow-sm border border-slate-400">
                         取消編輯模式
                    </button>
               </div>
-              <button type="submit" class="w-full text-white bg-violet-600 hover:bg-violet-700 font-bold rounded-2xl px-5 py-3 text-center transition-all shadow-lg shadow-violet-500/20 active:scale-95">
+
+              <button type="submit" 
+                      class="w-full text-white bg-violet-600 hover:bg-violet-700 font-bold rounded-2xl px-5 py-3 text-center transition-all shadow-lg shadow-violet-500/20 active:scale-95">
                 儲存追蹤紀錄
               </button>
             </form>
@@ -536,6 +568,7 @@
                   </div>
                   <textarea id="nursingRecord" rows="2" class="w-full px-4 py-2 bg-slate-50 border border-slate-100 rounded-2xl focus:border-emerald-500 outline-none transition-all resize-none"></textarea>
               </div>
+
               <div class="md:col-span-2 space-y-1">
                   <div class="flex items-center gap-2">
                       <span class="bg-slate-100 text-slate-600 text-[10px] font-bold px-2 py-0.5 rounded">Note</span>
@@ -596,6 +629,7 @@
               </div>
            </div>
         </div>
+        
         <div id="overviewListContainer" class="min-h-[300px] space-y-4">
            <div class="flex flex-col items-center justify-center py-20 bg-white rounded-[2.5rem] border-2 border-dashed border-slate-100 print:hidden">
               <div class="w-16 h-16 bg-slate-50 rounded-full flex items-center justify-center mb-4">
@@ -604,12 +638,14 @@
               <h4 class="text-lg font-bold text-slate-400">請選擇篩選條件查看紀錄</h4>
            </div>
         </div>
-        <div id="overviewPrintTable" class="hidden print:block w-full mt-4"></div>
+
+        <div id="overviewPrintTable" class="hidden print:block w-full mt-4">
+            <!-- 內容將由 JavaScript 動態生成 -->
+        </div>
+
       </div>
     </div>
-  </main>
-
-  <!-- Modal: 新增個案 -->
+  </main><!-- Modal: 新增個案 -->
   <div id="addClientModal" class="hidden fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 no-print">
      <div class="bg-white w-full max-w-3xl rounded-[2.5rem] overflow-hidden shadow-2xl">
         <div class="px-6 py-4 border-b border-slate-100 flex justify-between items-center bg-white sticky top-0 z-10">
@@ -627,6 +663,7 @@
                  <input type="text" id="addDob" required maxlength="8" placeholder="西元出生年月日8碼" oninput="this.value = this.value.replace(/[^0-9]/g, '')" class="flex-1 px-4 py-2.5 bg-slate-50 border border-slate-100 rounded-xl outline-none focus:bg-white focus:border-emerald-500 transition-all">
               </div>
            </div>
+
            <div class="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-4">
               <div class="flex items-center gap-3">
                  <label class="w-28 shrink-0 text-sm font-bold text-slate-500 text-right">身分證字號 <span class="text-red-400">*</span></label>
@@ -637,6 +674,7 @@
                  <input type="text" id="addPhone" required class="flex-1 px-4 py-2.5 bg-slate-50 border border-slate-100 rounded-xl outline-none focus:bg-white focus:border-emerald-500 transition-all">
               </div>
            </div>
+
            <div class="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-4">
               <div class="flex items-center gap-3">
                  <label class="w-28 shrink-0 text-sm font-bold text-slate-500 text-right">緊急聯絡人</label>
@@ -647,6 +685,7 @@
                  <input type="text" id="addEmerPhone" class="flex-1 px-4 py-2.5 bg-slate-50 border border-slate-100 rounded-xl outline-none focus:bg-white focus:border-emerald-500 transition-all">
               </div>
            </div>
+
            <div class="flex items-center gap-3">
               <label class="w-28 shrink-0 text-sm font-bold text-slate-500 text-right">負責治療師</label>
               <div class="flex-1">
@@ -655,10 +694,12 @@
                  </select>
               </div>
            </div>
+
            <div>
               <label class="text-xs font-bold text-slate-400 ml-1 block mb-1">慢性病或特殊疾病</label>
               <textarea id="addChronic" rows="3" class="w-full px-4 py-3 bg-slate-50 border border-slate-100 rounded-xl outline-none focus:bg-white focus:border-emerald-500 transition-all resize-none"></textarea>
            </div>
+
            <div class="pt-2 sticky bottom-0 bg-white pb-1">
               <button type="button" id="btnSubmitClient" onclick="submitNewClient()" class="w-full bg-emerald-500 hover:bg-emerald-600 text-white font-bold py-3.5 rounded-xl shadow-lg shadow-emerald-500/20 transition-all active:scale-[0.98] tracking-wide text-lg">
                  建立個案資料
@@ -719,24 +760,189 @@
       </div>
   </div>
 
+  <?!= include('JavaScript'); ?>
+  
+  <!-- Script Override -->
+  <script>
+    function renderTreatmentList(logs) {
+      const c = document.getElementById('historyListContainer');
+      const countBadge = document.getElementById('treatmentHistoryCount');
+      
+      if(countBadge) {
+         countBadge.textContent = `共 ${logs ? logs.length : 0} 次`;
+      }
+
+      if(!logs || !logs.length) { 
+        c.innerHTML = '<div class="text-center py-10 text-slate-300 bg-slate-50 rounded-2xl">無相關紀錄</div>'; 
+        return; 
+      }
+      
+      c.innerHTML = logs.map(l => {
+        const dataStr = encodeURIComponent(JSON.stringify(l));
+        return `
+        <div class="bg-white p-5 rounded-[2rem] shadow-sm border border-slate-100 card-hover relative overflow-hidden group print:break-inside-avoid print:border print:border-slate-200 print:shadow-none print:rounded-none">
+            <div class="absolute top-0 left-0 w-1.5 h-full bg-emerald-500 print:hidden"></div>
+            <div class="pl-2">
+                <div class="flex justify-between items-center mb-3">
+                    <div class="flex items-center gap-2">
+                        <span class="text-xs font-bold text-slate-500 font-mono bg-slate-100 px-2 py-1 rounded-lg print:bg-white print:border print:border-slate-200">${l['治療日期']}</span>
+                        <button onclick="startEdit('treatment', JSON.parse(decodeURIComponent('${dataStr}')))" class="text-slate-400 hover:text-emerald-500 transition px-2 print:hidden" title="編輯紀錄">
+                            <span class="material-icons-outlined text-sm">edit</span>
+                        </button>
+                    </div>
+                    
+                    <div class="flex items-center gap-2">
+                        ${l['治療項目'] ? `<span class="px-2 py-0.5 rounded text-[10px] font-bold bg-blue-50 text-blue-600 border border-blue-100">${l['治療項目']}</span>` : ''}
+                        
+                        <div class="flex items-center gap-1 text-sm font-bold text-slate-500">
+                            <span class="material-icons-outlined text-sm">person</span>
+                            ${l['執行治療師']}
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="space-y-3">
+                    ${l['當日主訴'] ? `
+                    <div>
+                        <div class="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">當日主訴</div>
+                        <div class="text-sm text-slate-700 whitespace-pre-wrap leading-relaxed px-1">${l['當日主訴']}</div>
+                    </div>` : ''}
+                    
+                    ${l['治療內容'] ? `
+                    <div>
+                        <div class="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">治療內容</div>
+                        <div class="text-sm text-slate-700 whitespace-pre-wrap leading-relaxed px-1">${l['治療內容']}</div>
+                    </div>` : ''}
+                    
+                    ${l['備註/下次治療'] ? `
+                    <div class="bg-amber-50 p-3 rounded-xl border border-amber-100 mt-2 print:bg-white print:border-slate-200">
+                        <div class="text-[10px] font-bold text-amber-500 uppercase tracking-wider mb-1 flex items-center gap-1">
+                            <span class="material-icons-outlined text-[10px]">flag</span> 備註 / 下次治療
+                        </div>
+                        <div class="text-sm text-slate-600 whitespace-pre-wrap leading-relaxed">${l['備註/下次治療']}</div>
+                    </div>` : ''}
+                </div>
+            </div>
+        </div>`;
+      }).join('');
+    }
+    
+    document.getElementById('contentArea').addEventListener('scroll', function() {
+      const btn = document.getElementById('btnBackToTop');
+      if (!btn) return;
+      if (this.scrollTop > 300) {
+        btn.classList.remove('hidden');
+        btn.classList.add('animate-bounce-in');
+      } else {
+        btn.classList.add('hidden');
+        btn.classList.remove('animate-bounce-in');
+      }
+    });
+
+    function scrollToTop() {
+      document.getElementById('contentArea').scrollTo({
+        top: 0,
+        behavior: 'smooth'
+      });
+    }
+
+    // ★★★ 自動修正與格式化邏輯 (生日與電話) ★★★
+    
+    // 輔助函式：YYYYMMDD -> YYYY-MM-DD
+    function formatYmd(str) {
+       str = str ? str.trim() : '';
+       if (/^\d{8}$/.test(str)) {
+         return str.substring(0, 4) + '-' + str.substring(4, 6) + '-' + str.substring(6, 8);
+       }
+       return str;
+    }
+
+    // 輔助函式：09xxxxxxxx -> 09xx-xxx-xxx
+    function formatPhone(str) {
+       str = str ? str.trim() : '';
+       if (/^09\d{8}$/.test(str)) {
+          return str.substring(0, 4) + '-' + str.substring(4, 7) + '-' + str.substring(7, 10);
+       }
+       return str;
+    }
+
+    // 透過監聽器自動格式化 (headerClientDob, display-birthday)
+    const clientInfoObserver = new MutationObserver(function(mutations) {
+      mutations.forEach(function(mutation) {
+        if (mutation.type === 'childList' || mutation.type === 'characterData') {
+           const target = mutation.target.nodeType === 3 ? mutation.target.parentNode : mutation.target;
+           const original = target.textContent;
+           
+           // Header 生日 & 基本資料生日
+           if ((target.id === 'headerClientDob' || target.id === 'display-birthday') && /^\d{8}$/.test(original.trim())) {
+              const formatted = formatYmd(original);
+              if (original !== formatted) {
+                 target.textContent = formatted;
+              }
+           }
+        }
+      });
+    });
+
+    const obsConfig = { childList: true, characterData: true, subtree: true };
+    const headerDobEl = document.getElementById('headerClientDob');
+    if (headerDobEl) clientInfoObserver.observe(headerDobEl, obsConfig);
+    
+    const basicDobEl = document.getElementById('display-birthday');
+    if (basicDobEl) clientInfoObserver.observe(basicDobEl, obsConfig);
+
+    // ★★★ 監聽搜尋結果，自動格式化生日與電話 ★★★
+    const searchObserver = new MutationObserver(function(mutations) {
+        mutations.forEach(function(m) {
+            m.addedNodes.forEach(function(node) {
+                if(node.nodeType === 1) { // 元素節點
+                    // 尋找該節點下的所有文字節點並進行取代
+                    const walker = document.createTreeWalker(node, NodeFilter.SHOW_TEXT, null, false);
+                    let textNode;
+                    while(textNode = walker.nextNode()) {
+                        const val = textNode.nodeValue.trim();
+                        // 檢查電話 (09xxxxxxxx)
+                        if (/^09\d{8}$/.test(val)) {
+                            textNode.nodeValue = formatPhone(val);
+                        }
+                        // 檢查生日 (8碼數字，且非電話)
+                        else if (/^\d{8}$/.test(val)) {
+                            textNode.nodeValue = formatYmd(val);
+                        }
+                    }
+                }
+            });
+        });
+    });
+    const searchContainer = document.getElementById('searchResults');
+    if(searchContainer) searchObserver.observe(searchContainer, { childList: true, subtree: true });
+
+  </script>
+
   <!-- 回到頂部按鈕 -->
   <button id="btnBackToTop" onclick="scrollToTop()" class="hidden fixed bottom-8 right-8 z-50 bg-slate-700 text-white w-12 h-12 rounded-full shadow-lg hover:bg-slate-600 hover:shadow-xl hover:-translate-y-1 transition-all duration-300 flex items-center justify-center print:hidden">
     <span class="material-icons-outlined text-2xl">arrow_upward</span>
   </button>
-  
 
   <!-- 自定義通知 Modal -->
   <div id="custom-modal" class="hidden fixed inset-0 z-[200] flex items-center justify-center px-4 bg-slate-900/60 backdrop-blur-sm transition-opacity duration-300 no-print">
       <div class="bg-white rounded-[2.5rem] shadow-2xl max-w-sm w-full p-6 transform transition-all scale-100 relative overflow-hidden">
+          <!-- 背景裝飾圓形 -->
           <div class="absolute -top-10 -right-10 w-32 h-32 bg-slate-50 rounded-full z-0"></div>
+
           <div class="relative z-10 text-center space-y-4">
+              <!-- 動態圖示區域 -->
               <div id="modal-icon-container" class="mx-auto flex items-center justify-center w-16 h-16 rounded-full bg-slate-100 mb-2">
                   <span id="modal-icon" class="material-icons-outlined text-3xl text-slate-500">info</span>
               </div>
+
+              <!-- 文字內容 -->
               <div class="space-y-2">
                   <h3 id="modal-title" class="text-xl font-black text-slate-800 tracking-tight">提示</h3>
                   <p id="modal-message" class="text-slate-500 text-sm font-medium leading-relaxed">請確認操作內容。</p>
               </div>
+
+              <!-- 按鈕 -->
               <div class="pt-2">
                    <button id="modal-confirm-btn" onclick="closeNotification()" class="w-full py-3.5 px-4 bg-emerald-500 hover:bg-emerald-600 text-white font-bold rounded-2xl shadow-lg shadow-emerald-500/20 transition-all active:scale-95">
                       確定
@@ -745,8 +951,6 @@
           </div>
       </div>
   </div>
-
-  <?!= include('JavaScript'); ?>
 
 </body>
 </html>

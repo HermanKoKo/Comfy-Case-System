@@ -9,31 +9,7 @@ let currentOverviewCategory = 'all';
 let filesToUpload = [];
 let searchTimer = null;
 let allCalendarEvents = [];
-let isEditingClient = false; 
-
-// ==========================================
-// 工具：字串格式化 (取代 MutationObserver)
-// ==========================================
-function formatPhone(str) {
-   if (!str) return '--';
-   // 移除所有非數字
-   const clean = str.toString().replace(/\D/g, '');
-   // 若為 10 碼且以 09 開頭，則進行格式化
-   if (clean.length === 10 && clean.startsWith('09')) {
-      return clean.replace(/(\d{4})(\d{3})(\d{3})/, '$1-$2-$3');
-   }
-   return str;
-}
-
-function formatDateString(str) {
-   if (!str) return '--';
-   const clean = str.toString().trim();
-   // 若為 8 碼數字 (YYYYMMDD)，轉為 YYYY-MM-DD
-   if (/^\d{8}$/.test(clean)) {
-      return clean.substring(0, 4) + '-' + clean.substring(4, 6) + '-' + clean.substring(6, 8);
-   }
-   return str;
-}
+let isEditingClient = false; // 新增此變數
 
 // ==========================================
 // 初始化與 UI 設定
@@ -82,47 +58,74 @@ window.onload = function() {
   setupEnhancedFlatpickr('#overviewStartDate', overviewConfig);
   setupEnhancedFlatpickr('#overviewEndDate', overviewConfig);
 
-  // ★ 優化：一次載入所有系統資料 (取代原本分開的 loadSystemStaff, loadTreatmentItems 等)
-  loadSystemData();
+  loadSystemStaff();      // 載入一般系統人員 (醫師、護理師等)
+  loadTreatmentItems();   // 載入治療項目
+  loadTherapistOptions(); // 載入治療師清單 (System 分頁 C 欄)
 };
 
-function loadSystemData() {
-  // 呼叫後端新的 getSystemInitData 函式
+// 修正一：載入治療師下拉選單
+function loadTherapistOptions() {
   google.script.run
-    .withSuccessHandler(data => {
-        // 輔助函式：填入 Select 選項
-        const setOpts = (id, list, ph) => {
-            const el = document.getElementById(id);
-            if(el) el.innerHTML = `<option value="" disabled selected>${ph}</option>` + list.map(n => `<option value="${n}">${n}</option>`).join('');
-        };
-        
-        // 1. 醫師
-        setOpts('selectDoctor', data.doctors, '請選擇醫師');
-        const docEl = document.getElementById('selectDoctor'); 
-        if(docEl) docEl.value = "謝炳賢"; // 預設選取
+    .withSuccessHandler(function(therapists) {
+      const selectElement = document.getElementById('inputTherapist'); 
+      if (!selectElement) return;
 
-        // 2. 護理師 & 治療師
-        setOpts('selectNurse', data.nurses, '請選擇護理師');
-        setOpts('addTherapist', data.therapists, '請選擇治療師');
-        setOpts('inputTherapist', data.therapists, '請選擇治療師'); // 治療紀錄頁面的治療師
+      selectElement.innerHTML = '<option value="" disabled selected>請選擇治療師</option>';
+      
+      therapists.forEach(function(name) {
+        const option = document.createElement('option');
+        option.value = name;
+        option.textContent = name;
+        selectElement.appendChild(option);
+      });
+    })
+    .withFailureHandler(function(err) {
+      console.error("無法載入治療師名單", err);
+    })
+    .getTherapistList(); 
+}
 
-        // 3. 其他人員與項目
-        setOpts('selectMaintStaff', data.allStaff, '請選擇執行人員');
-        setOpts('trackStaff', data.allStaff, '請選擇人員');
-        
-        setOpts('trackType', data.trackingTypes, '請選擇項目');
-        setOpts('selectMaintItem', data.maintItems, '請選擇項目');
-        setOpts('inputTreatmentItem', data.treatmentItems, '請選擇項目');
-    })
-    .withFailureHandler(err => {
-        console.error("系統資料載入失敗", err);
-        showNotification('系統錯誤', '無法載入選單資料', 'error');
-    })
-    .getSystemInitData();
+function loadSystemStaff() {
+  if (typeof google === 'undefined' || !google.script) return;
+  google.script.run.withSuccessHandler(staff => {
+    const setOptions = (id, list, placeholder) => {
+      const el = document.getElementById(id);
+      if(el) { el.innerHTML = `<option value="" disabled selected>${placeholder}</option>` + list.map(n => `<option value="${n}">${n}</option>`).join(''); }
+    };
+    
+    setOptions('selectDoctor', staff.doctors, '請選擇醫師');
+    
+    // ★★★ 修改處 1：預設選取 "謝炳賢" ★★★
+    const docEl = document.getElementById('selectDoctor');
+    if(docEl) docEl.value = "謝炳賢";
+
+    setOptions('selectNurse', staff.nurses, '請選擇護理師');
+    setOptions('addTherapist', staff.therapists, '請選擇治療師'); 
+    setOptions('selectMaintStaff', staff.allStaff, '請選擇執行人員');
+    setOptions('selectMaintItem', staff.maintItems, '請選擇項目');
+    setOptions('trackStaff', staff.allStaff, '請選擇人員');
+    setOptions('trackType', staff.trackingTypes || [], '請選擇項目');
+    setOptions('inputTreatmentItem', staff.treatmentItems, '請選擇項目');
+  }).getSystemStaff();
+}
+
+function loadTreatmentItems() {
+  google.script.run.withSuccessHandler(function(items) {
+      var select = document.getElementById("inputTreatmentItem");
+      if (select && select.options.length <= 1) {
+          select.innerHTML = '<option value="" disabled selected>請選擇項目</option>';
+          items.forEach(function(item) {
+            var option = document.createElement("option");
+            option.value = item;
+            option.textContent = item;
+            select.appendChild(option);
+          });
+      }
+    }).getTreatmentItemsFromSystem();
 }
 
 function navTo(viewName) {
-  // 手機版自動收起側邊欄
+  // ★ 新增：手機版點擊選單後，自動收起側邊欄
   if (window.innerWidth < 768) {
       const sidebar = document.getElementById('sidebar');
       if (sidebar && !sidebar.classList.contains('hidden')) {
@@ -130,6 +133,7 @@ function navTo(viewName) {
       }
   }
 
+  // --- 以下維持原有邏輯 ---
   if (!currentClient && viewName !== 'search') {
       showNotification('提示', '請先選取個案以進行操作。', 'info');
       return;
@@ -187,8 +191,10 @@ function autoDetectGender(input) {
 function editClientInfo() {
   if (!currentClient) return;
 
+  // 1. 設定編輯模式標記
   isEditingClient = true;
 
+  // 2. 填入資料到表單
   document.getElementById('addName').value = currentClient['姓名'] || '';
   document.getElementById('addDob').value = currentClient['生日'] || '';
   document.getElementById('addIdNo').value = currentClient['身分證字號'] || '';
@@ -198,19 +204,22 @@ function editClientInfo() {
   document.getElementById('addTherapist').value = currentClient['負責治療師'] || '';
   document.getElementById('addChronic').value = currentClient['慢性病或特殊疾病'] || '';
 
+  // 3. 修改 UI 顯示 (標題與按鈕)
   document.querySelector('#addClientModal h3').textContent = '編輯個案資料';
   const btn = document.getElementById('btnSubmitClient');
   btn.innerHTML = '儲存修改';
   btn.classList.remove('bg-emerald-500', 'hover:bg-emerald-600');
-  btn.classList.add('bg-amber-500', 'hover:bg-amber-600');
+  btn.classList.add('bg-amber-500', 'hover:bg-amber-600'); // 改為橘黃色以示區別
 
+  // 4. 開啟視窗
   openModal('addClientModal');
 }
 
 function submitNewClient() {
   const btn = document.getElementById('btnSubmitClient');
-  const originalText = btn.innerHTML;
+  const originalText = btn.innerHTML; // 保存當前按鈕文字
 
+  // 1. 收集表單資料
   const data = {
     name: document.getElementById('addName').value.trim(),
     dob: document.getElementById('addDob').value.trim(),
@@ -223,11 +232,13 @@ function submitNewClient() {
     chronic: document.getElementById('addChronic').value.trim()
   };
 
+  // 2. 驗證
   if (!data.name || !data.dob || !data.idNo || !data.phone) {
       showNotification('資料缺漏', '請填寫所有必填欄位 (*)', 'error');
       return;
   }
   
+  // 自動判斷性別
   const secondChar = data.idNo.charAt(1);
   if (secondChar === '1') data.gender = '男';
   else if (secondChar === '2') data.gender = '女';
@@ -236,35 +247,47 @@ function submitNewClient() {
   btn.disabled = true;
   btn.innerHTML = '<span class="material-icons-outlined animate-spin-reverse">sync</span> 處理中...';
 
+  // ★★★ 關鍵修改：判斷是「編輯」還是「新增」 ★★★
   if (isEditingClient) {
-      data.clientId = currentClient['個案編號'];
+      // --- 編輯模式 ---
+      data.clientId = currentClient['個案編號']; // 補上 ID
+
       google.script.run
         .withSuccessHandler(function(res) {
           btn.disabled = false;
           btn.innerHTML = originalText;
+          
           if (res.success) {
               showNotification('成功', '資料已更新！', 'success');
+              
+              // 更新前端的 currentClient 資料
               currentClient = { ...currentClient, ...res.updatedData };
+              
+              // 重新渲染基本資料頁面
               renderBasicInfo();
               document.getElementById('headerClientName').textContent = currentClient['姓名'];
-              // ★ 這裡套用格式化工具
-              document.getElementById('headerClientDob').textContent = formatDateString(currentClient['生日']);
+              document.getElementById('headerClientDob').textContent = currentClient['生日'];
               
               closeModal('addClientModal');
-              resetAddClientModalUI();
+              resetAddClientModalUI(); // 重置 UI 狀態
           } else {
               showNotification('更新失敗', res.message, 'error');
           }
         })
         .withFailureHandler(function(e) {
-            btn.disabled = false; btn.innerHTML = originalText; showNotification('系統錯誤', e.message, 'error');
+            btn.disabled = false;
+            btn.innerHTML = originalText;
+            showNotification('系統錯誤', e.message, 'error');
         })
-        .updateClientBasicInfo(data);
+        .updateClientBasicInfo(data); // 呼叫後端新函式
+
   } else {
-      if (data.idNo.length < 2) { 
+      // --- 新增模式 (維持原邏輯) ---
+      if (data.idNo.length < 2) { // 新增時才嚴格檢查身分證格式 (編輯時可能無法修改)
          showNotification('格式錯誤', '身分證字號格式錯誤', 'error');
          btn.disabled = false; btn.innerHTML = originalText; return;
       }
+
       google.script.run
         .withSuccessHandler(function(res) {
           btn.disabled = false;
@@ -279,7 +302,9 @@ function submitNewClient() {
           }
         })
         .withFailureHandler(function(e) {
-            btn.disabled = false; btn.innerHTML = originalText; showNotification('系統錯誤', e.message, 'error');
+            btn.disabled = false;
+            btn.innerHTML = originalText;
+            showNotification('系統錯誤', e.message, 'error');
         })
         .createNewClient(data);
   }
@@ -288,6 +313,8 @@ function submitNewClient() {
 function resetAddClientModalUI() {
   isEditingClient = false;
   document.getElementById('addClientForm').reset();
+  
+  // 還原標題與按鈕樣式
   document.querySelector('#addClientModal h3').textContent = '新增個案資料';
   const btn = document.getElementById('btnSubmitClient');
   btn.innerHTML = '建立個案資料';
@@ -295,18 +322,31 @@ function resetAddClientModalUI() {
   btn.classList.remove('bg-amber-500', 'hover:bg-amber-600');
 }
 
+
+// ==========================================
+// 列印功能
+// ==========================================
 function handlePrint() {
   const today = new Date();
-  const dateStr = today.getFullYear() + "-" + String(today.getMonth() + 1).padStart(2, '0') + "-" + String(today.getDate()).padStart(2, '0');
+  const dateStr = today.getFullYear() + "-" +
+                  String(today.getMonth() + 1).padStart(2, '0') + "-" +
+                  String(today.getDate()).padStart(2, '0');
   const dateEl = document.getElementById('print-date-display');
   if(dateEl) dateEl.innerText = dateStr;
+
   const infoEl = document.getElementById('print-patient-info');
-  if (infoEl) infoEl.innerText = currentClient ? currentClient['姓名'] : "";
+  if (infoEl) {
+      if (currentClient) {
+          infoEl.innerText = currentClient['姓名'];
+      } else {
+          infoEl.innerText = "";
+      }
+  }
   window.print();
 }
 
 // ==========================================
-// 基本資料渲染 (★ 優化：使用 JS 格式化工具)
+// 基本資料渲染
 // ==========================================
 function renderBasicInfo() {
   if(!currentClient) return;
@@ -322,16 +362,22 @@ function renderBasicInfo() {
     'display-therapist': '負責治療師',
     'display-notes': '慢性病或特殊疾病'
   };
-  
   for (const [domId, dbKey] of Object.entries(fieldMap)) {
     const el = document.getElementById(domId);
     if(el) {
-       let displayValue = currentClient[dbKey] || '--';
-       if(domId === 'display-notes' && (!displayValue || displayValue === '')) displayValue = '無';
+       if(domId === 'display-notes' && (!currentClient[dbKey] || currentClient[dbKey] === '')) continue;
        
-       // ★ 套用格式化
-       if (domId.includes('phone')) displayValue = formatPhone(displayValue);
-       if (domId === 'display-birthday') displayValue = formatDateString(displayValue);
+       let displayValue = currentClient[dbKey] || '--';
+
+       // ★★★ 修改處 2：電話格式化 (09xx-xxx-xxx) ★★★
+       if ((domId === 'display-phone' || domId === 'display-emergency-phone') && displayValue !== '--') {
+          // 移除所有非數字
+          const cleanNum = displayValue.toString().replace(/\D/g, '');
+          // 若為 10 碼且以 09 開頭，則進行格式化
+          if (cleanNum.length === 10 && cleanNum.startsWith('09')) {
+              displayValue = cleanNum.replace(/(\d{4})(\d{3})(\d{3})/, '$1-$2-$3');
+          }
+       }
 
        el.textContent = displayValue;
     }
@@ -341,7 +387,7 @@ function renderBasicInfo() {
 }
 
 // ==========================================
-// 搜尋功能 (★ 優化：直接渲染 template literals)
+// 搜尋功能
 // ==========================================
 function handleSearchDebounced(val) {
   const kw = val.trim();
@@ -361,27 +407,28 @@ function handleSearch(keyword) {
       container.innerHTML = '';
       if(data.length === 0) { container.innerHTML = '<div class="text-center py-6 text-slate-400 bg-white rounded-2xl border border-slate-100 shadow-sm">查無此個案資料</div>'; return; }
 
-      // ★ 使用 map 直接生成 HTML，並套用格式化函數
-      container.innerHTML = data.map(c => `
-        <div class="bg-white p-5 rounded-3xl shadow-sm border border-slate-100 hover:border-emerald-400 hover:shadow-md cursor-pointer transition-all flex justify-between items-center group mb-3 relative overflow-hidden" 
-             onclick='selectClient(${JSON.stringify(c).replace(/'/g, "&#39;")})'>
+      data.forEach(c => {
+        const div = document.createElement('div');
+        div.className = "bg-white p-5 rounded-3xl shadow-sm border border-slate-100 hover:border-emerald-400 hover:shadow-md cursor-pointer transition-all flex justify-between items-center group mb-3 relative overflow-hidden";
+        div.onclick = () => selectClient(c);
+        div.innerHTML = `
           <div class="absolute left-0 top-0 bottom-0 w-1 bg-emerald-500 opacity-0 group-hover:opacity-100 transition-opacity"></div>
           <div class="pl-2">
             <div class="font-black text-slate-800 text-lg flex items-center gap-2">
               ${c['姓名']}
               <span class="text-xs font-bold text-emerald-600 bg-emerald-50 px-2 py-1 rounded-lg border border-emerald-100 flex items-center gap-1">
-                <span class="material-icons-outlined text-[10px]">cake</span> ${formatDateString(c['生日'])}
+                <span class="material-icons-outlined text-[10px]">cake</span> ${c['生日']}
               </span>
             </div>
             <div class="text-sm text-slate-400 mt-1 flex items-center gap-1 font-mono">
-              <span class="material-icons-outlined text-[14px]">phone</span> ${formatPhone(c['電話'])}
+              <span class="material-icons-outlined text-[14px]">phone</span> ${c['電話']}
             </div>
           </div>
           <div class="w-10 h-10 rounded-full bg-slate-50 flex items-center justify-center text-slate-300 group-hover:bg-emerald-500 group-hover:text-white transition-all">
             <span class="material-icons-outlined">arrow_forward</span>
-          </div>
-        </div>
-      `).join('');
+          </div>`;
+        container.appendChild(div);
+      });
   }).searchClient(kw);
 }
 
@@ -391,22 +438,23 @@ function selectClient(c) {
 
   document.getElementById('topBarClientInfo').classList.remove('hidden');
   document.getElementById('headerClientName').textContent = c['姓名'];
-  // ★ 套用格式化
-  document.getElementById('headerClientDob').textContent = formatDateString(c['生日']);
+  document.getElementById('headerClientDob').textContent = c['生日'];
   document.querySelectorAll('.auto-fill-id').forEach(el => el.value = c['個案編號']);
 
   const therapistSelect = document.getElementById('inputTherapist');
-  if (therapistSelect) therapistSelect.value = c['負責治療師'] || "";
+  if (therapistSelect) {
+      therapistSelect.value = c['負責治療師'] || "";
+  }
   
   const itemSelect = document.getElementById('inputTreatmentItem');
-  if (itemSelect) itemSelect.value = "1600";
-  
+  if (itemSelect) {
+      itemSelect.value = "1600";
+  }
   navTo('treatment');
-}
+}// ==========================================
+// 編輯功能相關函式
+// ==========================================
 
-// ==========================================
-// 編輯與表單提交
-// ==========================================
 function findIdFromData(data) {
     if (!data) return "";
     const candidates = ['紀錄id', '紀錄ID', '追蹤ID', '追蹤id', '影像ID', '影像id', 'id', 'ID', 'Id', 'RecordId', 'record_id'];
@@ -416,7 +464,9 @@ function findIdFromData(data) {
     const keys = Object.keys(data);
     for (const key of keys) {
         const cleanKey = key.replace(/\s+/g, '').toLowerCase();
-        if (cleanKey === '紀錄id' || cleanKey === '追蹤id' || cleanKey === '影像id' || cleanKey === 'id') return data[key];
+        if (cleanKey === '紀錄id' || cleanKey === '追蹤id' || cleanKey === '影像id' || cleanKey === 'id') {
+            return data[key];
+        }
     }
     if (Array.isArray(data) && data.length > 0) return data[0];
     return "";
@@ -424,16 +474,22 @@ function findIdFromData(data) {
 
 function startEdit(type, data) {
   let id = findIdFromData(data);
-  if (!id) { showNotification('資料錯誤', '無法讀取此筆紀錄的 ID。', 'error'); return; }
+  if (!id) {
+     showNotification('資料錯誤', '無法讀取此筆紀錄的 ID。', 'error');
+     return;
+  }
 
   const idField = document.getElementById('edit_id_' + type);
   if (idField) idField.value = id;
+
   const cancelDiv = document.getElementById('edit-cancel-' + type);
   if (cancelDiv) cancelDiv.classList.remove('hidden');
 
   const submitBtn = getSubmitBtn(type);
   if (submitBtn) {
-    if (!submitBtn.hasAttribute('data-original-text')) submitBtn.setAttribute('data-original-text', submitBtn.innerHTML);
+    if (!submitBtn.hasAttribute('data-original-text')) {
+       submitBtn.setAttribute('data-original-text', submitBtn.innerHTML);
+    }
     submitBtn.innerHTML = '<span class="material-icons-outlined text-lg mr-1">update</span> 確認更新修改';
     submitBtn.classList.remove('bg-emerald-500', 'hover:bg-emerald-600', 'bg-violet-600', 'hover:bg-violet-700', 'bg-gradient-to-r', 'from-orange-400', 'to-orange-600', 'hover:from-orange-500', 'hover:to-orange-700');
     submitBtn.classList.add('bg-amber-500', 'hover:bg-amber-600', 'text-white');
@@ -443,6 +499,7 @@ function startEdit(type, data) {
     if (type === 'treatment') {
         if(document.getElementById('treatmentDate')._flatpickr)
         document.getElementById('treatmentDate')._flatpickr.setDate(data['治療日期'] || data['date']);
+
         document.getElementById('inputTherapist').value = data['執行治療師'] || data['therapist'] || "";
         document.getElementById('inputTreatmentItem').value = data['治療項目'] || data['item'] || "";
         document.getElementById('inputComplaint').value = data['當日主訴'] || data['complaint'] || "";
@@ -453,6 +510,7 @@ function startEdit(type, data) {
     else if (type === 'doctor') {
         if(document.getElementById('doctorConsultDate')._flatpickr)
         document.getElementById('doctorConsultDate')._flatpickr.setDate(data['看診日期']);
+
         document.getElementById('selectDoctor').value = data['看診醫師'] || "";
         document.getElementById('selectNurse').value = data['護理師'] || "";
         document.querySelector('#view-doctor textarea[name="主訴"]').value = data['S_主訴'] || "";
@@ -465,36 +523,44 @@ function startEdit(type, data) {
     }
     else if (type === 'maintenance') {
         if(document.getElementById('maintenanceDate')._flatpickr)
-        document.getElementById('maintenanceDate')._flatpickr.setDate(data['保養日期'] || data.date);
-        document.getElementById('selectMaintStaff').value = data['執行人員'] || data.staff || "";
-        document.getElementById('selectMaintItem').value = data['保養項目'] || data.item || "";
+        document.getElementById('maintenanceDate')._flatpickr.setDate(data['保養日期']);
+
+        document.getElementById('selectMaintStaff').value = data['執行人員'] || "";
+        document.getElementById('selectMaintItem').value = data['保養項目'] || "";
         const f = document.getElementById('maintenanceForm');
-        f.querySelector('input[name="血壓"]').value = data['血壓'] || data.bp || "";
-        f.querySelector('input[name="血氧"]').value = data['血氧'] || data.spo2 || "";
-        f.querySelector('input[name="心律"]').value = data['心律'] || data.hr || "";
-        f.querySelector('input[name="體溫"]').value = data['體溫'] || data.temp || "";
-        f.querySelector('input[name="呼吸速率"]').value = data['呼吸速率'] || data.rr || "";
-        f.querySelector('textarea[name="備註"]').value = data['備註'] || data.remark || "";
+        f.querySelector('input[name="血壓"]').value = data['血壓'] || "";
+        f.querySelector('input[name="血氧"]').value = data['血氧'] || "";
+        f.querySelector('input[name="心律"]').value = data['心律'] || "";
+        f.querySelector('input[name="體溫"]').value = data['體溫'] || "";
+        // ★ 修改處：加入呼吸速率回填
+        f.querySelector('input[name="呼吸速率"]').value = data['呼吸速率'] || "";
+        f.querySelector('textarea[name="備註"]').value = data['備註'] || data['remark'] || "";
         document.getElementById('view-maintenance').scrollIntoView({ behavior: 'smooth' });
     }
     else if (type === 'tracking') {
         if(document.getElementById('trackDate')._flatpickr)
         document.getElementById('trackDate')._flatpickr.setDate(data.date || data['追蹤日期']);
+
         document.getElementById('trackStaff').value = data.staff || data['追蹤人員'] || "";
         document.getElementById('trackType').value = data.type || data['追蹤項目'] || "";
         document.getElementById('trackContent').value = data.content || data['追蹤內容'] || "";
         document.getElementById('view-tracking').scrollIntoView({ behavior: 'smooth' });
     }
-  } catch(e) { console.error("Error populating form:", e); }
+  } catch(e) {
+      console.error("Error populating form:", e);
+  }
 }
 
 function cancelEdit(type) {
   document.getElementById('edit_id_' + type).value = "";
   document.getElementById('edit-cancel-' + type).classList.add('hidden');
 
-  if(type === 'tracking') document.getElementById('trackingForm').reset();
-  else {
+  if(type === 'tracking') {
+      document.getElementById('trackingForm').reset();
+  } else {
       document.getElementById(type + 'Form').reset();
+      
+      // 取消編輯後，若為治療紀錄，自動帶回負責治療師
       if (type === 'treatment' && currentClient) {
           document.getElementById('inputTherapist').value = currentClient['負責治療師'] || "";
       }
@@ -510,13 +576,20 @@ function cancelEdit(type) {
 
   const submitBtn = getSubmitBtn(type);
   if (submitBtn) {
-    if (submitBtn.hasAttribute('data-original-text')) submitBtn.innerHTML = submitBtn.getAttribute('data-original-text');
-    else submitBtn.innerHTML = "儲存紀錄";
-    
+    if (submitBtn.hasAttribute('data-original-text')) {
+       submitBtn.innerHTML = submitBtn.getAttribute('data-original-text');
+    } else {
+       submitBtn.innerHTML = "儲存紀錄";
+    }
     submitBtn.classList.remove('bg-amber-500', 'hover:bg-amber-600', 'text-white');
-    if(type === 'tracking') submitBtn.classList.add('bg-violet-600', 'hover:bg-violet-700', 'text-white');
-    else if(type === 'maintenance') submitBtn.classList.add('bg-gradient-to-r', 'from-orange-400', 'to-orange-600', 'hover:from-orange-500', 'hover:to-orange-700', 'text-white');
-    else submitBtn.classList.add('bg-emerald-500', 'hover:bg-emerald-600', 'text-white');
+
+    if(type === 'tracking') {
+        submitBtn.classList.add('bg-violet-600', 'hover:bg-violet-700', 'text-white');
+    } else if(type === 'maintenance') {
+        submitBtn.classList.add('bg-gradient-to-r', 'from-orange-400', 'to-orange-600', 'hover:from-orange-500', 'hover:to-orange-700', 'text-white');
+    } else {
+        submitBtn.classList.add('bg-emerald-500', 'hover:bg-emerald-600', 'text-white');
+    }
   }
 }
 
@@ -528,8 +601,14 @@ function getSubmitBtn(type) {
   return null;
 }
 
+// ==========================================
+// 表單提交
+// ==========================================
 function submitForm(type) {
-  if (!currentClient) { showNotification('流程錯誤', '未選取個案，請重新搜尋。', 'error'); return; }
+  if (!currentClient) {
+      showNotification('流程錯誤', '未選取個案，請重新搜尋。', 'error');
+      return;
+  }
 
   const clientId = currentClient['個案編號'];
   const editIdField = document.getElementById('edit_id_' + type);
@@ -543,17 +622,24 @@ function submitForm(type) {
   if(safeBtn) btn = safeBtn;
 
   const ot = btn ? btn.innerHTML : "儲存";
+  
   if(btn) { btn.disabled = true; btn.innerHTML = '<span class="material-icons-outlined animate-spin-reverse">sync</span> 處理中...'; }
 
   const onSuccess = (res, formId, reloadFunc) => {
-      btn.disabled = false; btn.innerHTML = ot;
+      btn.disabled = false;
+      btn.innerHTML = ot;
       if (res.success) {
           showNotification('成功', res.message, 'success');
-          if (isEdit) cancelEdit(type);
-          else {
+          if (isEdit) {
+             cancelEdit(type);
+          } else {
              if(formId) document.getElementById(formId).reset();
              document.querySelectorAll('.auto-fill-id').forEach(el => el.value = clientId);
-             if (formId === 'treatmentForm' && currentClient) document.getElementById('inputTherapist').value = currentClient['負責治療師'] || "";
+             
+             // 新增成功並重置表單後，自動帶回負責治療師
+             if (formId === 'treatmentForm' && currentClient) {
+                 document.getElementById('inputTherapist').value = currentClient['負責治療師'] || "";
+             }
           }
           if(reloadFunc) reloadFunc();
           fetchCalendarData();
@@ -563,9 +649,11 @@ function submitForm(type) {
   };
 
   let d = {};
+
   if (type === 'doctor') {
     d = {
-      record_id: editId, clientId: clientId,
+      record_id: editId,
+      clientId: clientId,
       date: document.getElementById('doctorConsultDate').value,
       doctor: document.getElementById('selectDoctor').value,
       nurse: document.getElementById('selectNurse').value,
@@ -576,11 +664,21 @@ function submitForm(type) {
       nursingRecord: document.getElementById('nursingRecord').value,
       remark: document.getElementById('doctorRemark').value
     };
-    if (!d.date || !d.doctor) { showNotification('欄位未填', '請填寫日期與醫師', 'warning'); if(btn){btn.disabled=false;btn.innerHTML=ot;} return; }
+    if (!d.date || !d.doctor) {
+        showNotification('欄位未填', '請填寫日期與醫師', 'warning');
+        if(btn){btn.disabled=false; btn.innerHTML=ot;} return;
+    }
   }
   else if (type === 'treatment') {
     d = {
-      record_id: editId, '個案編號': clientId,
+      record_id: editId,
+      '個案編號': clientId,
+      '治療日期': document.getElementById('treatmentDate').value,
+      '執行治療師': document.getElementById('inputTherapist').value, // Select ID
+      '治療項目': document.getElementById('inputTreatmentItem').value,
+      '當日主訴': document.getElementById('inputComplaint').value,
+      '治療內容': document.getElementById('inputContent').value,
+      '備註/下次治療': document.getElementById('inputNextPlan').value,
       date: document.getElementById('treatmentDate').value,
       therapist: document.getElementById('inputTherapist').value,
       item: document.getElementById('inputTreatmentItem').value,
@@ -588,12 +686,16 @@ function submitForm(type) {
       content: document.getElementById('inputContent').value,
       nextPlan: document.getElementById('inputNextPlan').value
     };
-    if (!d.date || !d.therapist) { showNotification('欄位未填', '請填寫日期與治療師', 'warning'); if(btn){btn.disabled=false;btn.innerHTML=ot;} return; }
+    if (!d['治療日期'] || !d['執行治療師']) {
+        showNotification('欄位未填', '請填寫日期與治療師', 'warning');
+        if(btn){btn.disabled=false; btn.innerHTML=ot;} return;
+    }
   }
   else if (type === 'maintenance') {
     const f = document.getElementById('maintenanceForm');
     d = {
-      record_id: editId, clientId: clientId,
+      record_id: editId,
+      clientId: clientId,
       date: document.getElementById('maintenanceDate').value,
       staff: document.getElementById('selectMaintStaff').value,
       item: document.getElementById('selectMaintItem').value,
@@ -601,24 +703,34 @@ function submitForm(type) {
       spo2: f.querySelector('input[name="血氧"]').value,
       hr: f.querySelector('input[name="心律"]').value,
       temp: f.querySelector('input[name="體溫"]').value,
+      // ★ 修改處：加入呼吸速率收集
       rr: f.querySelector('input[name="呼吸速率"]').value,
       remark: f.querySelector('textarea[name="備註"]').value
     };
-    if (!d.date || !d.staff || !d.item) { showNotification('欄位未填', '請完整填寫必填欄位', 'warning'); if(btn){btn.disabled=false;btn.innerHTML=ot;} return; }
+    if (!d.date || !d.staff || !d.item) {
+        showNotification('欄位未填', '請完整填寫必填欄位', 'warning');
+        if(btn){btn.disabled=false; btn.innerHTML=ot;} return;
+    }
   }
   else if (type === 'tracking') {
     d = {
-      record_id: editId, clientId: clientId,
+      record_id: editId,
+      clientId: clientId,
       trackDate: document.getElementById('trackDate').value,
       trackStaff: document.getElementById('trackStaff').value,
       trackType: document.getElementById('trackType').value,
       content: document.getElementById('trackContent').value
     };
-    if (!d.trackDate || !d.trackStaff || !d.trackType || !d.content) { showNotification('欄位未填', '請完整填寫追蹤資料', 'warning'); if(btn){btn.disabled=false;btn.innerHTML=ot;} return; }
+    if (!d.trackDate || !d.trackStaff || !d.trackType || !d.content) {
+        showNotification('欄位未填', '請完整填寫追蹤資料', 'warning');
+        if(btn){btn.disabled=false; btn.innerHTML=ot;} return;
+    }
   }
 
   if (isEdit) {
-     google.script.run.withSuccessHandler(res => onSuccess(res, null, getReloadFunc(type))).updateRecord(type, d);
+     google.script.run
+       .withSuccessHandler(res => onSuccess(res, null, getReloadFunc(type)))
+       .updateRecord(type, d);
   } else {
      if (type === 'doctor') google.script.run.withSuccessHandler(res => onSuccess(res, 'doctorForm', loadDoctorHistory)).saveDoctorConsultation(d);
      else if (type === 'treatment') google.script.run.withSuccessHandler(res => onSuccess(res, 'treatmentForm', loadTreatmentHistory)).saveData('Treatment_Logs', d);
@@ -636,8 +748,9 @@ function getReloadFunc(type) {
 }
 
 // ==========================================
-// 歷史列表與總覽
+// 歷史列表載入與渲染
 // ==========================================
+
 function loadTrackingHistory() {
   const c = document.getElementById('trackingHistoryList'); c.innerHTML = '<div class="text-center py-6 text-slate-400">讀取中...</div>';
   google.script.run.withSuccessHandler(recs => {
@@ -680,7 +793,10 @@ function renderTreatmentList(logs) {
   const countBadge = document.getElementById('treatmentHistoryCount');
   if(countBadge) countBadge.textContent = `共 ${logs ? logs.length : 0} 次`;
 
-  if(!logs || !logs.length) { c.innerHTML = '<div class="text-center py-10 text-slate-300 bg-slate-50 rounded-2xl">無相關紀錄</div>'; return; }
+  if(!logs || !logs.length) {
+    c.innerHTML = '<div class="text-center py-10 text-slate-300 bg-slate-50 rounded-2xl">無相關紀錄</div>';
+    return;
+  }
 
   c.innerHTML = logs.map(l => {
     const dataStr = encodeURIComponent(JSON.stringify(l));
@@ -694,6 +810,7 @@ function renderTreatmentList(logs) {
                 <span class="material-icons-outlined text-sm">edit</span>
             </button>
         </div>
+
         <div class="flex items-center gap-2">
             ${l['治療項目'] ? `<span class="px-2 py-0.5 rounded text-[10px] font-bold bg-blue-50 text-blue-600 border border-blue-100 print:text-black">${l['治療項目']}</span>` : ''}
             <div class="flex items-center gap-1 text-xs font-bold text-slate-500 print:text-black">
@@ -702,42 +819,62 @@ function renderTreatmentList(logs) {
         </div>
       </div>
       <div class="space-y-3">
-        ${l['當日主訴'] ? `<div class="text-xs text-slate-500 bg-slate-50 p-3 rounded-xl border border-slate-100 print:bg-white print:border-0 print:p-0"><span class="font-bold text-slate-400 block mb-1 uppercase tracking-widest text-[10px] print:text-black">Complaint</span>${l['當日主訴']}</div>` : ''}
+        ${l['當日主訴'] ? `
+        <div class="text-xs text-slate-500 bg-slate-50 p-3 rounded-xl border border-slate-100 print:bg-white print:border-0 print:p-0">
+          <span class="font-bold text-slate-400 block mb-1 uppercase tracking-widest text-[10px] print:text-black">Complaint</span>${l['當日主訴']}
+        </div>` : ''}
+
         <div class="text-sm text-slate-700 whitespace-pre-wrap px-1 print:text-black">${l['治療內容']}</div>
+
         ${l['備註/下次治療']?`<div class="mt-2 text-xs text-slate-600 bg-amber-50 p-3 rounded-xl border border-amber-100 print:bg-white print:border-slate-300"><span class="font-bold text-amber-500 block mb-1 flex items-center gap-1 print:text-black"><span class="material-icons-outlined text-[12px] print:hidden">flag</span> Next Plan</span>${l['備註/下次治療']}</div>`:''}
       </div>
     </div>`;
   }).join('');
-}
-
-function loadMaintenanceHistory() {
+}function loadMaintenanceHistory() {
   const c = document.getElementById('maintenanceHistoryList'); c.innerHTML = '<div class="text-center py-10 text-slate-400">紀錄載入中...</div>';
   google.script.run.withSuccessHandler(logs => {
     if(!logs || !logs.length) { c.innerHTML = '<div class="bg-white/50 border-2 border-dashed border-slate-200 rounded-[2.5rem] p-12 text-center text-slate-300">尚無歷史紀錄</div>'; return; }
+
     c.innerHTML = logs.map(l => {
       const dataStr = encodeURIComponent(JSON.stringify(l));
+      
+      // 為了相容性，同時嘗試讀取英文 Key (新版後端) 或中文 Key (舊版資料)
+      const remarkText = l.remark || l['備註']; 
+
       return `
-      <div class="bg-white p-6 rounded-[2rem] shadow-sm border border-slate-100 card-hover mb-4 flex flex-col items-stretch print:break-inside-avoid print:mb-4 print:border print:border-slate-300 relative group">
+      <div class="bg-white p-6 rounded-[2rem] shadow-sm border border-slate-100 card-hover mb-4 flex flex-col md:flex-row gap-4 items-center print:break-inside-avoid print:mb-4 print:border print:border-slate-300 relative group">
         <button onclick="startEdit('maintenance', JSON.parse(decodeURIComponent('${dataStr}')))" class="absolute top-4 right-4 text-slate-300 hover:text-orange-500 transition print:hidden" title="編輯">
             <span class="material-icons-outlined text-sm">edit</span>
         </button>
-        <div class="flex flex-col md:flex-row gap-4 items-center mb-2">
-            <div class="w-full md:w-auto flex flex-col gap-1 md:pr-6 min-w-[140px]">
-              <div class="text-sm font-mono text-slate-500 tracking-tight print:text-black">${l.date||'--'}</div>
-              <span class="px-2.5 py-1 bg-orange-50 text-orange-600 text-[11px] font-bold rounded-lg w-fit mt-1 print:bg-white print:text-black print:border print:border-slate-300">${l.item||'一般'}</span>
-              <div class="text-xs font-bold text-slate-400 flex items-center gap-1 mt-2 print:text-black">
-                 <span class="material-icons-outlined text-sm text-slate-400 print:hidden">person</span>${l.staff||'--'}
-              </div>
-            </div>
-            <div class="w-full grid grid-cols-5 gap-2 text-center">
-              <div class="p-2 rounded-xl bg-slate-50 print:bg-white print:border print:border-slate-300"><div class="text-[9px] font-bold text-slate-400 mb-1 print:text-black">Temp</div><div class="text-sm font-black text-slate-700 print:text-black">${l.temp||'-'}</div></div>
-              <div class="p-2 rounded-xl bg-slate-50 print:bg-white print:border print:border-slate-300"><div class="text-[9px] font-bold text-slate-400 mb-1 print:text-black">HR</div><div class="text-sm font-black text-slate-700 print:text-black">${l.hr||'-'}</div></div>
-              <div class="p-2 rounded-xl bg-slate-50 print:bg-white print:border print:border-slate-300"><div class="text-[9px] font-bold text-slate-400 mb-1 print:text-black">RR</div><div class="text-sm font-black text-slate-700 print:text-black">${l.rr||'-'}</div></div>
-              <div class="p-2 rounded-xl bg-slate-50 print:bg-white print:border print:border-slate-300"><div class="text-[9px] font-bold text-slate-400 mb-1 print:text-black">BP</div><div class="text-sm font-black text-slate-700 print:text-black">${l.bp||'-'}</div></div>
-              <div class="p-2 rounded-xl bg-slate-50 print:bg-white print:border print:border-slate-300"><div class="text-[9px] font-bold text-slate-400 mb-1 print:text-black">SpO2</div><div class="text-sm font-black text-slate-700 print:text-black">${l.spo2||'-'}</div></div>
-            </div>
+
+        <div class="w-full md:w-auto flex flex-col gap-1 border-b md:border-b-0 md:border-r border-slate-100 pb-4 md:pb-0 md:pr-6 min-w-[140px] print:border-r print:border-slate-300">
+          <div class="text-sm font-mono text-slate-500 tracking-tight print:text-black">${l['保養日期']||'--'}</div>
+          <span class="px-2.5 py-1 bg-orange-50 text-orange-600 text-[11px] font-bold rounded-lg w-fit mt-1 print:bg-white print:text-black print:border print:border-slate-300">${l['保養項目']||'一般'}</span>
+          <div class="text-xs font-bold text-slate-400 flex items-center gap-1 mt-2 print:text-black">
+             <span class="material-icons-outlined text-sm text-slate-400 print:hidden">person</span>${l['執行人員']||'--'}
+          </div>
         </div>
-        ${l.remark ? `<div class="mt-2 pt-3 border-t border-slate-100 flex items-start gap-2"><span class="text-xs font-bold text-orange-500 whitespace-nowrap pt-0.5">備註</span><div class="text-sm text-slate-600 leading-snug">${l.remark}</div></div>` : ''}
+        
+        <!-- 數值顯示區 (Grid) -->
+        <div class="w-full">
+            <div class="grid grid-cols-5 gap-2 text-center">
+              <div class="p-2 rounded-xl bg-slate-50 print:bg-white print:border print:border-slate-300"><div class="text-[9px] font-bold text-slate-400 mb-1 print:text-black">Temp</div><div class="text-sm font-black text-slate-700 print:text-black">${l['體溫']||l.temp||'-'}</div></div>
+              <div class="p-2 rounded-xl bg-slate-50 print:bg-white print:border print:border-slate-300"><div class="text-[9px] font-bold text-slate-400 mb-1 print:text-black">HR</div><div class="text-sm font-black text-slate-700 print:text-black">${l['心律']||l.hr||'-'}</div></div>
+              <div class="p-2 rounded-xl bg-slate-50 print:bg-white print:border print:border-slate-300"><div class="text-[9px] font-bold text-slate-400 mb-1 print:text-black">RR</div><div class="text-sm font-black text-slate-700 print:text-black">${l['呼吸速率']||l.rr||'-'}</div></div>
+              <div class="p-2 rounded-xl bg-slate-50 print:bg-white print:border print:border-slate-300"><div class="text-[9px] font-bold text-slate-400 mb-1 print:text-black">BP</div><div class="text-sm font-black text-slate-700 print:text-black">${l['血壓']||l.bp||'-'}</div></div>
+              <div class="p-2 rounded-xl bg-slate-50 print:bg-white print:border print:border-slate-300"><div class="text-[9px] font-bold text-slate-400 mb-1 print:text-black">SpO2</div><div class="text-sm font-black text-slate-700 print:text-black">${l['血氧']||l.spo2||'-'}</div></div>
+            </div>
+
+            <!-- ★★★ 修正處：在此處插入備註顯示 ★★★ -->
+            ${remarkText && remarkText !== '' ? `
+             <div class="mt-4 pt-3 border-t border-gray-100 text-sm text-gray-600 text-left flex items-start">
+                 <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 text-gray-400 mr-2 mt-0.5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 8h10M7 12h4m1 8l-4-4H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-3l-4 4z" />
+                 </svg>
+                 <span class="break-words w-full">${remarkText}</span>
+             </div>
+             ` : ''}
+        </div>
       </div>`;
     }).join('');
   }).getMaintenanceHistory(currentClient['個案編號']);
@@ -747,6 +884,7 @@ function loadDoctorHistory() {
   const c = document.getElementById('doctorHistoryList'); c.innerHTML = '<div class="text-center py-10 text-slate-400">讀取中...</div>';
   google.script.run.withSuccessHandler(logs => {
     if(!logs || !logs.length) { c.innerHTML = '<div class="py-12 text-center text-slate-300 bg-white rounded-[2rem] border border-slate-100">尚無看診紀錄</div>'; return; }
+
     c.innerHTML = logs.map(l => {
       const dataStr = encodeURIComponent(JSON.stringify(l));
       return `
@@ -759,10 +897,15 @@ function loadDoctorHistory() {
               </button>
           </div>
           <div class="text-sm font-bold text-slate-500 flex items-center gap-4 print:text-black">
-            <div class="flex items-center gap-1"><span class="material-icons-outlined text-base text-slate-400 print:hidden">person</span> ${l['看診醫師']||'--'}</div>
-            <div class="flex items-center gap-1"><span class="material-icons-outlined text-base text-slate-400 print:hidden">person</span> ${l['護理師']||'--'}</div>
+            <div class="flex items-center gap-1">
+              <span class="material-icons-outlined text-base text-slate-400 print:hidden">person</span> ${l['看診醫師']||'--'}
+            </div>
+            <div class="flex items-center gap-1">
+              <span class="material-icons-outlined text-base text-slate-400 print:hidden">person</span> ${l['護理師']||'--'}
+            </div>
           </div>
         </div>
+
         <div class="soap-grid-container grid grid-cols-1 md:grid-cols-2 gap-2 text-sm print:gap-2">
           <div class="bg-blue-50/40 p-2.5 rounded-xl border border-blue-50 print:bg-white print:border-slate-300 print:p-2">
              <div class="flex items-center gap-2 mb-1 text-blue-600 font-black print:text-black"><span class="w-6 h-6 rounded-full bg-blue-100 flex items-center justify-center text-xs print:border print:border-black print:bg-white">S</span> 主訴</div>
@@ -780,14 +923,26 @@ function loadDoctorHistory() {
              <div class="flex items-center gap-2 mb-1 text-emerald-600 font-black print:text-black"><span class="w-6 h-6 rounded-full bg-emerald-100 flex items-center justify-center text-xs print:border print:border-black print:bg-white">P</span> 計畫</div>
              <div class="text-slate-600 leading-relaxed pl-1 print:text-black">${l['P_治療計劃']||'--'}</div>
           </div>
-          ${l['護理紀錄'] && l['護理紀錄']!=='--' ? `<div class="md:col-span-2 bg-rose-50/40 p-2.5 rounded-xl border border-rose-50 print:bg-white print:border-slate-300 print:p-2"><div class="flex items-center gap-2 mb-1 text-rose-600 font-black print:text-black"><span class="w-6 h-6 rounded-full bg-rose-100 flex items-center justify-center text-xs print:border print:border-black print:bg-white">N</span> 護理紀錄</div><div class="text-slate-600 leading-relaxed pl-1 print:text-black">${l['護理紀錄']}</div></div>` : ''}
-          ${l['備註'] && l['備註']!=='--' ? `<div class="md:col-span-2 bg-slate-50 p-2.5 rounded-2xl text-xs text-slate-500 border border-slate-100 flex gap-2 print:bg-white print:border-slate-300 print:p-2"><span class="font-bold shrink-0 print:text-black">Note:</span><span class="print:text-black">${l['備註']}</span></div>` : ''}
+
+          ${l['護理紀錄'] && l['護理紀錄']!=='--' ? `
+          <div class="md:col-span-2 bg-rose-50/40 p-2.5 rounded-xl border border-rose-50 print:bg-white print:border-slate-300 print:p-2">
+              <div class="flex items-center gap-2 mb-1 text-rose-600 font-black print:text-black"><span class="w-6 h-6 rounded-full bg-rose-100 flex items-center justify-center text-xs print:border print:border-black print:bg-white">N</span> 護理紀錄</div>
+              <div class="text-slate-600 leading-relaxed pl-1 print:text-black">${l['護理紀錄']}</div>
+          </div>` : ''}
+
+          ${l['備註'] && l['備註']!=='--' ? `
+          <div class="md:col-span-2 bg-slate-50 p-2.5 rounded-2xl text-xs text-slate-500 border border-slate-100 flex gap-2 print:bg-white print:border-slate-300 print:p-2">
+              <span class="font-bold shrink-0 print:text-black">Note:</span><span class="print:text-black">${l['備註']}</span>
+          </div>` : ''}
         </div>
       </div>`;
     }).join('');
   }).getClientHistory(currentClient['個案編號'], 'Doctor_Consultation');
 }
 
+// ==========================================
+// 個案總覽
+// ==========================================
 function loadOverviewData() {
   const container = document.getElementById('overviewListContainer'); container.innerHTML = '<div class="text-center py-12 text-slate-400 flex flex-col items-center gap-2"><span class="material-icons-outlined animate-spin-reverse">sync</span><span>讀取個案歷程中...</span></div>';
   google.script.run.withSuccessHandler(data => {
@@ -799,6 +954,7 @@ function loadOverviewData() {
 
 function setOverviewCategory(cat) {
   currentOverviewCategory = cat;
+
   document.querySelectorAll('[id^="filter-btn-"]').forEach(btn => {
      if(btn.id === 'filter-btn-' + cat) {
          btn.classList.remove('bg-white', 'text-slate-800', 'text-slate-500', 'hover:bg-white', 'hover:text-slate-700', 'shadow-sm', 'ring-1', 'ring-slate-200');
@@ -808,15 +964,23 @@ function setOverviewCategory(cat) {
          btn.classList.add('bg-white', 'text-slate-500', 'hover:bg-white', 'hover:text-slate-700');
      }
   });
+
   renderOverviewList();
 }
 
 function getFilteredOverviewData() {
   let data = allOverviewRecords;
-  if (currentOverviewCategory !== 'all') data = data.filter(i => i.category === currentOverviewCategory);
+
+  if (currentOverviewCategory !== 'all') {
+      data = data.filter(i => i.category === currentOverviewCategory);
+  }
+
   const s = document.getElementById('overviewStartDate').value;
   const e = document.getElementById('overviewEndDate').value;
-  if(s && e) data = data.filter(i => i.date >= s && i.date <= e);
+
+  if(s && e) {
+      data = data.filter(i => i.date >= s && i.date <= e);
+  }
   return data;
 }
 
@@ -833,6 +997,7 @@ function renderOverviewList() {
     return;
   }
 
+  // 生成畫面上的卡片列表
   c.innerHTML = f.map((i, index) => {
     const cardClass = `print:break-before-page ${index === 0 ? '' : 'print:break-before-page'} bg-white border border-slate-100 rounded-[2rem] p-5 shadow-sm mb-4 card-hover relative overflow-hidden group print:hidden`;
     const headerClass = "flex justify-between items-center mb-3 pb-2 border-b border-slate-50 pl-3";
@@ -927,16 +1092,18 @@ function renderOverviewList() {
     return '';
   }).join('');
 
-  // 列印表格生成 (含標題與姓名)
+  // --- 列印表格生成 (含標題與姓名) ---
   const catName = { 'all': '全部', 'doctor': '醫師看診', 'treatment': '物理治療', 'maintenance': '保養項目', 'tracking': '個管追蹤' };
   const clientName = currentClient ? currentClient['姓名'] : ''; 
 
   let tableHtml = `
+    <!-- 標題區塊：標題置中，姓名靠右 -->
     <div style="display: flex; justify-content: space-between; align-items: flex-end; margin-bottom: 5px; border-bottom: 2px solid #000; padding-bottom: 5px;">
         <div style="flex: 1;"></div> 
         <div style="flex: 0 0 auto; text-align: center; font-size: 24px; font-weight: bold; letter-spacing: 2px;">康飛運醫 物理治療所</div>
         <div style="flex: 1; text-align: right; font-size: 16px; font-weight: bold;">${clientName}</div>
     </div>
+
     <div style="margin-bottom: 10px; font-weight: bold; font-size: 12px; border-bottom: 1px solid #000; padding-bottom: 5px;">
         列印日期：${new Date().toISOString().split('T')[0]} ｜ 篩選條件：${catName[currentOverviewCategory] || '全部'} ｜ 資料筆數：${f.length}
     </div>
@@ -952,6 +1119,7 @@ function renderOverviewList() {
         <tbody>`;
 
   f.forEach((i, index) => {
+    // 若為全部或治療分頁，因為內容較多，每一筆後強制分頁(除了第一筆)
     const isPageBreakNeeded = (currentOverviewCategory === 'all' || currentOverviewCategory === 'treatment') && index > 0;
     const rowStyle = isPageBreakNeeded ? 'style="page-break-before: always; border-top: 1px solid #000; padding-top: 10px;"' : 'style="border-top: 1px solid #000; padding-top: 10px;"';
 
@@ -960,7 +1128,11 @@ function renderOverviewList() {
 
     if (i.category === 'doctor') {
        typeName = '醫師看診';
-       content = `<b>[S]</b> ${i.s||'-'}<br><b>[O]</b> ${i.o||'-'}<br><b>[A]</b> ${i.a||'-'}<br><b>[P]</b> ${i.p||'-'}`;
+       content = `
+       <b>[S]</b> ${i.s||'-'}<br>
+       <b>[O]</b> ${i.o||'-'}<br>
+       <b>[A]</b> ${i.a||'-'}<br>
+       <b>[P]</b> ${i.p||'-'}`;
        if(i.nursingRecord && i.nursingRecord!=='--') content += `<br><b>[護理]</b> ${i.nursingRecord}`;
        if(i.remark && i.remark!=='--') content += `<br><b>[備註]</b> ${i.remark}`;
     }
@@ -974,6 +1146,7 @@ function renderOverviewList() {
     else if (i.category === 'maintenance') {
        typeName = '保養項目';
        if(i.item) typeName += `<br><small>(${i.item})</small>`;
+       // ★ 修改處：列印報表也加入 RR
        content = `T: ${i.temp||'-'} / HR: ${i.hr||'-'} / RR: ${i.rr||'-'} / BP: ${i.bp||'-'} / SpO2: ${i.spo2||'-'}`;
        if(i.remark && i.remark!=='--') content += `<br><b>[備註]</b> ${i.remark}`;
     }
@@ -983,7 +1156,13 @@ function renderOverviewList() {
        content = i.content;
     }
 
-    tableHtml += `<tr ${rowStyle}><td style="padding: 8px 0;">${i.date}</td><td style="padding: 8px 0;">${typeName}</td><td style="padding: 8px 0;">${content}</td><td style="padding: 8px 0;">${i.staff||i.doctor||'--'}</td></tr>`;
+    tableHtml += `
+      <tr ${rowStyle}>
+          <td style="padding: 8px 0;">${i.date}</td>
+          <td style="padding: 8px 0;">${typeName}</td>
+          <td style="padding: 8px 0;">${content}</td>
+          <td style="padding: 8px 0;">${i.staff||i.doctor||'--'}</td>
+      </tr>`;
   });
 
   tableHtml += `</tbody></table>`;
@@ -993,21 +1172,39 @@ function renderOverviewList() {
 function printOverviewReport() { handlePrint(); }
 
 // ==========================================
-// 影像功能 (保持不變)
+// 影像載入與上傳邏輯
 // ==========================================
+
 function loadClientImages() {
   const container = document.getElementById('imageGalleryContainer');
   const countText = document.getElementById('img-stats-text');
+
   container.innerHTML = '<div class="col-span-full flex flex-col items-center justify-center py-20 text-slate-300"><span class="material-icons-outlined text-4xl animate-spin-reverse mb-3">sync</span><p>讀取影像中...</p></div>';
   if(countText) countText.textContent = '讀取中...';
+
   const clientId = currentClient['個案編號'];
+
   google.script.run.withSuccessHandler(function(res) {
-     if (!res.success) { container.innerHTML = '<div class="col-span-full text-center py-10 text-red-400">讀取失敗: ' + res.message + '</div>'; return; }
+     if (!res.success) {
+        container.innerHTML = '<div class="col-span-full text-center py-10 text-red-400">讀取失敗: ' + res.message + '</div>';
+        return;
+     }
+
      const images = res.images;
      if (countText) countText.textContent = '共 ' + images.length + ' 張影像紀錄';
+
      if (images.length === 0) {
-        container.innerHTML = `<div class="col-span-full flex flex-col items-center justify-center py-24 bg-white rounded-[2.5rem] border border-slate-100"><div class="w-16 h-16 bg-slate-50 rounded-full flex items-center justify-center mb-4 text-slate-300"><span class="material-icons-outlined text-3xl">broken_image</span></div><p class="text-slate-400 font-bold">無影像資料</p><p class="text-xs text-slate-300 mt-1">請確認雲端資料夾是否已有檔案</p></div>`; return;
+        container.innerHTML = `
+          <div class="col-span-full flex flex-col items-center justify-center py-24 bg-white rounded-[2.5rem] border border-slate-100">
+              <div class="w-16 h-16 bg-slate-50 rounded-full flex items-center justify-center mb-4 text-slate-300">
+                  <span class="material-icons-outlined text-3xl">broken_image</span>
+              </div>
+              <p class="text-slate-400 font-bold">無影像資料</p>
+              <p class="text-xs text-slate-300 mt-1">請確認雲端資料夾是否已有檔案</p>
+          </div>`;
+        return;
      }
+
      container.innerHTML = images.map(img => `
         <div class="group relative bg-white rounded-3xl shadow-sm border border-slate-100 overflow-hidden aspect-square cursor-pointer hover:shadow-md transition-all" onclick="openLightbox('${img.id}', '${img.name}')">
             <img src="${img.thumbnail}" alt="${img.name}" class="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110">
@@ -1017,14 +1214,17 @@ function loadClientImages() {
             </div>
         </div>
      `).join('');
+
   }).getClientImages(clientId);
 }
 
 function previewFiles(input) {
   const container = document.getElementById('previewList');
   const previewArea = document.getElementById('uploadPreviewArea');
+
   filesToUpload = Array.from(input.files);
   container.innerHTML = '';
+
   if (filesToUpload.length > 0) {
     previewArea.classList.remove('hidden');
     filesToUpload.forEach(file => {
@@ -1032,26 +1232,42 @@ function previewFiles(input) {
       reader.onload = function(e) {
         const div = document.createElement('div');
         div.className = "flex items-center gap-3 p-2 bg-slate-50 rounded-xl border border-slate-100";
-        div.innerHTML = `<div class="w-10 h-10 rounded-lg overflow-hidden bg-white shrink-0"><img src="${e.target.result}" class="w-full h-full object-cover"></div><div class="flex-1 min-w-0"><p class="text-xs font-bold text-slate-700 truncate">${file.name}</p><p class="text-[10px] text-slate-400">${(file.size/1024).toFixed(1)} KB</p></div>`;
+        div.innerHTML = `
+          <div class="w-10 h-10 rounded-lg overflow-hidden bg-white shrink-0">
+             <img src="${e.target.result}" class="w-full h-full object-cover">
+          </div>
+          <div class="flex-1 min-w-0">
+             <p class="text-xs font-bold text-slate-700 truncate">${file.name}</p>
+             <p class="text-[10px] text-slate-400">${(file.size/1024).toFixed(1)} KB</p>
+          </div>`;
         container.appendChild(div);
       };
       reader.readAsDataURL(file);
     });
-  } else { previewArea.classList.add('hidden'); }
+  } else {
+    previewArea.classList.add('hidden');
+  }
 }
 
 function startUpload() {
-  if (filesToUpload.length === 0) { showNotification('提示', '請先選擇檔案', 'info'); return; }
+  if (filesToUpload.length === 0) {
+      showNotification('提示', '請先選擇檔案', 'info');
+      return;
+  }
   const btn = document.getElementById('btnStartUpload');
   const originalText = btn.innerHTML;
   const remark = document.getElementById('fileRemark').value;
+
   btn.disabled = true;
   btn.innerHTML = '<span class="material-icons-outlined animate-spin-reverse mr-2">sync</span>上傳中...';
+
   let successCount = 0;
+
   const processNext = (idx) => {
       if (idx >= filesToUpload.length) {
          showNotification('上傳完成', '成功 ' + successCount + ' / ' + filesToUpload.length, 'success');
-         btn.disabled = false; btn.innerHTML = originalText;
+         btn.disabled = false;
+         btn.innerHTML = originalText;
          closeModal('uploadImageModal');
          document.getElementById('uploadInput').value = '';
          document.getElementById('fileRemark').value = '';
@@ -1061,6 +1277,7 @@ function startUpload() {
          loadClientImages();
          return;
       }
+
       const file = filesToUpload[idx];
       const reader = new FileReader();
       reader.onload = function(e) {
@@ -1068,15 +1285,22 @@ function startUpload() {
           google.script.run.withSuccessHandler(res => {
              if(res.success) successCount++;
              processNext(idx + 1);
-          }).withFailureHandler(err => { console.error(err); processNext(idx + 1); }).uploadClientImage(currentClient['個案編號'], content, file.name, file.type, remark);
+          }).withFailureHandler(err => {
+             console.error(err);
+             processNext(idx + 1);
+          }).uploadClientImage(currentClient['個案編號'], content, file.name, file.type, remark);
       };
       reader.readAsDataURL(file);
   };
+
   processNext(0);
 }
 
 function openUploadModal() {
-  if (!currentClient) { showNotification('提示', '請先選取個案', 'info'); return; }
+  if (!currentClient) {
+      showNotification('提示', '請先選取個案', 'info');
+      return;
+  }
   document.getElementById('uploadInput').value = '';
   document.getElementById('fileRemark').value = '';
   document.getElementById('previewList').innerHTML = '';
@@ -1089,12 +1313,30 @@ function openUploadModal() {
 // 工具函式
 // ==========================================
 function resetSearch() { currentClient = null; document.getElementById('topBarClientInfo').classList.add('hidden'); navTo('search'); }
-function closeModal(id) { document.getElementById(id).classList.add('hidden'); if (id === 'addClientModal') resetAddClientModalUI(); }
-function toggleSidebar() { const sidebar = document.getElementById('sidebar'); if (sidebar) sidebar.classList.toggle('hidden'); }
+
+function closeModal(id) { 
+  document.getElementById(id).classList.add('hidden'); 
+  
+  // 如果關閉的是新增個案視窗，必須重置 UI
+  if (id === 'addClientModal') {
+    resetAddClientModalUI();
+  }
+}
+
+function toggleSidebar() {
+  const sidebar = document.getElementById('sidebar');
+  if (sidebar) {
+    // 切換 hidden 類別：
+    // 如果有 hidden (隱藏中) -> 移除 (顯示)
+    // 如果沒 hidden (顯示中) -> 加入 (隱藏)
+    sidebar.classList.toggle('hidden');
+  }
+}
+
 function openModal(id) { document.getElementById(id).classList.remove('hidden'); }
 
 // ==========================================
-// Lightbox & Notifications
+// Lightbox
 // ==========================================
 function openLightbox(id, name) {
     const modal = document.getElementById('imageLightbox');
@@ -1109,7 +1351,11 @@ function openLightbox(id, name) {
     img.src = "";
     if (titleDiv) titleDiv.textContent = name || '';
     const highResUrl = `https://lh3.googleusercontent.com/d/${id}=s0`;
-    img.onload = function() { loading.classList.add('hidden'); img.style.opacity = '1'; img.style.transform = 'scale(1)'; };
+    img.onload = function() {
+        loading.classList.add('hidden');
+        img.style.opacity = '1';
+        img.style.transform = 'scale(1)';
+    };
     img.src = highResUrl;
     document.body.style.overflow = 'hidden';
 }
@@ -1120,38 +1366,35 @@ function closeLightbox() {
     if (img) img.src = '';
     document.body.style.overflow = '';
 }
-document.addEventListener('keydown', function(event) { if (event.key === "Escape") closeLightbox(); });
+document.addEventListener('keydown', function(event) {
+    if (event.key === "Escape") closeLightbox();
+});
 
 // ==========================================
-// 回到頂部按鈕邏輯 (修正版：針對 contentArea 監聽)
+// 回到頂部按鈕邏輯
 // ==========================================
+window.addEventListener('scroll', function() {
+  const btn = document.getElementById('btnBackToTop');
+  if (!btn) return;
 
-// 1. 監聽內容區塊的捲動事件
-const contentArea = document.getElementById('contentArea');
-if (contentArea) {
-  contentArea.addEventListener('scroll', function() {
-    const btn = document.getElementById('btnBackToTop');
-    if (!btn) return;
+  if (window.scrollY > 300) {
+    btn.classList.remove('hidden');
+    btn.classList.add('animate-bounce-in');
+  } else {
+    btn.classList.add('hidden');
+  }
+});
 
-    // 當捲動超過 300px 時顯示按鈕
-    if (this.scrollTop > 300) {
-      btn.classList.remove('hidden');
-    } else {
-      btn.classList.add('hidden');
-    }
+function scrollToTop() {
+  window.scrollTo({
+    top: 0,
+    behavior: 'smooth'
   });
 }
 
-// 2. 執行捲動回頂部
-function scrollToTop() {
-  const contentArea = document.getElementById('contentArea');
-  if (contentArea) {
-    contentArea.scrollTo({
-      top: 0,
-      behavior: 'smooth'
-    });
-  }
-}
+// ==========================================
+// 自訂通知
+// ==========================================
 
 function showNotification(title, message, type = 'info') {
   const modal = document.getElementById('custom-modal');
@@ -1160,15 +1403,43 @@ function showNotification(title, message, type = 'info') {
   const iconEl = document.getElementById('modal-icon');
   const iconContainer = document.getElementById('modal-icon-container');
   const btn = document.getElementById('modal-confirm-btn');
+
   if (!modal) return;
-  titleEl.innerText = title; msgEl.innerText = message;
+
+  titleEl.innerText = title;
+  msgEl.innerText = message;
+
+  // 重置樣式
   iconContainer.className = 'mx-auto flex items-center justify-center w-16 h-16 rounded-full mb-2';
   btn.className = 'w-full py-3.5 px-4 font-bold rounded-2xl shadow-lg transition-all active:scale-95 text-white';
-  if (type === 'success') { iconEl.innerText = 'check_circle'; iconEl.className = 'material-icons-outlined text-3xl text-emerald-600'; iconContainer.classList.add('bg-emerald-100'); btn.classList.add('bg-emerald-500', 'hover:bg-emerald-600', 'shadow-emerald-500/20'); } 
-  else if (type === 'error') { iconEl.innerText = 'error'; iconEl.className = 'material-icons-outlined text-3xl text-rose-600'; iconContainer.classList.add('bg-rose-100'); btn.classList.add('bg-rose-500', 'hover:bg-rose-600', 'shadow-rose-500/20'); } 
-  else if (type === 'warning') { iconEl.innerText = 'warning'; iconEl.className = 'material-icons-outlined text-3xl text-amber-600'; iconContainer.classList.add('bg-amber-100'); btn.classList.add('bg-amber-500', 'hover:bg-amber-600', 'shadow-amber-500/20'); } 
-  else { iconEl.innerText = 'info'; iconEl.className = 'material-icons-outlined text-3xl text-slate-500'; iconContainer.classList.add('bg-slate-100'); btn.classList.add('bg-slate-700', 'hover:bg-slate-800', 'shadow-slate-500/20'); }
+
+  if (type === 'success') {
+      iconEl.innerText = 'check_circle';
+      iconEl.className = 'material-icons-outlined text-3xl text-emerald-600';
+      iconContainer.classList.add('bg-emerald-100');
+      btn.classList.add('bg-emerald-500', 'hover:bg-emerald-600', 'shadow-emerald-500/20');
+  } else if (type === 'error') {
+      iconEl.innerText = 'error';
+      iconEl.className = 'material-icons-outlined text-3xl text-rose-600';
+      iconContainer.classList.add('bg-rose-100');
+      btn.classList.add('bg-rose-500', 'hover:bg-rose-600', 'shadow-rose-500/20');
+  } else if (type === 'warning') {
+      iconEl.innerText = 'warning';
+      iconEl.className = 'material-icons-outlined text-3xl text-amber-600';
+      iconContainer.classList.add('bg-amber-100');
+      btn.classList.add('bg-amber-500', 'hover:bg-amber-600', 'shadow-amber-500/20');
+  } else {
+      iconEl.innerText = 'info';
+      iconEl.className = 'material-icons-outlined text-3xl text-slate-500';
+      iconContainer.classList.add('bg-slate-100');
+      btn.classList.add('bg-slate-700', 'hover:bg-slate-800', 'shadow-slate-500/20');
+  }
+
   modal.classList.remove('hidden');
 }
-function closeNotification() { const modal = document.getElementById('custom-modal'); if (modal) modal.classList.add('hidden'); }
+
+function closeNotification() {
+  const modal = document.getElementById('custom-modal');
+  if (modal) modal.classList.add('hidden');
+}
 </script>
