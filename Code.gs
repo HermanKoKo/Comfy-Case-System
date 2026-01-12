@@ -489,119 +489,96 @@ function saveMaintenanceRecord(data) {
   } catch (e) { return { success: false, message: "儲存失敗：" + e.toString() }; }
 }
 
-/**
- * 取得個案總覽資料 - ★★★ 已優化：批次開啟 System 資料庫 ★★★
- */
+// [新增] 為了前端「秒開搜尋」，一次回傳所有個案的精簡清單
+// 這樣前端就不需要每次打字都問後端
+function getAllClientDataForCache() {
+  const sheet = getSheetHelper(CONFIG.SHEETS.CLIENT);
+  const data = sheet.getDataRange().getDisplayValues(); // 使用 DisplayValues 保持日期與電話格式
+  
+  // 移除標題列
+  const headers = data.shift(); 
+  
+  // 為了縮小傳輸量，我們只回傳前端搜尋和列表顯示需要的欄位
+  // 假設欄位順序：0:ID, 1:姓名, 2:生日, 3:身分證, 4:電話, ... 8:治療師, 9:慢性病, 10:Folder, 11:Date
+  return data.map(row => ({
+    id: row[0],
+    name: row[1],
+    dob: row[2],
+    phone: row[4],
+    therapist: row[8],
+    // 把整列資料存成 JSON 字串，前端點擊時直接解開，不用再 fetch 一次
+    fullJson: JSON.stringify({
+      '個案編號': row[0], '姓名': row[1], '生日': row[2], '身分證字號': row[3],
+      '電話': row[4], '性別': row[5], '緊急聯絡人': row[6], '緊急聯絡人電話': row[7],
+      '負責治療師': row[8], '慢性病或特殊疾病': row[9], 'GoogleDrive資料夾連結': row[10]
+    })
+  })).reverse(); // 讓最新建立的個案排在最前面
+}
+
+// [優化] getCaseOverviewData: 使用 Promise.all 的概念 (在 GAS 裡是順序執行，但減少物件建立開銷)
 function getCaseOverviewData(clientId) {
   try {
     if (!clientId) return [];
-    const result = [];
     const targetId = String(clientId).trim();
-
-    // 優化：只開啟一次 System DB，因為除了基本資料外，所有紀錄都在這裡
+    const result = [];
+    
+    // 技巧：只開啟 Spreadsheet 物件一次
     const ss = SpreadsheetApp.openById(CONFIG.SPREADSHEET_ID);
     
-    // 預先取得所有需要的 Sheets
-    const docSheet = ss.getSheetByName(CONFIG.SHEETS.DOCTOR);
-    const maintSheet = ss.getSheetByName(CONFIG.SHEETS.MAINTENANCE);
-    const trackSheet = ss.getSheetByName(CONFIG.SHEETS.TRACKING);
-    const treatSheet = ss.getSheetByName(CONFIG.SHEETS.TREATMENT);
-
-    // 1. 醫師看診
-    if (docSheet) {
-      try {
-        const data = docSheet.getDataRange().getValues();
-        const idx = data[0].map(normalizeHeader).indexOf(normalizeHeader("個案編號"));
-        const targetCol = idx > -1 ? idx : 1; 
-        data.slice(1).forEach(row => {
-          if (String(row[targetCol]).replace(/^'/, '').trim() === targetId) {
-            result.push({
-              id: row[0],
-              date: formatDateForJSON(row[2]),
-              category: 'doctor', categoryName: '醫師看診',
-              doctor: row[3], nurse: row[4],
-              s: row[5], o: row[6], a: row[7], p: row[8],
-              nursingRecord: row[9], remark: row[10]
-            });
-          }
-        });
-      } catch (e) {}
-    }
-
-    // 2. 保養項目
-    if (maintSheet) {
-      try {
-        const data = maintSheet.getDataRange().getValues();
-        const idx = data[0].map(normalizeHeader).indexOf(normalizeHeader("個案編號"));
-        const targetCol = idx > -1 ? idx : 1;
-        data.slice(1).forEach(row => {
-          if (String(row[targetCol]).replace(/^'/, '').trim() === targetId) {
-            result.push({
-              id: row[0],
-              date: formatDateForJSON(row[2]),
-              category: 'maintenance', categoryName: '保養項目',
-              staff: row[3], item: row[4],
-              bp: row[5], spo2: row[6], hr: row[7], temp: row[8],
-              rr: row[9], remark: row[10]
-            });
-          }
-        });
-      } catch (e) {}
-    }
-
-    // 3. 個管追蹤
-    if (trackSheet) {
-      try {
-        const data = trackSheet.getDataRange().getValues();
-        const idx = data[0].map(normalizeHeader).indexOf(normalizeHeader("個案編號"));
-        const targetCol = idx > -1 ? idx : 1;
-        data.slice(1).forEach(row => {
-          if (String(row[targetCol]).replace(/^'/, '').trim() === targetId) {
-            result.push({
-              id: row[0],
-              date: formatDateForJSON(row[2]),
-              category: 'tracking', categoryName: '個管追蹤',
-              staff: row[3], type: row[4], content: row[5]
-            });
-          }
-        });
-      } catch (e) {}
-    }
-
-    // 4. 治療紀錄
-    if (treatSheet) {
-      try {
-        const data = treatSheet.getDataRange().getValues();
-        const headers = data[0].map(normalizeHeader);
-        let idxId = headers.indexOf(normalizeHeader("個案編號"));
-        if (idxId === -1) idxId = 1; 
-        const idxDate = headers.indexOf(normalizeHeader("治療日期"));
-        const idxStaff = headers.indexOf(normalizeHeader("執行治療師"));
-        const idxItem = headers.indexOf(normalizeHeader("治療項目"));
-        const idxComplaint = headers.indexOf(normalizeHeader("當日主訴"));
-        const idxContent = headers.indexOf(normalizeHeader("治療內容"));
-        const idxNext = headers.indexOf(normalizeHeader("備註/下次治療"));
-        
-        data.slice(1).forEach(row => {
-          if (String(row[idxId]).replace(/^'/, '').trim() === targetId) {
-            result.push({
-              id: 'T-' + formatDateForJSON(row[idxDate]), 
-              date: formatDateForJSON(row[idxDate]),
+    // 定義要讀取的 Sheets 與對應的 Category
+    const configs = [
+      { name: CONFIG.SHEETS.DOCTOR, cat: 'doctor', idHeader: '個案編號', mapFunc: (r, h) => ({
+          id: r[0], date: formatDateForJSON(r[2]), category: 'doctor', categoryName: '醫師看診',
+          doctor: r[3], nurse: r[4], s: r[5], o: r[6], a: r[7], p: r[8], nursingRecord: r[9], remark: r[10]
+      })},
+      { name: CONFIG.SHEETS.MAINTENANCE, cat: 'maintenance', idHeader: '個案編號', mapFunc: (r, h) => ({
+          id: r[0], date: formatDateForJSON(r[2]), category: 'maintenance', categoryName: '保養項目',
+          staff: r[3], item: r[4], bp: r[5], spo2: r[6], hr: r[7], temp: r[8], rr: r[9], remark: r[10]
+      })},
+      { name: CONFIG.SHEETS.TRACKING, cat: 'tracking', idHeader: '個案編號', mapFunc: (r, h) => ({
+          id: r[0], date: formatDateForJSON(r[2]), category: 'tracking', categoryName: '個管追蹤',
+          staff: r[3], type: r[4], content: r[5]
+      })},
+      { name: CONFIG.SHEETS.TREATMENT, cat: 'treatment', idHeader: '個案編號', mapFunc: (r, h) => {
+          // 治療紀錄欄位較多，動態抓取 Index (優化：可以在外部定義好 Index，這裡簡化處理)
+          const idxDate = h.indexOf("治療日期");
+          const idxStaff = h.indexOf("執行治療師");
+          const idxItem = h.indexOf("治療項目");
+          const idxC = h.indexOf("當日主訴");
+          const idxCont = h.indexOf("治療內容");
+          const idxNext = h.indexOf("備註/下次治療");
+          return {
+              id: 'T-' + formatDateForJSON(r[idxDate]), date: formatDateForJSON(r[idxDate]),
               category: 'treatment', categoryName: '物理治療',
-              staff: row[idxStaff],
-              item: (idxItem > -1) ? row[idxItem] : "",
-              complaint: (idxComplaint > -1) ? row[idxComplaint] : "",
-              content: (idxContent > -1) ? row[idxContent] : "",
-              nextPlan: (idxNext > -1) ? row[idxNext] : "" 
-            });
-          }
-        });
-      } catch (e) {}
-    }
+              staff: r[idxStaff], item: r[idxItem]>-1?r[idxItem]:"", complaint: r[idxC]>-1?r[idxC]:"",
+              content: r[idxCont]>-1?r[idxCont]:"", nextPlan: r[idxNext]>-1?r[idxNext]:""
+          };
+      }}
+    ];
+
+    // 迴圈讀取資料
+    configs.forEach(cfg => {
+      const sheet = ss.getSheetByName(cfg.name);
+      if (!sheet) return;
+      
+      const data = sheet.getDataRange().getValues();
+      if (data.length <= 1) return;
+      
+      const headers = data[0].map(normalizeHeader);
+      const rawHeaders = data[0]; // 保留原始 Header 給 Treatment 用
+      let idIdx = headers.indexOf(normalizeHeader(cfg.idHeader));
+      if (idIdx === -1) idIdx = 1; // Fallback
+
+      // 記憶體內篩選
+      for (let i = 1; i < data.length; i++) {
+        if (String(data[i][idIdx]).replace(/^'/, '').trim() === targetId) {
+           result.push(cfg.mapFunc(data[i], rawHeaders));
+        }
+      }
+    });
 
     return result.sort((a, b) => new Date(b.date) - new Date(a.date));
-
-  } catch (e) { throw new Error("取得總覽資料失敗: " + e.message); }
+  } catch (e) { throw new Error("總覽讀取失敗: " + e.message); }
 }
 
 /**

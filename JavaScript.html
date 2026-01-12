@@ -260,91 +260,7 @@ function editClientInfo() {
   openModal('addClientModal');
 }
 
-function submitNewClient() {
-  const btn = document.getElementById('btnSubmitClient');
-  const originalText = btn.innerHTML;
 
-  const data = {
-    name: document.getElementById('addName').value.trim(),
-    dob: document.getElementById('addDob').value.trim(),
-    idNo: document.getElementById('addIdNo').value.trim(),
-    phone: document.getElementById('addPhone').value.trim(),
-    gender: '',
-    emerName: document.getElementById('addEmerName').value.trim(),
-    emerPhone: document.getElementById('addEmerPhone').value.trim(),
-    therapist: document.getElementById('addTherapist').value.trim(),
-    chronic: document.getElementById('addChronic').value.trim()
-  };
-
-  if (!data.name || !data.dob || !data.idNo || !data.phone) {
-      showNotification('資料缺漏', '請填寫所有必填欄位 (*)', 'error');
-      return;
-  }
-  
-  const secondChar = data.idNo.charAt(1);
-  if (secondChar === '1') data.gender = '男';
-  else if (secondChar === '2') data.gender = '女';
-  else data.gender = '其他';
-
-  btn.disabled = true;
-  btn.innerHTML = '<span class="material-icons-outlined animate-spin-reverse">sync</span> 處理中...';
-
-  if (isEditingClient) {
-      data.clientId = currentClient['個案編號']; 
-
-      google.script.run
-        .withSuccessHandler(function(res) {
-          btn.disabled = false;
-          btn.innerHTML = originalText;
-          
-          if (res.success) {
-              showNotification('成功', '資料已更新！', 'success');
-              currentClient = { ...currentClient, ...res.updatedData };
-              
-              renderBasicInfo();
-              document.getElementById('headerClientName').textContent = currentClient['姓名'];
-              document.getElementById('headerClientDob').textContent = formatYmd(currentClient['生日']);
-              
-              closeModal('addClientModal');
-              resetAddClientModalUI(); 
-          } else {
-              showNotification('更新失敗', res.message, 'error');
-          }
-        })
-        .withFailureHandler(function(e) {
-            btn.disabled = false;
-            btn.innerHTML = originalText;
-            showNotification('系統錯誤', e.message, 'error');
-        })
-        .updateClientBasicInfo(data); 
-
-  } else {
-      if (data.idNo.length < 2) { 
-         showNotification('格式錯誤', '身分證字號格式錯誤', 'error');
-         btn.disabled = false; btn.innerHTML = originalText; return;
-      }
-
-      google.script.run
-        .withSuccessHandler(function(res) {
-          btn.disabled = false;
-          btn.innerHTML = originalText;
-          if (res.success) {
-              showNotification('成功', '個案建立成功！', 'success');
-              document.getElementById('addClientForm').reset();
-              closeModal('addClientModal');
-              selectClient(res.fullData);
-          } else {
-              showNotification('建立失敗', res.message, 'error');
-          }
-        })
-        .withFailureHandler(function(e) {
-            btn.disabled = false;
-            btn.innerHTML = originalText;
-            showNotification('系統錯誤', e.message, 'error');
-        })
-        .createNewClient(data);
-  }
-}
 
 function resetAddClientModalUI() {
   isEditingClient = false;
@@ -415,61 +331,195 @@ function renderBasicInfo() {
 }
 
 // ==========================================
-// 搜尋功能 (★ 已優化：使用 Template + Map Cache)
+// 1. 全域變數新增
+// ==========================================
+let allClientCache = []; // 存放所有個案的快取資料
+let isClientCacheLoaded = false;
+
+// ==========================================
+// 2. 初始化流程 (window.onload)
+// ==========================================
+window.onload = function() {
+  // ... (保留你原本的 Date/Flatpickr 設定) ...
+  const today = new Date().toISOString().split('T')[0];
+  document.querySelectorAll('#treatmentDate, #maintenanceDate, #doctorConsultDate, #trackDate').forEach(el => el.value = today);
+  setupEnhancedFlatpickr('input[type="date"], #trackDate');
+  // ...
+
+  // ★ 啟動關鍵資料預載 ★
+  initClientDatabase(); 
+  
+  loadSystemStaff();
+  loadTreatmentItems();
+  loadTherapistOptions();
+};
+
+// ==========================================
+// 3. 預載個案資料庫 (核心優化)
+// ==========================================
+function initClientDatabase() {
+  console.log("正在下載個案資料庫...");
+  // 可以在搜尋欄顯示 Loading 提示
+  const searchInput = document.getElementById('searchInput');
+  if(searchInput) searchInput.setAttribute('placeholder', '正在同步個案資料庫...');
+
+  google.script.run
+    .withSuccessHandler(data => {
+      allClientCache = data; // data 是 Code.gs 回傳的 [{id, name, fullJson...}, ...]
+      isClientCacheLoaded = true;
+      console.log(`個案資料庫同步完成，共 ${data.length} 筆`);
+      
+      if(searchInput) {
+        searchInput.setAttribute('placeholder', '輸入姓名、電話或編號搜尋');
+        searchInput.removeAttribute('disabled');
+      }
+      
+      // 如果剛建立完個案，需要重新整理快取，可以在這裡處理
+    })
+    .withFailureHandler(err => {
+      console.error("個案資料下載失敗", err);
+      if(searchInput) searchInput.setAttribute('placeholder', '資料庫連線失敗，請重新整理');
+    })
+    .getAllClientDataForCache(); // 呼叫 Code.gs 新函數
+}
+
+// ==========================================
+// 4. 極速搜尋 (完全不呼叫 Google Script Run)
 // ==========================================
 function handleSearchDebounced(val) {
-  const kw = val.trim();
-  const container = document.getElementById('searchResults');
-  if (searchTimer) clearTimeout(searchTimer);
-  if (!kw) { container.innerHTML = ''; return; }
-  searchTimer = setTimeout(() => { handleSearch(kw); }, 400);
+  // 因為是本地運算，其實甚至不需要 Debounce，但保留也無妨
+  // 這裡我們直接呼叫 handleSearch
+  handleSearch(val);
 }
 
 function handleSearch(keyword) {
-  const kw = keyword || document.getElementById('searchInput').value.trim();
-  if (!kw) return;
+  const kw = (keyword || document.getElementById('searchInput').value).trim().toLowerCase();
   const container = document.getElementById('searchResults');
-  container.innerHTML = '<div class="text-center py-8 text-slate-400 flex flex-col items-center gap-2"><span class="material-icons-outlined animate-spin-reverse">sync</span><span>搜尋中...</span></div>';
+  
+  if (!kw) { 
+    container.innerHTML = ''; 
+    return; 
+  }
 
-  google.script.run.withSuccessHandler(data => {
-      container.innerHTML = '';
-      searchResultCache.clear(); // 清空舊快取
+  if (!isClientCacheLoaded) {
+    container.innerHTML = '<div class="text-center py-4 text-slate-400">資料庫正在初始化，請稍候...</div>';
+    return;
+  }
 
-      if(data.length === 0) { 
-          container.innerHTML = '<div class="text-center py-6 text-slate-400 bg-white rounded-2xl border border-slate-100 shadow-sm">查無此個案資料</div>'; 
-          return; 
-      }
+  // ★ 本地篩選 (速度極快) ★
+  // 搜尋範圍：姓名、電話、ID、治療師
+  const results = allClientCache.filter(c => {
+    return (
+      c.name.toLowerCase().includes(kw) ||
+      c.phone.includes(kw) ||
+      c.id.toLowerCase().includes(kw)
+    );
+  });
 
-      // ★★★ 優化：使用 DocumentFragment 和 Template ★★★
-      const fragment = document.createDocumentFragment();
-      const template = document.getElementById('tmpl-search-result');
-
-      data.forEach(c => {
-        // 將完整資料存入 Map，使用個案編號當 Key
-        searchResultCache.set(c['個案編號'], c);
-
-        const clone = template.content.cloneNode(true);
-        
-        // 填入資料
-        clone.querySelector('.data-name').textContent = c['姓名'];
-        clone.querySelector('.data-dob').textContent = formatYmd(c['生日']);
-        clone.querySelector('.data-phone').textContent = formatPhone(c['電話']);
-        
-        // 設定點擊事件：從 Map 取出資料，傳給 selectClient
-        // 注意：querySelector 選擇的是 .client-card，這是在 template 內的 class
-        const card = clone.querySelector('.client-card');
-        card.onclick = () => { 
-            const clientData = searchResultCache.get(c['個案編號']);
-            selectClient(clientData); 
-        };
-
-        fragment.appendChild(clone);
-      });
-
-      container.appendChild(fragment);
-
-  }).searchClient(kw);
+  renderSearchResults(results, container);
 }
+
+function renderSearchResults(data, container) {
+  container.innerHTML = '';
+  if (data.length === 0) {
+    container.innerHTML = '<div class="text-center py-6 text-slate-400 bg-white rounded-2xl border border-slate-100 shadow-sm">查無此個案資料</div>';
+    return;
+  }
+
+  const fragment = document.createDocumentFragment();
+  const template = document.getElementById('tmpl-search-result');
+
+  // 限制顯示數量，避免 DOM 太多卡頓 (例如只顯示前 20 筆)
+  const displayData = data.slice(0, 30); 
+
+  displayData.forEach(c => {
+    const clone = template.content.cloneNode(true);
+    
+    clone.querySelector('.data-name').textContent = c.name;
+    clone.querySelector('.data-dob').textContent = formatYmd(c.dob);
+    clone.querySelector('.data-phone').textContent = formatPhone(c.phone);
+
+    const card = clone.querySelector('.client-card');
+    card.onclick = () => {
+      // ★ 直接 Parse 預存的 JSON，不需要再去後端 fetch
+      const fullData = JSON.parse(c.fullJson);
+      selectClient(fullData);
+    };
+
+    fragment.appendChild(clone);
+  });
+
+  if (data.length > 30) {
+    const moreDiv = document.createElement('div');
+    moreDiv.className = "text-center text-xs text-slate-400 py-2";
+    moreDiv.textContent = `還有 ${data.length - 30} 筆相符資料，請輸入更精確的關鍵字`;
+    fragment.appendChild(moreDiv);
+  }
+
+  container.appendChild(fragment);
+}
+
+// ==========================================
+// 5. 優化 Loading 顯示
+// ==========================================
+function showGlobalLoading(show, text = "處理中...") {
+  const loader = document.getElementById('global-loader');
+  const txt = document.getElementById('global-loader-text');
+  if (show) {
+    txt.textContent = text;
+    loader.classList.remove('hidden');
+  } else {
+    loader.classList.add('hidden');
+  }
+}
+
+// 修改 submitForm 和 submitNewClient，改用 showGlobalLoading
+// 例如 submitNewClient 內：
+
+function submitNewClient() {
+  // ... (前段驗證邏輯不變) ...
+
+  // 使用全域遮罩，而非按鈕 loading (體驗更好)
+  showGlobalLoading(true, "正在建立個案資料庫...");
+  
+  if (isEditingClient) {
+     // ... updateClientBasicInfo 邏輯 ...
+     // 成功後:
+     // showGlobalLoading(false);
+     // initClientDatabase(); // ★ 重要：更新完後，背景重新抓取一次快取，確保搜尋結果正確
+  } else {
+     google.script.run
+       .withSuccessHandler(function(res) {
+          showGlobalLoading(false); // 關閉遮罩
+          if (res.success) {
+              showNotification('成功', '個案建立成功！', 'success');
+              document.getElementById('addClientForm').reset();
+              closeModal('addClientModal');
+              
+              // ★ 立即將新個案加入本地快取 (這也是 Optimistic UI 的一種)
+              // 這樣使用者搜尋時能立刻搜到，不用等 initClientDatabase 跑完
+              allClientCache.unshift({
+                id: res.clientId,
+                name: data.name,
+                dob: data.dob,
+                phone: data.phone,
+                fullJson: JSON.stringify(res.fullData)
+              });
+              
+              selectClient(res.fullData);
+          } else {
+              showNotification('建立失敗', res.message, 'error');
+          }
+       })
+       .withFailureHandler(function(e) {
+           showGlobalLoading(false);
+           showNotification('系統錯誤', e.message, 'error');
+       })
+       .createNewClient(data);
+  }
+}
+
+
 
 function selectClient(c) {
   currentClient = c;

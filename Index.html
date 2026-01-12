@@ -703,7 +703,19 @@
       </div>
   </div>
 
-  <!-- ★★★ 優化：Templates for High Performance Rendering (加入此區塊) ★★★ -->
+  <!-- ★★★ 優化：新增全域 Loading 遮罩 ★★★ -->
+  <div id="global-loader" class="hidden fixed inset-0 z-[999] bg-white/80 backdrop-blur-sm flex flex-col items-center justify-center transition-opacity duration-300">
+    <div class="relative w-20 h-20">
+      <div class="absolute inset-0 border-4 border-slate-200 rounded-full"></div>
+      <div class="absolute inset-0 border-4 border-emerald-500 rounded-full border-t-transparent animate-spin"></div>
+      <div class="absolute inset-0 flex items-center justify-center">
+        <span class="material-icons-outlined text-emerald-600 text-2xl animate-pulse">spa</span>
+      </div>
+    </div>
+    <h4 id="global-loader-text" class="mt-4 text-slate-600 font-bold text-lg tracking-wide">系統處理中...</h4>
+  </div>
+
+  <!-- Templates -->
   <template id="tmpl-search-result">
     <div class="bg-white p-5 rounded-3xl shadow-sm border border-slate-100 hover:border-emerald-400 hover:shadow-md cursor-pointer transition-all flex justify-between items-center group mb-3 relative overflow-hidden client-card">
       <div class="absolute left-0 top-0 bottom-0 w-1 bg-emerald-500 opacity-0 group-hover:opacity-100 transition-opacity"></div>
