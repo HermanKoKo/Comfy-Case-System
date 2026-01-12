@@ -203,34 +203,40 @@ function saveData(sheetName, dataObj) {
 }
 
 /**
- * 取得系統人員與項目清單 - ★★★ 已優化：增加快取 ★★★
+ * 取得系統人員與項目清單 - [已修復] 移除長快取以支援即時更新
  */
 function getSystemStaff() {
+  // 若希望即時性高，建議暫時移除 Cache 或設為極短時間 (例如 5 秒)
+  // 這裡為了效能保留 5 秒快取，避免短時間重複 request，但能確保重整頁面後拿到新資料
   const cache = CacheService.getScriptCache();
-  const cached = cache.get("SYSTEM_STAFF_DATA");
+  const cached = cache.get("SYSTEM_STAFF_DATA_V2");
   if (cached) return JSON.parse(cached);
 
   try {
-    // 這裡直接連 System DB，不需透過 helper 路由判斷 (節省一次判斷)
     const ss = SpreadsheetApp.openById(CONFIG.SPREADSHEET_ID);
     const sheet = ss.getSheetByName(CONFIG.SHEETS.SYSTEM);
     if(!sheet) throw new Error("無 System 表");
 
-    const data = sheet.getDataRange().getValues();
-    const rows = data.slice(1);
+    const lastRow = sheet.getLastRow();
+    // 防呆：如果沒資料
+    if (lastRow < 2) return {};
+
+    // 一次讀取所有資料範圍 (A2:G)
+    const data = sheet.getRange(2, 1, lastRow - 1, 7).getValues();
     
+    // 整理資料：過濾掉空字串
     const result = {
-      doctors: rows.map(r => r[0]).filter(String),
-      nurses: rows.map(r => r[1]).filter(String),
-      therapists: rows.map(r => r[2]).filter(String),
-      trackingTypes: rows.map(r => r[3]).filter(String),
-      maintItems: rows.map(r => r[4]).filter(String),
-      allStaff: rows.map(r => r[5]).filter(String),
-      treatmentItems: rows.map(r => r[6]).filter(String)
+      doctors: data.map(r => r[0]).filter(String),        // A欄: 醫師
+      nurses: data.map(r => r[1]).filter(String),         // B欄: 護理師
+      therapists: data.map(r => r[2]).filter(String),     // C欄: 治療師
+      trackingTypes: data.map(r => r[3]).filter(String),  // D欄: 追蹤項目
+      maintItems: data.map(r => r[4]).filter(String),     // E欄: 保養項目
+      allStaff: data.map(r => r[5]).filter(String),       // F欄: 所有人員
+      treatmentItems: data.map(r => r[6]).filter(String)  // G欄: 治療項目
     };
 
-    // 寫入快取，保存 6 小時 (21600 秒)
-    cache.put("SYSTEM_STAFF_DATA", JSON.stringify(result), 21600);
+    // 快取設為 5 秒，確保 F5 重整後能拿到 Sheet 的最新變更
+    cache.put("SYSTEM_STAFF_DATA_V2", JSON.stringify(result), 5);
     return result;
 
   } catch (e) {
@@ -835,3 +841,4 @@ function updateClientBasicInfo(data) {
     };
   } catch (e) { return { success: false, message: "更新失敗: " + e.toString() }; } finally { lock.releaseLock(); }
 }
+

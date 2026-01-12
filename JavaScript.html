@@ -86,98 +86,102 @@ function setupEnhancedFlatpickr(selector, options = {}) {
 window.onload = function() {
   const today = new Date().toISOString().split('T')[0];
   document.querySelectorAll('#treatmentDate, #maintenanceDate, #doctorConsultDate, #trackDate').forEach(el => el.value = today);
+  
+  // 初始化日期選擇器
   setupEnhancedFlatpickr('input[type="date"], #trackDate');
 
+  // 設定個案總覽的日期篩選監聽 (修復問題二的關鍵入口)
   const overviewConfig = { onChange: function() { renderOverviewList(); } };
   setupEnhancedFlatpickr('#overviewStartDate', overviewConfig);
   setupEnhancedFlatpickr('#overviewEndDate', overviewConfig);
 
-  loadSystemStaff();      // ★ 已優化：優先讀取 LocalStorage
-  loadTreatmentItems();   
-  loadTherapistOptions(); 
+  // 初始化個案資料庫 (預載)
+  initClientDatabase(); 
+  
+  // ★ [修復問題一] 統一載入所有下拉選單 (治療師、醫師、項目等)
+  // 移除舊的 loadTreatmentItems 和 loadTherapistOptions，改用這個統一管理
+  loadSystemStaff();      
 };
 
-function loadTherapistOptions() {
-  google.script.run
-    .withSuccessHandler(function(therapists) {
-      const selectElement = document.getElementById('inputTherapist'); 
-      if (!selectElement) return;
-      selectElement.innerHTML = '<option value="" disabled selected>請選擇治療師</option>';
-      therapists.forEach(function(name) {
-        const option = document.createElement('option');
-        option.value = name;
-        option.textContent = name;
-        selectElement.appendChild(option);
-      });
-    })
-    .withFailureHandler(err => console.error("無法載入治療師名單", err))
-    .getTherapistList(); 
-}
-
 /**
- * ★★★ 優化：載入系統人員名單 (LocalStorage + Background Fetch) ★★★
+ * ★★★ [已修復] 統一載入系統下拉選單 (包含治療師、醫師、項目等) ★★★
+ * 對應問題一：自動抓取 System 頁面更新
  */
 function loadSystemStaff() {
-  const CACHE_KEY = 'SYSTEM_STAFF_CACHE_V1';
+  const CACHE_KEY = 'SYSTEM_STAFF_CACHE_V2';
   
-  // 1. 優先從 LocalStorage 讀取並渲染 (0 延遲)
+  // 1. 優先嘗試從 LocalStorage 讀取 (提升體驗)
   const cached = localStorage.getItem(CACHE_KEY);
   if (cached) {
     try {
-      const staff = JSON.parse(cached);
-      renderStaffOptions(staff);
+      renderStaffOptions(JSON.parse(cached));
     } catch (e) { console.error('Cache parse error', e); }
   }
 
-  // 2. 背景呼叫 GAS 取得最新資料
-  if (typeof google !== 'undefined' && google.script) {
-    google.script.run.withSuccessHandler(staff => {
-      // 比對資料是否有變更，有變更才更新快取與介面
-      if (JSON.stringify(staff) !== cached) {
-        localStorage.setItem(CACHE_KEY, JSON.stringify(staff));
-        renderStaffOptions(staff);
-      }
-    }).getSystemStaff();
-  }
+  // 2. 呼叫後端取得最新 Sheet 資料
+  google.script.run.withSuccessHandler(staff => {
+    // 儲存到 LocalStorage
+    localStorage.setItem(CACHE_KEY, JSON.stringify(staff));
+    // 重新渲染介面
+    renderStaffOptions(staff);
+  }).getSystemStaff();
 }
 
-// 抽離渲染邏輯供重複使用
+/**
+ * 渲染所有下拉選單
+ */
 function renderStaffOptions(staff) {
-    const setOptions = (id, list, placeholder) => {
-      const el = document.getElementById(id);
-      if(el) { 
-         const currentVal = el.value; // 保留當前選值
-         el.innerHTML = `<option value="" disabled selected>${placeholder}</option>` + list.map(n => `<option value="${n}">${n}</option>`).join(''); 
-         if(currentVal && list.includes(currentVal)) el.value = currentVal;
-      }
+    if (!staff) return;
+
+    // 通用填入函式
+    const setOptions = (ids, list, placeholder) => {
+      // 支援傳入單一 ID 或 ID 陣列
+      const targets = Array.isArray(ids) ? ids : [ids];
+      
+      targets.forEach(id => {
+        const el = document.getElementById(id);
+        if(el) { 
+           const currentVal = el.value; // 暫存使用者當前選的值 (若有)
+           
+           // 建立選項 HTML
+           let html = `<option value="" disabled ${!currentVal ? 'selected' : ''}>${placeholder}</option>`;
+           if (list && list.length > 0) {
+               html += list.map(n => `<option value="${n}">${n}</option>`).join('');
+           }
+           
+           el.innerHTML = html; 
+           
+           // 嘗試恢復選值 (如果原本選的值還在新清單內)
+           if(currentVal && list.includes(currentVal)) {
+               el.value = currentVal;
+           } else if (id === 'selectDoctor' && list.includes('謝炳賢')) {
+               el.value = "謝炳賢"; // 特殊預設值邏輯
+           }
+        }
+      });
     };
     
+    // --- 綁定資料到對應的 HTML ID ---
+    
+    // 1. 醫師與護理師
     setOptions('selectDoctor', staff.doctors, '請選擇醫師');
-    const docEl = document.getElementById('selectDoctor');
-    if(docEl && !docEl.value) docEl.value = "謝炳賢"; // 預設值
-
     setOptions('selectNurse', staff.nurses, '請選擇護理師');
-    setOptions('addTherapist', staff.therapists, '請選擇治療師'); 
-    setOptions('selectMaintStaff', staff.allStaff, '請選擇執行人員');
-    setOptions('selectMaintItem', staff.maintItems, '請選擇項目');
-    setOptions('trackStaff', staff.allStaff, '請選擇人員');
-    setOptions('trackType', staff.trackingTypes || [], '請選擇項目');
-    setOptions('inputTreatmentItem', staff.treatmentItems, '請選擇項目');
-}
-
-function loadTreatmentItems() {
-  google.script.run.withSuccessHandler(function(items) {
-      var select = document.getElementById("inputTreatmentItem");
-      if (select && select.options.length <= 1) {
-          select.innerHTML = '<option value="" disabled selected>請選擇項目</option>';
-          items.forEach(function(item) {
-            var option = document.createElement("option");
-            option.value = item;
-            option.textContent = item;
-            select.appendChild(option);
-          });
-      }
-    }).getTreatmentItemsFromSystem();
+    
+    // 2. 治療師 (同時更新「治療紀錄」與「新增個案」頁面的選單)
+    setOptions(['inputTherapist', 'addTherapist'], staff.therapists, '請選擇治療師'); 
+    
+    // 3. 保養頁面
+    setOptions('selectMaintStaff', staff.allStaff, '請選擇執行人員'); // 使用 All Staff
+    setOptions('selectMaintItem', staff.maintItems, '請選擇保養項目');
+    
+    // 4. 追蹤頁面
+    setOptions('trackStaff', staff.allStaff, '請選擇追蹤人員'); // 使用 All Staff
+    setOptions('trackType', staff.trackingTypes || staff.trackingItems, '請選擇追蹤項目');
+    
+    // 5. 治療項目
+    setOptions('inputTreatmentItem', staff.treatmentItems, '請選擇治療項目');
+    
+    console.log('下拉選單已更新');
 }
 
 function navTo(viewName) {
@@ -228,9 +232,7 @@ function fetchCalendarData() {
     google.script.run.withSuccessHandler(data => {
         allCalendarEvents = data || [];
     }).getCaseOverviewData(currentClient['個案編號']);
-}
-
-// ==========================================
+}// ==========================================
 // 新增個案相關函式
 // ==========================================
 function autoDetectGender(input) {
@@ -259,8 +261,6 @@ function editClientInfo() {
 
   openModal('addClientModal');
 }
-
-
 
 function resetAddClientModalUI() {
   isEditingClient = false;
@@ -331,28 +331,10 @@ function renderBasicInfo() {
 }
 
 // ==========================================
-// 1. 全域變數新增
+// 1. 全域變數新增 (搜尋相關)
 // ==========================================
 let allClientCache = []; // 存放所有個案的快取資料
 let isClientCacheLoaded = false;
-
-// ==========================================
-// 2. 初始化流程 (window.onload)
-// ==========================================
-window.onload = function() {
-  // ... (保留你原本的 Date/Flatpickr 設定) ...
-  const today = new Date().toISOString().split('T')[0];
-  document.querySelectorAll('#treatmentDate, #maintenanceDate, #doctorConsultDate, #trackDate').forEach(el => el.value = today);
-  setupEnhancedFlatpickr('input[type="date"], #trackDate');
-  // ...
-
-  // ★ 啟動關鍵資料預載 ★
-  initClientDatabase(); 
-  
-  loadSystemStaff();
-  loadTreatmentItems();
-  loadTherapistOptions();
-};
 
 // ==========================================
 // 3. 預載個案資料庫 (核心優化)
@@ -373,22 +355,18 @@ function initClientDatabase() {
         searchInput.setAttribute('placeholder', '輸入姓名、電話或編號搜尋');
         searchInput.removeAttribute('disabled');
       }
-      
-      // 如果剛建立完個案，需要重新整理快取，可以在這裡處理
     })
     .withFailureHandler(err => {
       console.error("個案資料下載失敗", err);
       if(searchInput) searchInput.setAttribute('placeholder', '資料庫連線失敗，請重新整理');
     })
-    .getAllClientDataForCache(); // 呼叫 Code.gs 新函數
+    .getAllClientDataForCache(); 
 }
 
 // ==========================================
 // 4. 極速搜尋 (完全不呼叫 Google Script Run)
 // ==========================================
 function handleSearchDebounced(val) {
-  // 因為是本地運算，其實甚至不需要 Debounce，但保留也無妨
-  // 這裡我們直接呼叫 handleSearch
   handleSearch(val);
 }
 
@@ -407,7 +385,6 @@ function handleSearch(keyword) {
   }
 
   // ★ 本地篩選 (速度極快) ★
-  // 搜尋範圍：姓名、電話、ID、治療師
   const results = allClientCache.filter(c => {
     return (
       c.name.toLowerCase().includes(kw) ||
@@ -429,7 +406,7 @@ function renderSearchResults(data, container) {
   const fragment = document.createDocumentFragment();
   const template = document.getElementById('tmpl-search-result');
 
-  // 限制顯示數量，避免 DOM 太多卡頓 (例如只顯示前 20 筆)
+  // 限制顯示數量，避免 DOM 太多卡頓 (例如只顯示前 30 筆)
   const displayData = data.slice(0, 30); 
 
   displayData.forEach(c => {
@@ -441,7 +418,7 @@ function renderSearchResults(data, container) {
 
     const card = clone.querySelector('.client-card');
     card.onclick = () => {
-      // ★ 直接 Parse 預存的 JSON，不需要再去後端 fetch
+      // ★ 直接 Parse 預存的 JSON
       const fullData = JSON.parse(c.fullJson);
       selectClient(fullData);
     };
@@ -473,31 +450,66 @@ function showGlobalLoading(show, text = "處理中...") {
   }
 }
 
-// 修改 submitForm 和 submitNewClient，改用 showGlobalLoading
-// 例如 submitNewClient 內：
-
 function submitNewClient() {
-  // ... (前段驗證邏輯不變) ...
+  const data = {
+    name: document.getElementById('addName').value,
+    dob: document.getElementById('addDob').value,
+    idNo: document.getElementById('addIdNo').value,
+    phone: document.getElementById('addPhone').value,
+    gender: "", // 自動判斷
+    emerName: document.getElementById('addEmerName').value,
+    emerPhone: document.getElementById('addEmerPhone').value,
+    therapist: document.getElementById('addTherapist').value,
+    chronic: document.getElementById('addChronic').value
+  };
 
-  // 使用全域遮罩，而非按鈕 loading (體驗更好)
-  showGlobalLoading(true, "正在建立個案資料庫...");
+  // 簡易驗證
+  if(!data.name || !data.dob || !data.idNo || !data.phone) {
+    showNotification('欄位未填', '請填寫所有必填欄位 (*)', 'warning');
+    return;
+  }
+  
+  if(data.idNo.length === 10) {
+      const char2 = data.idNo.charAt(1);
+      if(char2 === '1') data.gender = '男';
+      else if(char2 === '2') data.gender = '女';
+      else data.gender = '其他';
+  }
+
+  // 使用全域遮罩
+  showGlobalLoading(true, isEditingClient ? "正在更新資料..." : "正在建立個案資料庫...");
   
   if (isEditingClient) {
-     // ... updateClientBasicInfo 邏輯 ...
-     // 成功後:
-     // showGlobalLoading(false);
-     // initClientDatabase(); // ★ 重要：更新完後，背景重新抓取一次快取，確保搜尋結果正確
+     const updateData = { ...data, clientId: currentClient['個案編號'] };
+     google.script.run
+       .withSuccessHandler(res => {
+          showGlobalLoading(false);
+          if (res.success) {
+              showNotification('成功', '資料更新成功', 'success');
+              closeModal('addClientModal');
+              // 更新當前顯示
+              selectClient(res.updatedData); 
+              // 可以在此處重新同步快取，略
+          } else {
+              showNotification('失敗', res.message, 'error');
+          }
+       })
+       .withFailureHandler(e => {
+           showGlobalLoading(false);
+           showNotification('系統錯誤', e.message, 'error');
+       })
+       .updateClientBasicInfo(updateData);
+       
   } else {
      google.script.run
        .withSuccessHandler(function(res) {
-          showGlobalLoading(false); // 關閉遮罩
+          showGlobalLoading(false);
           if (res.success) {
               showNotification('成功', '個案建立成功！', 'success');
               document.getElementById('addClientForm').reset();
               closeModal('addClientModal');
               
-              // ★ 立即將新個案加入本地快取 (這也是 Optimistic UI 的一種)
-              // 這樣使用者搜尋時能立刻搜到，不用等 initClientDatabase 跑完
+              // ★ 立即將新個案加入本地快取
               allClientCache.unshift({
                 id: res.clientId,
                 name: data.name,
@@ -519,8 +531,6 @@ function submitNewClient() {
   }
 }
 
-
-
 function selectClient(c) {
   currentClient = c;
   allCalendarEvents = [];
@@ -538,10 +548,12 @@ function selectClient(c) {
   
   const itemSelect = document.getElementById('inputTreatmentItem');
   if (itemSelect) {
-      itemSelect.value = "1600";
+      itemSelect.value = "1600"; // 預設值
   }
   navTo('treatment');
-}// ==========================================
+}
+
+// ==========================================
 // 編輯功能相關函式
 // ==========================================
 
@@ -813,7 +825,7 @@ function submitForm(type) {
     }
   }
 
-  // ★ 後端已優化為批量寫入，呼叫方式不變
+  // 後端已優化為批量寫入，呼叫方式不變
   if (isEdit) {
      google.script.run
        .withSuccessHandler(res => onSuccess(res, null, getReloadFunc(type)))
@@ -832,9 +844,7 @@ function getReloadFunc(type) {
     if(type === 'maintenance') return loadMaintenanceHistory;
     if(type === 'tracking') return loadTrackingHistory;
     return null;
-}
-
-// ==========================================
+}// ==========================================
 // 歷史列表載入與渲染
 // ==========================================
 
@@ -1043,21 +1053,38 @@ function loadDoctorHistory() {
       </div>`;
     }).join('');
   }).getClientHistory(currentClient['個案編號'], 'Doctor_Consultation');
-}// ==========================================
-// 個案總覽
-// ==========================================
-function loadOverviewData() {
-  const container = document.getElementById('overviewListContainer'); container.innerHTML = '<div class="text-center py-12 text-slate-400 flex flex-col items-center gap-2"><span class="material-icons-outlined animate-spin-reverse">sync</span><span>讀取個案歷程中...</span></div>';
-  google.script.run.withSuccessHandler(data => {
-      allOverviewRecords = data || [];
-      allCalendarEvents = data || [];
-      renderOverviewList();
-  }).withFailureHandler(err => { container.innerHTML = `<div class="text-red-500 text-center py-10">載入失敗: ${err.message}</div>`; }).getCaseOverviewData(currentClient['個案編號']);
 }
 
+// ==========================================
+// 個案總覽 (已修復日期篩選)
+// ==========================================
+
+/**
+ * 載入個案總覽資料 (後端 -> 前端)
+ */
+function loadOverviewData() {
+  const container = document.getElementById('overviewListContainer'); 
+  container.innerHTML = '<div class="text-center py-12 text-slate-400 flex flex-col items-center gap-2"><span class="material-icons-outlined animate-spin-reverse">sync</span><span>讀取個案歷程中...</span></div>';
+  
+  google.script.run.withSuccessHandler(data => {
+      // 1. 儲存原始資料到全域變數
+      allOverviewRecords = data || [];
+      // 2. 同步更新日曆事件點
+      allCalendarEvents = data || [];
+      // 3. 渲染列表 (初始顯示全部)
+      renderOverviewList();
+  }).withFailureHandler(err => { 
+      container.innerHTML = `<div class="text-red-500 text-center py-10">載入失敗: ${err.message}</div>`; 
+  }).getCaseOverviewData(currentClient['個案編號']);
+}
+
+/**
+ * 切換類別按鈕時呼叫
+ */
 function setOverviewCategory(cat) {
   currentOverviewCategory = cat;
 
+  // 更新按鈕樣式
   document.querySelectorAll('[id^="filter-btn-"]').forEach(btn => {
      if(btn.id === 'filter-btn-' + cat) {
          btn.classList.remove('bg-white', 'text-slate-800', 'text-slate-500', 'hover:bg-white', 'hover:text-slate-700', 'shadow-sm', 'ring-1', 'ring-slate-200');
@@ -1068,29 +1095,48 @@ function setOverviewCategory(cat) {
      }
   });
 
+  // 重新渲染 (會自動套用 getFilteredOverviewData 的篩選)
   renderOverviewList();
 }
 
+/**
+ * 核心篩選邏輯：結合「類別」與「日期範圍」
+ * 對應問題二：修復日期篩選
+ */
 function getFilteredOverviewData() {
-  let data = allOverviewRecords;
+  let data = allOverviewRecords; 
 
+  // 1. 類別篩選
   if (currentOverviewCategory !== 'all') {
       data = data.filter(i => i.category === currentOverviewCategory);
   }
 
-  const s = document.getElementById('overviewStartDate').value;
-  const e = document.getElementById('overviewEndDate').value;
+  // 2. 日期篩選 (input value 格式為 YYYY-MM-DD)
+  const sStr = document.getElementById('overviewStartDate').value;
+  const eStr = document.getElementById('overviewEndDate').value;
 
-  if(s && e) {
-      data = data.filter(i => i.date >= s && i.date <= e);
+  if(sStr || eStr) {
+      data = data.filter(i => {
+          // i.date 格式也是 YYYY-MM-DD 字串
+          if (sStr && i.date < sStr) return false;
+          if (eStr && i.date > eStr) return false;
+          return true;
+      });
   }
   return data;
+}
+
+/**
+ * 介面觸發點：當日期改變時呼叫此函式 (已綁定在 setupEnhancedFlatpickr)
+ */
+function filterOverviewTable() {
+    renderOverviewList();
 }
 
 function renderOverviewList() {
   const c = document.getElementById('overviewListContainer');
   const printTable = document.getElementById('overviewPrintTable');
-  const f = getFilteredOverviewData();
+  const f = getFilteredOverviewData(); // ★ 呼叫新的篩選邏輯
 
   document.getElementById('overviewStats').textContent = `共 ${f.length} 筆紀錄`;
 
@@ -1194,7 +1240,7 @@ function renderOverviewList() {
     return '';
   }).join('');
 
-  // --- 列印表格生成 ---
+  // --- 列印表格生成 (保持不變) ---
   const catName = { 'all': '全部', 'doctor': '醫師看診', 'treatment': '物理治療', 'maintenance': '保養項目', 'tracking': '個管追蹤' };
   const clientName = currentClient ? currentClient['姓名'] : ''; 
 
@@ -1429,6 +1475,11 @@ function toggleSidebar() {
 
 function openModal(id) { document.getElementById(id).classList.remove('hidden'); }
 
+function closeNotification() {
+  const modal = document.getElementById('custom-modal');
+  if (modal) modal.classList.add('hidden');
+}
+
 // ==========================================
 // Lightbox
 // ==========================================
@@ -1487,9 +1538,8 @@ function scrollToTop() {
 }
 
 // ==========================================
-// 自訂通知
+// 自訂通知 UI
 // ==========================================
-
 function showNotification(title, message, type = 'info') {
   const modal = document.getElementById('custom-modal');
   const titleEl = document.getElementById('modal-title');
@@ -1529,10 +1579,5 @@ function showNotification(title, message, type = 'info') {
   }
 
   modal.classList.remove('hidden');
-}
-
-function closeNotification() {
-  const modal = document.getElementById('custom-modal');
-  if (modal) modal.classList.add('hidden');
 }
 </script>
