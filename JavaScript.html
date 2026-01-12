@@ -9,7 +9,33 @@ let currentOverviewCategory = 'all';
 let filesToUpload = [];
 let searchTimer = null;
 let allCalendarEvents = [];
-let isEditingClient = false; // 新增此變數
+let isEditingClient = false;
+
+// ==========================================
+// ★★★ 新增：格式化輔助函式 (取代 MutationObserver) ★★★
+// ==========================================
+
+// YYYYMMDD -> YYYY-MM-DD
+function formatYmd(str) {
+  if (!str) return '';
+  str = String(str).trim();
+  if (/^\d{8}$/.test(str)) {
+    return str.substring(0, 4) + '-' + str.substring(4, 6) + '-' + str.substring(6, 8);
+  }
+  return str;
+}
+
+// 09xxxxxxxx -> 09xx-xxx-xxx
+function formatPhone(str) {
+  if (!str) return '';
+  str = String(str).trim();
+  // 移除所有非數字以便檢查
+  const cleanNum = str.replace(/\D/g, '');
+  if (cleanNum.length === 10 && cleanNum.startsWith('09')) {
+      return cleanNum.replace(/(\d{4})(\d{3})(\d{3})/, '$1-$2-$3');
+  }
+  return str;
+}
 
 // ==========================================
 // 初始化與 UI 設定
@@ -58,20 +84,17 @@ window.onload = function() {
   setupEnhancedFlatpickr('#overviewStartDate', overviewConfig);
   setupEnhancedFlatpickr('#overviewEndDate', overviewConfig);
 
-  loadSystemStaff();      // 載入一般系統人員 (醫師、護理師等)
-  loadTreatmentItems();   // 載入治療項目
-  loadTherapistOptions(); // 載入治療師清單 (System 分頁 C 欄)
+  loadSystemStaff();      
+  loadTreatmentItems();   
+  loadTherapistOptions(); 
 };
 
-// 修正一：載入治療師下拉選單
 function loadTherapistOptions() {
   google.script.run
     .withSuccessHandler(function(therapists) {
       const selectElement = document.getElementById('inputTherapist'); 
       if (!selectElement) return;
-
       selectElement.innerHTML = '<option value="" disabled selected>請選擇治療師</option>';
-      
       therapists.forEach(function(name) {
         const option = document.createElement('option');
         option.value = name;
@@ -79,9 +102,7 @@ function loadTherapistOptions() {
         selectElement.appendChild(option);
       });
     })
-    .withFailureHandler(function(err) {
-      console.error("無法載入治療師名單", err);
-    })
+    .withFailureHandler(err => console.error("無法載入治療師名單", err))
     .getTherapistList(); 
 }
 
@@ -94,8 +115,6 @@ function loadSystemStaff() {
     };
     
     setOptions('selectDoctor', staff.doctors, '請選擇醫師');
-    
-    // ★★★ 修改處 1：預設選取 "謝炳賢" ★★★
     const docEl = document.getElementById('selectDoctor');
     if(docEl) docEl.value = "謝炳賢";
 
@@ -125,7 +144,6 @@ function loadTreatmentItems() {
 }
 
 function navTo(viewName) {
-  // ★ 新增：手機版點擊選單後，自動收起側邊欄
   if (window.innerWidth < 768) {
       const sidebar = document.getElementById('sidebar');
       if (sidebar && !sidebar.classList.contains('hidden')) {
@@ -133,7 +151,6 @@ function navTo(viewName) {
       }
   }
 
-  // --- 以下維持原有邏輯 ---
   if (!currentClient && viewName !== 'search') {
       showNotification('提示', '請先選取個案以進行操作。', 'info');
       return;
@@ -182,19 +199,12 @@ function fetchCalendarData() {
 function autoDetectGender(input) {
   const val = input.value.toUpperCase();
   input.value = val;
-  if (val.length >= 2) {
-    const secondChar = val.charAt(1);
-    if (secondChar === '1') { } else if (secondChar === '2') { }
-  }
 }
 
 function editClientInfo() {
   if (!currentClient) return;
-
-  // 1. 設定編輯模式標記
   isEditingClient = true;
 
-  // 2. 填入資料到表單
   document.getElementById('addName').value = currentClient['姓名'] || '';
   document.getElementById('addDob').value = currentClient['生日'] || '';
   document.getElementById('addIdNo').value = currentClient['身分證字號'] || '';
@@ -204,22 +214,19 @@ function editClientInfo() {
   document.getElementById('addTherapist').value = currentClient['負責治療師'] || '';
   document.getElementById('addChronic').value = currentClient['慢性病或特殊疾病'] || '';
 
-  // 3. 修改 UI 顯示 (標題與按鈕)
   document.querySelector('#addClientModal h3').textContent = '編輯個案資料';
   const btn = document.getElementById('btnSubmitClient');
   btn.innerHTML = '儲存修改';
   btn.classList.remove('bg-emerald-500', 'hover:bg-emerald-600');
-  btn.classList.add('bg-amber-500', 'hover:bg-amber-600'); // 改為橘黃色以示區別
+  btn.classList.add('bg-amber-500', 'hover:bg-amber-600'); 
 
-  // 4. 開啟視窗
   openModal('addClientModal');
 }
 
 function submitNewClient() {
   const btn = document.getElementById('btnSubmitClient');
-  const originalText = btn.innerHTML; // 保存當前按鈕文字
+  const originalText = btn.innerHTML;
 
-  // 1. 收集表單資料
   const data = {
     name: document.getElementById('addName').value.trim(),
     dob: document.getElementById('addDob').value.trim(),
@@ -232,13 +239,11 @@ function submitNewClient() {
     chronic: document.getElementById('addChronic').value.trim()
   };
 
-  // 2. 驗證
   if (!data.name || !data.dob || !data.idNo || !data.phone) {
       showNotification('資料缺漏', '請填寫所有必填欄位 (*)', 'error');
       return;
   }
   
-  // 自動判斷性別
   const secondChar = data.idNo.charAt(1);
   if (secondChar === '1') data.gender = '男';
   else if (secondChar === '2') data.gender = '女';
@@ -247,10 +252,8 @@ function submitNewClient() {
   btn.disabled = true;
   btn.innerHTML = '<span class="material-icons-outlined animate-spin-reverse">sync</span> 處理中...';
 
-  // ★★★ 關鍵修改：判斷是「編輯」還是「新增」 ★★★
   if (isEditingClient) {
-      // --- 編輯模式 ---
-      data.clientId = currentClient['個案編號']; // 補上 ID
+      data.clientId = currentClient['個案編號']; 
 
       google.script.run
         .withSuccessHandler(function(res) {
@@ -259,17 +262,15 @@ function submitNewClient() {
           
           if (res.success) {
               showNotification('成功', '資料已更新！', 'success');
-              
-              // 更新前端的 currentClient 資料
               currentClient = { ...currentClient, ...res.updatedData };
               
-              // 重新渲染基本資料頁面
+              // 重新渲染並更新 Header (使用格式化函式)
               renderBasicInfo();
               document.getElementById('headerClientName').textContent = currentClient['姓名'];
-              document.getElementById('headerClientDob').textContent = currentClient['生日'];
+              document.getElementById('headerClientDob').textContent = formatYmd(currentClient['生日']);
               
               closeModal('addClientModal');
-              resetAddClientModalUI(); // 重置 UI 狀態
+              resetAddClientModalUI(); 
           } else {
               showNotification('更新失敗', res.message, 'error');
           }
@@ -279,11 +280,10 @@ function submitNewClient() {
             btn.innerHTML = originalText;
             showNotification('系統錯誤', e.message, 'error');
         })
-        .updateClientBasicInfo(data); // 呼叫後端新函式
+        .updateClientBasicInfo(data); 
 
   } else {
-      // --- 新增模式 (維持原邏輯) ---
-      if (data.idNo.length < 2) { // 新增時才嚴格檢查身分證格式 (編輯時可能無法修改)
+      if (data.idNo.length < 2) { 
          showNotification('格式錯誤', '身分證字號格式錯誤', 'error');
          btn.disabled = false; btn.innerHTML = originalText; return;
       }
@@ -314,7 +314,6 @@ function resetAddClientModalUI() {
   isEditingClient = false;
   document.getElementById('addClientForm').reset();
   
-  // 還原標題與按鈕樣式
   document.querySelector('#addClientModal h3').textContent = '新增個案資料';
   const btn = document.getElementById('btnSubmitClient');
   btn.innerHTML = '建立個案資料';
@@ -322,10 +321,6 @@ function resetAddClientModalUI() {
   btn.classList.remove('bg-amber-500', 'hover:bg-amber-600');
 }
 
-
-// ==========================================
-// 列印功能
-// ==========================================
 function handlePrint() {
   const today = new Date();
   const dateStr = today.getFullYear() + "-" +
@@ -346,7 +341,7 @@ function handlePrint() {
 }
 
 // ==========================================
-// 基本資料渲染
+// 基本資料渲染 (★ 已優化：使用格式化函式)
 // ==========================================
 function renderBasicInfo() {
   if(!currentClient) return;
@@ -369,14 +364,12 @@ function renderBasicInfo() {
        
        let displayValue = currentClient[dbKey] || '--';
 
-       // ★★★ 修改處 2：電話格式化 (09xx-xxx-xxx) ★★★
-       if ((domId === 'display-phone' || domId === 'display-emergency-phone') && displayValue !== '--') {
-          // 移除所有非數字
-          const cleanNum = displayValue.toString().replace(/\D/g, '');
-          // 若為 10 碼且以 09 開頭，則進行格式化
-          if (cleanNum.length === 10 && cleanNum.startsWith('09')) {
-              displayValue = cleanNum.replace(/(\d{4})(\d{3})(\d{3})/, '$1-$2-$3');
-          }
+       // 應用格式化
+       if (domId === 'display-birthday') {
+           displayValue = formatYmd(displayValue);
+       }
+       else if (domId === 'display-phone' || domId === 'display-emergency-phone') {
+           displayValue = formatPhone(displayValue);
        }
 
        el.textContent = displayValue;
@@ -387,7 +380,7 @@ function renderBasicInfo() {
 }
 
 // ==========================================
-// 搜尋功能
+// 搜尋功能 (★ 已優化：使用 map + join)
 // ==========================================
 function handleSearchDebounced(val) {
   const kw = val.trim();
@@ -404,31 +397,45 @@ function handleSearch(keyword) {
   container.innerHTML = '<div class="text-center py-8 text-slate-400 flex flex-col items-center gap-2"><span class="material-icons-outlined animate-spin-reverse">sync</span><span>搜尋中...</span></div>';
 
   google.script.run.withSuccessHandler(data => {
-      container.innerHTML = '';
-      if(data.length === 0) { container.innerHTML = '<div class="text-center py-6 text-slate-400 bg-white rounded-2xl border border-slate-100 shadow-sm">查無此個案資料</div>'; return; }
+      if(data.length === 0) { 
+          container.innerHTML = '<div class="text-center py-6 text-slate-400 bg-white rounded-2xl border border-slate-100 shadow-sm">查無此個案資料</div>'; 
+          return; 
+      }
 
-      data.forEach(c => {
-        const div = document.createElement('div');
-        div.className = "bg-white p-5 rounded-3xl shadow-sm border border-slate-100 hover:border-emerald-400 hover:shadow-md cursor-pointer transition-all flex justify-between items-center group mb-3 relative overflow-hidden";
-        div.onclick = () => selectClient(c);
-        div.innerHTML = `
+      // ★★★ 優化重點：使用 map 生成 HTML 字串，減少 DOM 重繪次數 ★★★
+      const htmlString = data.map(c => {
+        // 先將物件轉為 JSON 字串，以便 onclick 傳遞
+        // 注意：這裡不直接傳遞物件字串，改為點擊時從 closure 或重新查找較安全，但為了保持原有結構
+        // 我們這裡使用一個簡單的 trick：將資料暫存或直接生成
+        // 為了效能，這裡我們直接生成 HTML，點擊時呼叫 selectClient
+        // 我們需要將 c 物件傳給 selectClient。最簡單的方法是將 c 存入全域陣列，或是直接 bind
+        // 但由於 google.script.run 回傳的是 JSON，我們可以 stringify
+        // 為了避免引號問題，簡單做 escape
+        const cStr = encodeURIComponent(JSON.stringify(c));
+
+        return `
+        <div class="bg-white p-5 rounded-3xl shadow-sm border border-slate-100 hover:border-emerald-400 hover:shadow-md cursor-pointer transition-all flex justify-between items-center group mb-3 relative overflow-hidden"
+             onclick="selectClient(JSON.parse(decodeURIComponent('${cStr}')))">
           <div class="absolute left-0 top-0 bottom-0 w-1 bg-emerald-500 opacity-0 group-hover:opacity-100 transition-opacity"></div>
           <div class="pl-2">
             <div class="font-black text-slate-800 text-lg flex items-center gap-2">
               ${c['姓名']}
               <span class="text-xs font-bold text-emerald-600 bg-emerald-50 px-2 py-1 rounded-lg border border-emerald-100 flex items-center gap-1">
-                <span class="material-icons-outlined text-[10px]">cake</span> ${c['生日']}
+                <span class="material-icons-outlined text-[10px]">cake</span> ${formatYmd(c['生日'])}
               </span>
             </div>
             <div class="text-sm text-slate-400 mt-1 flex items-center gap-1 font-mono">
-              <span class="material-icons-outlined text-[14px]">phone</span> ${c['電話']}
+              <span class="material-icons-outlined text-[14px]">phone</span> ${formatPhone(c['電話'])}
             </div>
           </div>
           <div class="w-10 h-10 rounded-full bg-slate-50 flex items-center justify-center text-slate-300 group-hover:bg-emerald-500 group-hover:text-white transition-all">
             <span class="material-icons-outlined">arrow_forward</span>
-          </div>`;
-        container.appendChild(div);
-      });
+          </div>
+        </div>`;
+      }).join('');
+
+      container.innerHTML = htmlString;
+
   }).searchClient(kw);
 }
 
@@ -438,7 +445,10 @@ function selectClient(c) {
 
   document.getElementById('topBarClientInfo').classList.remove('hidden');
   document.getElementById('headerClientName').textContent = c['姓名'];
-  document.getElementById('headerClientDob').textContent = c['生日'];
+  
+  // ★ 使用格式化函式
+  document.getElementById('headerClientDob').textContent = formatYmd(c['生日']);
+  
   document.querySelectorAll('.auto-fill-id').forEach(el => el.value = c['個案編號']);
 
   const therapistSelect = document.getElementById('inputTherapist');
@@ -532,8 +542,8 @@ function startEdit(type, data) {
         f.querySelector('input[name="血氧"]').value = data['血氧'] || "";
         f.querySelector('input[name="心律"]').value = data['心律'] || "";
         f.querySelector('input[name="體溫"]').value = data['體溫'] || "";
-        // ★ 修改處：加入呼吸速率回填
-        f.querySelector('input[name="呼吸速率"]').value = data['呼吸速率'] || "";
+        // 回填呼吸速率 (RR)
+        f.querySelector('input[name="呼吸速率"]').value = data['呼吸速率'] || data['rr'] || "";
         f.querySelector('textarea[name="備註"]').value = data['備註'] || data['remark'] || "";
         document.getElementById('view-maintenance').scrollIntoView({ behavior: 'smooth' });
     }
@@ -560,7 +570,6 @@ function cancelEdit(type) {
   } else {
       document.getElementById(type + 'Form').reset();
       
-      // 取消編輯後，若為治療紀錄，自動帶回負責治療師
       if (type === 'treatment' && currentClient) {
           document.getElementById('inputTherapist').value = currentClient['負責治療師'] || "";
       }
@@ -636,7 +645,6 @@ function submitForm(type) {
              if(formId) document.getElementById(formId).reset();
              document.querySelectorAll('.auto-fill-id').forEach(el => el.value = clientId);
              
-             // 新增成功並重置表單後，自動帶回負責治療師
              if (formId === 'treatmentForm' && currentClient) {
                  document.getElementById('inputTherapist').value = currentClient['負責治療師'] || "";
              }
@@ -674,7 +682,7 @@ function submitForm(type) {
       record_id: editId,
       '個案編號': clientId,
       '治療日期': document.getElementById('treatmentDate').value,
-      '執行治療師': document.getElementById('inputTherapist').value, // Select ID
+      '執行治療師': document.getElementById('inputTherapist').value,
       '治療項目': document.getElementById('inputTreatmentItem').value,
       '當日主訴': document.getElementById('inputComplaint').value,
       '治療內容': document.getElementById('inputContent').value,
@@ -703,7 +711,6 @@ function submitForm(type) {
       spo2: f.querySelector('input[name="血氧"]').value,
       hr: f.querySelector('input[name="心律"]').value,
       temp: f.querySelector('input[name="體溫"]').value,
-      // ★ 修改處：加入呼吸速率收集
       rr: f.querySelector('input[name="呼吸速率"]').value,
       remark: f.querySelector('textarea[name="備註"]').value
     };
@@ -755,6 +762,8 @@ function loadTrackingHistory() {
   const c = document.getElementById('trackingHistoryList'); c.innerHTML = '<div class="text-center py-6 text-slate-400">讀取中...</div>';
   google.script.run.withSuccessHandler(recs => {
     if (!recs || !recs.length) { c.innerHTML = `<div class="text-center text-slate-400 py-12 bg-white rounded-[2rem] border border-slate-100"><span class="material-icons-outlined text-4xl mb-2 text-slate-300">history_edu</span><p>尚無任何追蹤紀錄</p></div>`; return; }
+    
+    // 使用 map + join 優化渲染
     c.innerHTML = recs.map(r => {
       const dataStr = encodeURIComponent(JSON.stringify(r));
       return `
@@ -781,16 +790,19 @@ function loadTrackingHistory() {
 }
 
 function loadTreatmentHistory() {
-  const c = document.getElementById('historyListContainer'); c.innerHTML = '<div class="text-center py-6 text-slate-400">讀取中...</div>';
+  const c = document.getElementById('historyListContainer'); 
+  c.innerHTML = '<div class="text-center py-6 text-slate-400">讀取中...</div>';
   google.script.run.withSuccessHandler(logs => {
       allTreatmentLogs = logs || [];
       renderTreatmentList(allTreatmentLogs);
   }).getClientHistory(currentClient['個案編號'], 'Treatment_Logs');
 }
 
+// ★★★ 整合後的 renderTreatmentList (原在 Index.html 底部) ★★★
 function renderTreatmentList(logs) {
   const c = document.getElementById('historyListContainer');
   const countBadge = document.getElementById('treatmentHistoryCount');
+  
   if(countBadge) countBadge.textContent = `共 ${logs ? logs.length : 0} 次`;
 
   if(!logs || !logs.length) {
@@ -801,36 +813,54 @@ function renderTreatmentList(logs) {
   c.innerHTML = logs.map(l => {
     const dataStr = encodeURIComponent(JSON.stringify(l));
     return `
-    <div class="bg-white p-6 rounded-[2rem] shadow-sm border border-slate-100 card-hover mb-4 relative overflow-hidden group print:break-inside-avoid print:mb-4 print:border print:border-slate-300">
-      <div class="absolute top-0 left-0 w-full h-1 bg-emerald-500 print:hidden"></div>
-      <div class="flex justify-between items-center mb-3">
-        <div class="flex items-center gap-2">
-            <span class="text-xs font-bold text-slate-400 font-mono bg-slate-50 px-2 py-1 rounded-lg print:bg-white print:text-black print:border print:border-slate-300">${l['治療日期']}</span>
-            <button onclick="startEdit('treatment', JSON.parse(decodeURIComponent('${dataStr}')))" class="text-slate-400 hover:text-emerald-500 transition print:hidden" title="編輯">
-                <span class="material-icons-outlined text-sm">edit</span>
-            </button>
-        </div>
-
-        <div class="flex items-center gap-2">
-            ${l['治療項目'] ? `<span class="px-2 py-0.5 rounded text-[10px] font-bold bg-blue-50 text-blue-600 border border-blue-100 print:text-black">${l['治療項目']}</span>` : ''}
-            <div class="flex items-center gap-1 text-xs font-bold text-slate-500 print:text-black">
-              <span class="material-icons-outlined text-sm text-slate-400 print:hidden">person</span>${l['執行治療師']}
+    <div class="bg-white p-5 rounded-[2rem] shadow-sm border border-slate-100 card-hover relative overflow-hidden group print:break-inside-avoid print:border print:border-slate-200 print:shadow-none print:rounded-none">
+        <div class="absolute top-0 left-0 w-1.5 h-full bg-emerald-500 print:hidden"></div>
+        <div class="pl-2">
+            <div class="flex justify-between items-center mb-3">
+                <div class="flex items-center gap-2">
+                    <span class="text-xs font-bold text-slate-500 font-mono bg-slate-100 px-2 py-1 rounded-lg print:bg-white print:border print:border-slate-200">${l['治療日期']}</span>
+                    <button onclick="startEdit('treatment', JSON.parse(decodeURIComponent('${dataStr}')))" class="text-slate-400 hover:text-emerald-500 transition px-2 print:hidden" title="編輯紀錄">
+                        <span class="material-icons-outlined text-sm">edit</span>
+                    </button>
+                </div>
+                
+                <div class="flex items-center gap-2">
+                    ${l['治療項目'] ? `<span class="px-2 py-0.5 rounded text-[10px] font-bold bg-blue-50 text-blue-600 border border-blue-100">${l['治療項目']}</span>` : ''}
+                    
+                    <div class="flex items-center gap-1 text-sm font-bold text-slate-500">
+                        <span class="material-icons-outlined text-sm">person</span>
+                        ${l['執行治療師']}
+                    </div>
+                </div>
+            </div>
+            
+            <div class="space-y-3">
+                ${l['當日主訴'] ? `
+                <div>
+                    <div class="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">當日主訴</div>
+                    <div class="text-sm text-slate-700 whitespace-pre-wrap leading-relaxed px-1">${l['當日主訴']}</div>
+                </div>` : ''}
+                
+                ${l['治療內容'] ? `
+                <div>
+                    <div class="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">治療內容</div>
+                    <div class="text-sm text-slate-700 whitespace-pre-wrap leading-relaxed px-1">${l['治療內容']}</div>
+                </div>` : ''}
+                
+                ${l['備註/下次治療'] ? `
+                <div class="bg-amber-50 p-3 rounded-xl border border-amber-100 mt-2 print:bg-white print:border-slate-200">
+                    <div class="text-[10px] font-bold text-amber-500 uppercase tracking-wider mb-1 flex items-center gap-1">
+                        <span class="material-icons-outlined text-[10px]">flag</span> 備註 / 下次治療
+                    </div>
+                    <div class="text-sm text-slate-600 whitespace-pre-wrap leading-relaxed">${l['備註/下次治療']}</div>
+                </div>` : ''}
             </div>
         </div>
-      </div>
-      <div class="space-y-3">
-        ${l['當日主訴'] ? `
-        <div class="text-xs text-slate-500 bg-slate-50 p-3 rounded-xl border border-slate-100 print:bg-white print:border-0 print:p-0">
-          <span class="font-bold text-slate-400 block mb-1 uppercase tracking-widest text-[10px] print:text-black">Complaint</span>${l['當日主訴']}
-        </div>` : ''}
-
-        <div class="text-sm text-slate-700 whitespace-pre-wrap px-1 print:text-black">${l['治療內容']}</div>
-
-        ${l['備註/下次治療']?`<div class="mt-2 text-xs text-slate-600 bg-amber-50 p-3 rounded-xl border border-amber-100 print:bg-white print:border-slate-300"><span class="font-bold text-amber-500 block mb-1 flex items-center gap-1 print:text-black"><span class="material-icons-outlined text-[12px] print:hidden">flag</span> Next Plan</span>${l['備註/下次治療']}</div>`:''}
-      </div>
     </div>`;
   }).join('');
-}function loadMaintenanceHistory() {
+}
+
+function loadMaintenanceHistory() {
   const c = document.getElementById('maintenanceHistoryList'); c.innerHTML = '<div class="text-center py-10 text-slate-400">紀錄載入中...</div>';
   google.script.run.withSuccessHandler(logs => {
     if(!logs || !logs.length) { c.innerHTML = '<div class="bg-white/50 border-2 border-dashed border-slate-200 rounded-[2.5rem] p-12 text-center text-slate-300">尚無歷史紀錄</div>'; return; }
@@ -838,7 +868,6 @@ function renderTreatmentList(logs) {
     c.innerHTML = logs.map(l => {
       const dataStr = encodeURIComponent(JSON.stringify(l));
       
-      // 為了相容性，同時嘗試讀取英文 Key (新版後端) 或中文 Key (舊版資料)
       const remarkText = l.remark || l['備註']; 
 
       return `
@@ -855,7 +884,6 @@ function renderTreatmentList(logs) {
           </div>
         </div>
         
-        <!-- 數值顯示區 (Grid) -->
         <div class="w-full">
             <div class="grid grid-cols-5 gap-2 text-center">
               <div class="p-2 rounded-xl bg-slate-50 print:bg-white print:border print:border-slate-300"><div class="text-[9px] font-bold text-slate-400 mb-1 print:text-black">Temp</div><div class="text-sm font-black text-slate-700 print:text-black">${l['體溫']||l.temp||'-'}</div></div>
@@ -865,7 +893,6 @@ function renderTreatmentList(logs) {
               <div class="p-2 rounded-xl bg-slate-50 print:bg-white print:border print:border-slate-300"><div class="text-[9px] font-bold text-slate-400 mb-1 print:text-black">SpO2</div><div class="text-sm font-black text-slate-700 print:text-black">${l['血氧']||l.spo2||'-'}</div></div>
             </div>
 
-            <!-- ★★★ 修正處：在此處插入備註顯示 ★★★ -->
             ${remarkText && remarkText !== '' ? `
              <div class="mt-4 pt-3 border-t border-gray-100 text-sm text-gray-600 text-left flex items-start">
                  <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 text-gray-400 mr-2 mt-0.5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -997,7 +1024,6 @@ function renderOverviewList() {
     return;
   }
 
-  // 生成畫面上的卡片列表
   c.innerHTML = f.map((i, index) => {
     const cardClass = `print:break-before-page ${index === 0 ? '' : 'print:break-before-page'} bg-white border border-slate-100 rounded-[2rem] p-5 shadow-sm mb-4 card-hover relative overflow-hidden group print:hidden`;
     const headerClass = "flex justify-between items-center mb-3 pb-2 border-b border-slate-50 pl-3";
@@ -1092,18 +1118,16 @@ function renderOverviewList() {
     return '';
   }).join('');
 
-  // --- 列印表格生成 (含標題與姓名) ---
+  // --- 列印表格生成 ---
   const catName = { 'all': '全部', 'doctor': '醫師看診', 'treatment': '物理治療', 'maintenance': '保養項目', 'tracking': '個管追蹤' };
   const clientName = currentClient ? currentClient['姓名'] : ''; 
 
   let tableHtml = `
-    <!-- 標題區塊：標題置中，姓名靠右 -->
     <div style="display: flex; justify-content: space-between; align-items: flex-end; margin-bottom: 5px; border-bottom: 2px solid #000; padding-bottom: 5px;">
         <div style="flex: 1;"></div> 
         <div style="flex: 0 0 auto; text-align: center; font-size: 24px; font-weight: bold; letter-spacing: 2px;">康飛運醫 物理治療所</div>
         <div style="flex: 1; text-align: right; font-size: 16px; font-weight: bold;">${clientName}</div>
     </div>
-
     <div style="margin-bottom: 10px; font-weight: bold; font-size: 12px; border-bottom: 1px solid #000; padding-bottom: 5px;">
         列印日期：${new Date().toISOString().split('T')[0]} ｜ 篩選條件：${catName[currentOverviewCategory] || '全部'} ｜ 資料筆數：${f.length}
     </div>
@@ -1119,7 +1143,6 @@ function renderOverviewList() {
         <tbody>`;
 
   f.forEach((i, index) => {
-    // 若為全部或治療分頁，因為內容較多，每一筆後強制分頁(除了第一筆)
     const isPageBreakNeeded = (currentOverviewCategory === 'all' || currentOverviewCategory === 'treatment') && index > 0;
     const rowStyle = isPageBreakNeeded ? 'style="page-break-before: always; border-top: 1px solid #000; padding-top: 10px;"' : 'style="border-top: 1px solid #000; padding-top: 10px;"';
 
@@ -1146,7 +1169,6 @@ function renderOverviewList() {
     else if (i.category === 'maintenance') {
        typeName = '保養項目';
        if(i.item) typeName += `<br><small>(${i.item})</small>`;
-       // ★ 修改處：列印報表也加入 RR
        content = `T: ${i.temp||'-'} / HR: ${i.hr||'-'} / RR: ${i.rr||'-'} / BP: ${i.bp||'-'} / SpO2: ${i.spo2||'-'}`;
        if(i.remark && i.remark!=='--') content += `<br><b>[備註]</b> ${i.remark}`;
     }
@@ -1285,7 +1307,8 @@ function startUpload() {
           google.script.run.withSuccessHandler(res => {
              if(res.success) successCount++;
              processNext(idx + 1);
-          }).withFailureHandler(err => {
+          }).withSuccessHandler(err => {
+             // 上傳失敗時，也算處理完，繼續下一個，但要記錄失敗 (這裡簡單處理)
              console.error(err);
              processNext(idx + 1);
           }).uploadClientImage(currentClient['個案編號'], content, file.name, file.type, remark);
@@ -1316,8 +1339,6 @@ function resetSearch() { currentClient = null; document.getElementById('topBarCl
 
 function closeModal(id) { 
   document.getElementById(id).classList.add('hidden'); 
-  
-  // 如果關閉的是新增個案視窗，必須重置 UI
   if (id === 'addClientModal') {
     resetAddClientModalUI();
   }
@@ -1326,9 +1347,6 @@ function closeModal(id) {
 function toggleSidebar() {
   const sidebar = document.getElementById('sidebar');
   if (sidebar) {
-    // 切換 hidden 類別：
-    // 如果有 hidden (隱藏中) -> 移除 (顯示)
-    // 如果沒 hidden (顯示中) -> 加入 (隱藏)
     sidebar.classList.toggle('hidden');
   }
 }
@@ -1409,7 +1427,6 @@ function showNotification(title, message, type = 'info') {
   titleEl.innerText = title;
   msgEl.innerText = message;
 
-  // 重置樣式
   iconContainer.className = 'mx-auto flex items-center justify-center w-16 h-16 rounded-full mb-2';
   btn.className = 'w-full py-3.5 px-4 font-bold rounded-2xl shadow-lg transition-all active:scale-95 text-white';
 

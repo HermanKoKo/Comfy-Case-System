@@ -4,12 +4,23 @@
   <base target="_top">
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>康飛運醫 | 個案管理系統</title>
+  
+  <!-- Tailwind CSS (CDN) -->
   <script src="https://cdn.tailwindcss.com"></script>
   
+  <!-- ★★★ 優化：字體預先連線與非同步載入 (取代 @import) ★★★ -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@300;400;500;700;900&display=swap" rel="stylesheet">
+
   <!-- Flatpickr 函式庫 -->
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
   <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
   <script src="https://cdn.jsdelivr.net/npm/flatpickr/dist/l10n/zh-tw.js"></script>
+
+  <!-- Google Icons -->
+  <link href="https://fonts.googleapis.com/icon?family=Material+Icons+Outlined" rel="stylesheet">
 
   <!-- 全域 Flatpickr 設定 -->
   <script>
@@ -24,99 +35,13 @@
     });
   </script>
 
-  <link href="https://fonts.googleapis.com/icon?family=Material+Icons+Outlined" rel="stylesheet">
+  <!-- 載入外部樣式表 -->
   <?!= include('Stylesheet'); ?>
-  
-  <style>
-    /* 其他通用樣式保持不變 */
-    .flatpickr-calendar { z-index: 99999 !important; }
-
-    /* 列印樣式 */
-    @media print {
-      @page { margin: 1cm; size: A4; }
-      
-      html, body, main, #contentArea {
-        height: auto !important;
-        min-height: 0 !important;
-        overflow: visible !important;
-        display: block !important;
-        background-color: white !important;
-      }
-
-      .no-print, button, .material-icons-outlined, #sidebar, #btnBackToTop { 
-        display: none !important; 
-      }
-
-      .card-hover, .bg-white, .rounded-\[2rem\], .rounded-\[2\.5rem\], .shadow-sm {
-        box-shadow: none !important;
-        border-radius: 0 !important;
-        background-color: white !important;
-        border: 1px solid #ddd !important;
-        margin-bottom: 10px !important;
-        padding: 10px !important;
-        transform: none !important;
-      }
-
-      .card-hover, .group, div, tr, td, tbody { 
-        break-inside: avoid !important; 
-        page-break-inside: avoid !important;
-      }
-
-      .text-slate-400, .text-slate-500, .text-slate-600 { color: #333 !important; }
-      .text-slate-300 { color: #999 !important; }
-      [class*="bg-"][class*="-50"] {
-        background-color: transparent !important;
-        border: 1px solid #eee !important;
-        color: #000 !important;
-      }
-      span.rounded-full, span.rounded-lg {
-        border: 1px solid #666 !important;
-        background: none !important;
-        color: #000 !important;
-        padding: 2px 6px !important;
-      }
-
-      #print-header { 
-        display: flex !important; 
-        width: 100% !important;
-        justify-content: space-between !important;
-        align-items: center !important;
-        border-bottom: 2px solid #000 !important; 
-        margin-bottom: 15px !important; 
-        padding-bottom: 10px !important;
-      }
-      
-      #overviewListContainer, #historyListContainer { min-height: 0 !important; height: auto !important; }
-    }
-    
-    @keyframes bounce-in {
-      0% { opacity: 0; transform: scale(0.5) translateY(20px); }
-      100% { opacity: 1; transform: scale(1) translateY(0); }
-    }
-    .animate-bounce-in {
-      animation: bounce-in 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
-    }
-
-    /* ★★★ 修改：新增逆時針旋轉動畫 ★★★ */
-    @keyframes spin-reverse {
-      from { transform: rotate(360deg); }
-      to { transform: rotate(0deg); }
-    }
-    .animate-spin-reverse {
-      animation: spin-reverse 1s linear infinite;
-    }
-
-    .flatpickr-calendar.static {
-        margin-top: 5px !important; 
-        box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05) !important;
-        z-index: 9999 !important;
-    }
-  </style>
 </head>
 
 <body class="bg-[#f8fafc] font-sans text-slate-900 antialiased h-screen overflow-hidden flex print:block print:h-auto print:overflow-visible">
 
-  <!-- ★★★ Sidebar (手機隱藏並浮動，電腦固定) ★★★ -->
+  <!-- Sidebar (手機隱藏並浮動，電腦固定) -->
   <aside id="sidebar" class="w-64 bg-[#1e293b] text-white flex-col flex-shrink-0 shadow-xl no-print hidden md:flex fixed inset-y-0 left-0 z-50 md:static h-full transition-all">
     <div class="p-5 flex justify-between items-center">
       <h1 class="text-xl font-bold tracking-tight flex items-center gap-2">
@@ -149,7 +74,7 @@
   
   <!-- Main -->
   <main id="main-content" class="flex-1 flex flex-col h-screen overflow-hidden print:block print:h-auto print:overflow-visible">
-    <!-- ★★★ Header ★★★ -->
+    <!-- Header -->
     <header class="bg-white border-b border-slate-200 px-6 py-3 flex justify-between items-center flex-shrink-0 shadow-sm z-10 no-print">
       <div class="flex items-center gap-4">
          <!-- 手機版漢堡選單按鈕 -->
@@ -160,12 +85,10 @@
       </div>
       <div id="topBarClientInfo" class="hidden flex items-center gap-2 bg-slate-50 pl-4 pr-1 py-1 rounded-full border border-slate-100 shadow-sm">
         <span id="headerClientName" class="font-bold text-emerald-600 text-sm">--</span>
-        <!-- 此處生日格式由底部 Script 自動修正 -->
+        <!-- 日期格式化已由 JS 控制 -->
         <span id="headerClientDob" class="text-xs text-slate-500 font-mono bg-white px-3 py-1 rounded-full shadow-sm">--</span>
       </div>
-    </header>
-
-    <div id="contentArea" class="flex-1 overflow-y-auto p-5 custom-scrollbar print:p-0 print:overflow-visible scroll-smooth print:block print:h-auto">
+    </header><div id="contentArea" class="flex-1 overflow-y-auto p-5 custom-scrollbar print:p-0 print:overflow-visible scroll-smooth print:block print:h-auto">
       
       <!-- 搜尋頁面 -->
       <div id="view-search" class="max-w-md mx-auto flex flex-col items-center justify-center min-h-[70vh] space-y-6 no-print">
@@ -179,7 +102,7 @@
             <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
           </button>
         </div>
-        <!-- 搜尋結果內容將由 Script 格式化 -->
+        <!-- 搜尋結果內容將由 JS 高效生成 -->
         <div id="searchResults" class="w-full space-y-3"></div>
       </div>
 
@@ -218,7 +141,6 @@
           <div class="grid grid-cols-1 md:grid-cols-3 border-t border-slate-50 print:grid-cols-3 print:border-slate-200">
             <div class="p-5 border-b md:border-b-0 md:border-r border-slate-50 print:p-2 print:border-slate-200">
               <label class="block text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">出生日期</label>
-              <!-- 此處顯示格式由底部 Script 自動修正 -->
               <div id="display-birthday" class="text-lg font-bold text-slate-700 print:text-sm">--</div>
             </div>
             <div class="p-5 border-b md:border-b-0 md:border-r border-slate-50 print:p-2 print:border-slate-200">
@@ -272,12 +194,13 @@
         </div>
         <div id="imageGalleryContainer" class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 min-h-[400px]">
            <div class="col-span-full flex flex-col items-center justify-center py-20 text-slate-300 print:hidden">
-              <!-- ★★★ 修改：Icon 旋轉方向改為逆時針 (animate-spin-reverse) ★★★ -->
               <span class="material-icons-outlined text-4xl animate-spin-reverse mb-3">sync</span>
               <p>讀取影像中...</p>
            </div>
         </div>
-      </div><!-- 治療紀錄視圖 -->
+      </div>
+
+      <!-- 治療紀錄視圖 -->
       <div id="view-treatment" class="hidden max-w-6xl mx-auto space-y-6">
          <div class="grid grid-cols-1 lg:grid-cols-12 gap-4 no-print">
             <div class="lg:col-span-12">
@@ -314,7 +237,6 @@
                     </div>
                  </div>
                  
-                 <!-- ★★★ 修改：放大輸入框 (增加 rows, 移除固定 h-14/h-full) ★★★ -->
                  <div class="space-y-1">
                    <label class="text-xs font-bold text-slate-400 ml-1">當日主訴</label>
                    <textarea id="inputComplaint" rows="6" class="w-full px-5 py-2.5 bg-slate-50 border border-slate-100 rounded-2xl outline-none focus:border-emerald-500 transition-all resize-none"></textarea>
@@ -447,9 +369,7 @@
             </div>
           </div>
         </div>
-      </div>
-
-      <!-- 個管追蹤視圖 -->
+      </div><!-- 個管追蹤視圖 -->
       <div id="view-tracking" class="hidden max-w-6xl mx-auto space-y-4">
         <div class="flex justify-between items-center mb-2 no-print">
           <h3 class="text-2xl font-bold text-violet-700 flex items-center gap-3">
@@ -639,13 +559,12 @@
            </div>
         </div>
 
-        <div id="overviewPrintTable" class="hidden print:block w-full mt-4">
-            <!-- 內容將由 JavaScript 動態生成 -->
-        </div>
-
+        <div id="overviewPrintTable" class="hidden print:block w-full mt-4"></div>
       </div>
     </div>
-  </main><!-- Modal: 新增個案 -->
+  </main>
+
+  <!-- Modal: 新增個案 -->
   <div id="addClientModal" class="hidden fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 no-print">
      <div class="bg-white w-full max-w-3xl rounded-[2.5rem] overflow-hidden shadow-2xl">
         <div class="px-6 py-4 border-b border-slate-100 flex justify-between items-center bg-white sticky top-0 z-10">
@@ -760,164 +679,8 @@
       </div>
   </div>
 
+  <!-- 引入主要的邏輯腳本 (已整合優化) -->
   <?!= include('JavaScript'); ?>
-  
-  <!-- Script Override -->
-  <script>
-    function renderTreatmentList(logs) {
-      const c = document.getElementById('historyListContainer');
-      const countBadge = document.getElementById('treatmentHistoryCount');
-      
-      if(countBadge) {
-         countBadge.textContent = `共 ${logs ? logs.length : 0} 次`;
-      }
-
-      if(!logs || !logs.length) { 
-        c.innerHTML = '<div class="text-center py-10 text-slate-300 bg-slate-50 rounded-2xl">無相關紀錄</div>'; 
-        return; 
-      }
-      
-      c.innerHTML = logs.map(l => {
-        const dataStr = encodeURIComponent(JSON.stringify(l));
-        return `
-        <div class="bg-white p-5 rounded-[2rem] shadow-sm border border-slate-100 card-hover relative overflow-hidden group print:break-inside-avoid print:border print:border-slate-200 print:shadow-none print:rounded-none">
-            <div class="absolute top-0 left-0 w-1.5 h-full bg-emerald-500 print:hidden"></div>
-            <div class="pl-2">
-                <div class="flex justify-between items-center mb-3">
-                    <div class="flex items-center gap-2">
-                        <span class="text-xs font-bold text-slate-500 font-mono bg-slate-100 px-2 py-1 rounded-lg print:bg-white print:border print:border-slate-200">${l['治療日期']}</span>
-                        <button onclick="startEdit('treatment', JSON.parse(decodeURIComponent('${dataStr}')))" class="text-slate-400 hover:text-emerald-500 transition px-2 print:hidden" title="編輯紀錄">
-                            <span class="material-icons-outlined text-sm">edit</span>
-                        </button>
-                    </div>
-                    
-                    <div class="flex items-center gap-2">
-                        ${l['治療項目'] ? `<span class="px-2 py-0.5 rounded text-[10px] font-bold bg-blue-50 text-blue-600 border border-blue-100">${l['治療項目']}</span>` : ''}
-                        
-                        <div class="flex items-center gap-1 text-sm font-bold text-slate-500">
-                            <span class="material-icons-outlined text-sm">person</span>
-                            ${l['執行治療師']}
-                        </div>
-                    </div>
-                </div>
-                
-                <div class="space-y-3">
-                    ${l['當日主訴'] ? `
-                    <div>
-                        <div class="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">當日主訴</div>
-                        <div class="text-sm text-slate-700 whitespace-pre-wrap leading-relaxed px-1">${l['當日主訴']}</div>
-                    </div>` : ''}
-                    
-                    ${l['治療內容'] ? `
-                    <div>
-                        <div class="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">治療內容</div>
-                        <div class="text-sm text-slate-700 whitespace-pre-wrap leading-relaxed px-1">${l['治療內容']}</div>
-                    </div>` : ''}
-                    
-                    ${l['備註/下次治療'] ? `
-                    <div class="bg-amber-50 p-3 rounded-xl border border-amber-100 mt-2 print:bg-white print:border-slate-200">
-                        <div class="text-[10px] font-bold text-amber-500 uppercase tracking-wider mb-1 flex items-center gap-1">
-                            <span class="material-icons-outlined text-[10px]">flag</span> 備註 / 下次治療
-                        </div>
-                        <div class="text-sm text-slate-600 whitespace-pre-wrap leading-relaxed">${l['備註/下次治療']}</div>
-                    </div>` : ''}
-                </div>
-            </div>
-        </div>`;
-      }).join('');
-    }
-    
-    document.getElementById('contentArea').addEventListener('scroll', function() {
-      const btn = document.getElementById('btnBackToTop');
-      if (!btn) return;
-      if (this.scrollTop > 300) {
-        btn.classList.remove('hidden');
-        btn.classList.add('animate-bounce-in');
-      } else {
-        btn.classList.add('hidden');
-        btn.classList.remove('animate-bounce-in');
-      }
-    });
-
-    function scrollToTop() {
-      document.getElementById('contentArea').scrollTo({
-        top: 0,
-        behavior: 'smooth'
-      });
-    }
-
-    // ★★★ 自動修正與格式化邏輯 (生日與電話) ★★★
-    
-    // 輔助函式：YYYYMMDD -> YYYY-MM-DD
-    function formatYmd(str) {
-       str = str ? str.trim() : '';
-       if (/^\d{8}$/.test(str)) {
-         return str.substring(0, 4) + '-' + str.substring(4, 6) + '-' + str.substring(6, 8);
-       }
-       return str;
-    }
-
-    // 輔助函式：09xxxxxxxx -> 09xx-xxx-xxx
-    function formatPhone(str) {
-       str = str ? str.trim() : '';
-       if (/^09\d{8}$/.test(str)) {
-          return str.substring(0, 4) + '-' + str.substring(4, 7) + '-' + str.substring(7, 10);
-       }
-       return str;
-    }
-
-    // 透過監聽器自動格式化 (headerClientDob, display-birthday)
-    const clientInfoObserver = new MutationObserver(function(mutations) {
-      mutations.forEach(function(mutation) {
-        if (mutation.type === 'childList' || mutation.type === 'characterData') {
-           const target = mutation.target.nodeType === 3 ? mutation.target.parentNode : mutation.target;
-           const original = target.textContent;
-           
-           // Header 生日 & 基本資料生日
-           if ((target.id === 'headerClientDob' || target.id === 'display-birthday') && /^\d{8}$/.test(original.trim())) {
-              const formatted = formatYmd(original);
-              if (original !== formatted) {
-                 target.textContent = formatted;
-              }
-           }
-        }
-      });
-    });
-
-    const obsConfig = { childList: true, characterData: true, subtree: true };
-    const headerDobEl = document.getElementById('headerClientDob');
-    if (headerDobEl) clientInfoObserver.observe(headerDobEl, obsConfig);
-    
-    const basicDobEl = document.getElementById('display-birthday');
-    if (basicDobEl) clientInfoObserver.observe(basicDobEl, obsConfig);
-
-    // ★★★ 監聽搜尋結果，自動格式化生日與電話 ★★★
-    const searchObserver = new MutationObserver(function(mutations) {
-        mutations.forEach(function(m) {
-            m.addedNodes.forEach(function(node) {
-                if(node.nodeType === 1) { // 元素節點
-                    // 尋找該節點下的所有文字節點並進行取代
-                    const walker = document.createTreeWalker(node, NodeFilter.SHOW_TEXT, null, false);
-                    let textNode;
-                    while(textNode = walker.nextNode()) {
-                        const val = textNode.nodeValue.trim();
-                        // 檢查電話 (09xxxxxxxx)
-                        if (/^09\d{8}$/.test(val)) {
-                            textNode.nodeValue = formatPhone(val);
-                        }
-                        // 檢查生日 (8碼數字，且非電話)
-                        else if (/^\d{8}$/.test(val)) {
-                            textNode.nodeValue = formatYmd(val);
-                        }
-                    }
-                }
-            });
-        });
-    });
-    const searchContainer = document.getElementById('searchResults');
-    if(searchContainer) searchObserver.observe(searchContainer, { childList: true, subtree: true });
-
-  </script>
 
   <!-- 回到頂部按鈕 -->
   <button id="btnBackToTop" onclick="scrollToTop()" class="hidden fixed bottom-8 right-8 z-50 bg-slate-700 text-white w-12 h-12 rounded-full shadow-lg hover:bg-slate-600 hover:shadow-xl hover:-translate-y-1 transition-all duration-300 flex items-center justify-center print:hidden">
@@ -927,22 +690,15 @@
   <!-- 自定義通知 Modal -->
   <div id="custom-modal" class="hidden fixed inset-0 z-[200] flex items-center justify-center px-4 bg-slate-900/60 backdrop-blur-sm transition-opacity duration-300 no-print">
       <div class="bg-white rounded-[2.5rem] shadow-2xl max-w-sm w-full p-6 transform transition-all scale-100 relative overflow-hidden">
-          <!-- 背景裝飾圓形 -->
           <div class="absolute -top-10 -right-10 w-32 h-32 bg-slate-50 rounded-full z-0"></div>
-
           <div class="relative z-10 text-center space-y-4">
-              <!-- 動態圖示區域 -->
               <div id="modal-icon-container" class="mx-auto flex items-center justify-center w-16 h-16 rounded-full bg-slate-100 mb-2">
                   <span id="modal-icon" class="material-icons-outlined text-3xl text-slate-500">info</span>
               </div>
-
-              <!-- 文字內容 -->
               <div class="space-y-2">
                   <h3 id="modal-title" class="text-xl font-black text-slate-800 tracking-tight">提示</h3>
                   <p id="modal-message" class="text-slate-500 text-sm font-medium leading-relaxed">請確認操作內容。</p>
               </div>
-
-              <!-- 按鈕 -->
               <div class="pt-2">
                    <button id="modal-confirm-btn" onclick="closeNotification()" class="w-full py-3.5 px-4 bg-emerald-500 hover:bg-emerald-600 text-white font-bold rounded-2xl shadow-lg shadow-emerald-500/20 transition-all active:scale-95">
                       確定
