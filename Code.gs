@@ -546,18 +546,25 @@ function getCaseOverviewData(clientId) {
           staff: r[3], type: r[4], content: r[5]
       })},
       { name: CONFIG.SHEETS.TREATMENT, cat: 'treatment', idHeader: '個案編號', mapFunc: (r, h) => {
-          // 治療紀錄欄位較多，動態抓取 Index (優化：可以在外部定義好 Index，這裡簡化處理)
+          // 治療紀錄欄位較多，動態抓取 Index
           const idxDate = h.indexOf("治療日期");
           const idxStaff = h.indexOf("執行治療師");
           const idxItem = h.indexOf("治療項目");
           const idxC = h.indexOf("當日主訴");
           const idxCont = h.indexOf("治療內容");
           const idxNext = h.indexOf("備註/下次治療");
+          
           return {
-              id: 'T-' + formatDateForJSON(r[idxDate]), date: formatDateForJSON(r[idxDate]),
-              category: 'treatment', categoryName: '物理治療',
-              staff: r[idxStaff], item: r[idxItem]>-1?r[idxItem]:"", complaint: r[idxC]>-1?r[idxC]:"",
-              content: r[idxCont]>-1?r[idxCont]:"", nextPlan: r[idxNext]>-1?r[idxNext]:""
+              id: 'T-' + formatDateForJSON(r[idxDate]), 
+              date: formatDateForJSON(r[idxDate]),
+              category: 'treatment', 
+              categoryName: '物理治療',
+              // [修正處] 這裡是檢查 index (idxStaff) 是否存在，而不是檢查內容 (r[idxStaff])
+              staff: idxStaff > -1 ? r[idxStaff] : "", 
+              item: idxItem > -1 ? r[idxItem] : "", 
+              complaint: idxC > -1 ? r[idxC] : "",
+              content: idxCont > -1 ? r[idxCont] : "", 
+              nextPlan: idxNext > -1 ? r[idxNext] : ""
           };
       }}
     ];
