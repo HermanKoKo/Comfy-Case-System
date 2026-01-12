@@ -22,6 +22,10 @@ const CONFIG = {
   }
 };
 
+// 在 CONFIG 下方加入
+let CACHED_SS_CLIENT = null;
+let CACHED_SS_SYSTEM = null;
+
 /**
  * ==========================================
  * 網頁應用程式入口 (WebApp.gs)
@@ -49,27 +53,27 @@ function normalizeHeader(header) {
   return String(header).replace(/\s+/g, '').trim().toLowerCase();
 }
 
-/**
- * 智慧分頁選取器
- */
 function getSheetHelper(sheetName) {
   let ss;
-  // 路由邏輯：Client基本資料去新DB，其餘去舊DB
+  // 判斷是否為 Client DB
   if (sheetName === CONFIG.SHEETS.CLIENT) {
-    try {
-      ss = SpreadsheetApp.openById(CONFIG.CLIENT_DB_ID);
-    } catch (e) {
-      throw new Error("無法連接個案核心資料庫 (Client DB)。");
+    if (!CACHED_SS_CLIENT) {
+      try {
+        CACHED_SS_CLIENT = SpreadsheetApp.openById(CONFIG.CLIENT_DB_ID);
+      } catch (e) { throw new Error("無法連接個案核心資料庫"); }
     }
+    ss = CACHED_SS_CLIENT;
   } else {
-    ss = SpreadsheetApp.openById(CONFIG.SPREADSHEET_ID);
+    // System DB
+    if (!CACHED_SS_SYSTEM) {
+      CACHED_SS_SYSTEM = SpreadsheetApp.openById(CONFIG.SPREADSHEET_ID);
+    }
+    ss = CACHED_SS_SYSTEM;
   }
 
   const sheet = ss.getSheetByName(sheetName);
   if (!sheet) {
-    if (sheetName !== CONFIG.SHEETS.CLIENT) {
-       return ss.insertSheet(sheetName);
-    }
+    if (sheetName !== CONFIG.SHEETS.CLIENT) return ss.insertSheet(sheetName);
     throw new Error("找不到工作表: " + sheetName);
   }
   return sheet;
@@ -719,86 +723,96 @@ function getTreatmentItemsFromSystem() {
   } catch(e) { return []; }
 }
 
-/**
- * 更新紀錄
- */
 function updateRecord(type, formData) {
   const lock = LockService.getScriptLock();
   if (!lock.tryLock(10000)) return { success: false, message: "系統忙碌中" };
 
   try {
+    // 1. 設定 Sheet 與 ID 欄位
     let sheetName = "";
     let expectedIdHeader = "紀錄id";
-    if (type === 'treatment') { sheetName = CONFIG.SHEETS.TREATMENT; }
-    else if (type === 'doctor') { sheetName = CONFIG.SHEETS.DOCTOR; }
-    else if (type === 'maintenance') { sheetName = CONFIG.SHEETS.MAINTENANCE; }
+    if (type === 'treatment') sheetName = CONFIG.SHEETS.TREATMENT;
+    else if (type === 'doctor') sheetName = CONFIG.SHEETS.DOCTOR;
+    else if (type === 'maintenance') sheetName = CONFIG.SHEETS.MAINTENANCE;
     else if (type === 'tracking') { sheetName = CONFIG.SHEETS.TRACKING; expectedIdHeader = "追蹤ID"; }
 
     const sheet = getSheetHelper(sheetName);
-    const data = sheet.getDataRange().getValues();
-    if (data.length < 2) return { success: false, message: "資料表為空" };
-
-    const headers = data[0];
-    let idColIndex = -1;
-    for (let c = 0; c < headers.length; c++) {
-      if (normalizeHeader(headers[c]) === normalizeHeader(expectedIdHeader)) { idColIndex = c; break; }
-    }
+    
+    // 2. 讀取全部資料 (只讀一次！)
+    const dataRange = sheet.getDataRange();
+    const values = dataRange.getValues(); // 取得原始值
+    const headers = values[0].map(normalizeHeader);
+    
+    // 3. 尋找 ID 欄位 Index
+    let idColIndex = headers.indexOf(normalizeHeader(expectedIdHeader));
     if (idColIndex === -1 && type === 'treatment') {
-       for (let c = 0; c < headers.length; c++) { if (String(headers[c]).toLowerCase().includes("id")) { idColIndex = c; break; } }
+       idColIndex = headers.findIndex(h => h.includes("id"));
     }
     if (idColIndex === -1 && type !== 'treatment') idColIndex = 0;
     if (idColIndex === -1) throw new Error("找不到 ID 欄位");
 
-    let targetId = String(formData.record_id).trim();
+    // 4. 尋找目標 Row
+    const targetId = String(formData.record_id).trim();
     let rowIndex = -1;
-    for (let i = 1; i < data.length; i++) {
-      if (String(data[i][idColIndex]).trim() === targetId) { rowIndex = i + 1; break; }
+    for (let i = 1; i < values.length; i++) {
+      if (String(values[i][idColIndex]).trim() === targetId) {
+        rowIndex = i; // 這是 Array index，對應 Sheet Row 是 i + 1
+        break;
+      }
     }
 
     if (rowIndex === -1) return { success: false, message: "找不到該筆資料" };
 
-    const getCol = (name) => {
-       for(let k=0; k<headers.length; k++) { if(normalizeHeader(headers[k]) === normalizeHeader(name)) return k + 1; }
-       return -1;
+    // 5. 準備更新資料 (在記憶體中操作 Array)
+    const rowData = values[rowIndex]; // 取得該列舊資料
+    
+    // 建立簡易映射函式
+    const setCol = (headerName, value) => {
+      const idx = headers.indexOf(normalizeHeader(headerName));
+      if (idx > -1) rowData[idx] = value;
     };
 
+    // 依照類型更新 Array
     if (type === 'treatment') {
-       const cols = { date: getCol("治療日期"), therapist: getCol("執行治療師"), item: getCol("治療項目"), complaint: getCol("當日主訴"), content: getCol("治療內容"), next: getCol("備註/下次治療") };
-       if (cols.date > 0) sheet.getRange(rowIndex, cols.date).setValue(formData.date);
-       if (cols.therapist > 0) sheet.getRange(rowIndex, cols.therapist).setValue(formData.therapist);
-       if (cols.item > 0) sheet.getRange(rowIndex, cols.item).setValue(formData.item);
-       if (cols.complaint > 0) sheet.getRange(rowIndex, cols.complaint).setValue(formData.complaint);
-       if (cols.content > 0) sheet.getRange(rowIndex, cols.content).setValue(formData.content);
-       if (cols.next > 0) sheet.getRange(rowIndex, cols.next).setValue(formData.nextPlan);
+       setCol("治療日期", formData.date);
+       setCol("執行治療師", formData.therapist);
+       setCol("治療項目", formData.item);
+       setCol("當日主訴", formData.complaint);
+       setCol("治療內容", formData.content);
+       setCol("備註/下次治療", formData.nextPlan);
     } 
     else if (type === 'doctor') {
-       sheet.getRange(rowIndex, 3).setValue(formData.date);
-       sheet.getRange(rowIndex, 4).setValue(formData.doctor);
-       sheet.getRange(rowIndex, 5).setValue(formData.nurse);
-       sheet.getRange(rowIndex, 6).setValue(formData.complaint);
-       sheet.getRange(rowIndex, 7).setValue(formData.objective);
-       sheet.getRange(rowIndex, 8).setValue(formData.diagnosis);
-       sheet.getRange(rowIndex, 9).setValue(formData.plan);
-       sheet.getRange(rowIndex, 10).setValue(formData.nursingRecord);
-       sheet.getRange(rowIndex, 11).setValue(formData.remark);
+       setCol("看診日期", formData.date);
+       setCol("看診醫師", formData.doctor);
+       setCol("護理師", formData.nurse);
+       setCol("S_主訴", formData.complaint);
+       setCol("O_客觀檢查", formData.objective);
+       setCol("A_診斷", formData.diagnosis);
+       setCol("P_治療計劃", formData.plan);
+       setCol("護理紀錄", formData.nursingRecord);
+       setCol("備註", formData.remark);
     } 
     else if (type === 'maintenance') {
-       sheet.getRange(rowIndex, 3).setValue(formData.date);
-       sheet.getRange(rowIndex, 4).setValue(formData.staff);
-       sheet.getRange(rowIndex, 5).setValue(formData.item);
-       sheet.getRange(rowIndex, 6).setValue(formData.bp);
-       sheet.getRange(rowIndex, 7).setValue(formData.spo2);
-       sheet.getRange(rowIndex, 8).setValue(formData.hr);
-       sheet.getRange(rowIndex, 9).setValue(formData.temp);
-       sheet.getRange(rowIndex, 10).setValue(formData.rr);
-       sheet.getRange(rowIndex, 11).setValue(formData.remark);
+       setCol("保養日期", formData.date);
+       setCol("執行人員", formData.staff);
+       setCol("保養項目", formData.item);
+       setCol("血壓", formData.bp);
+       setCol("血氧", formData.spo2);
+       setCol("心律", formData.hr);
+       setCol("體溫", formData.temp);
+       setCol("呼吸速率", formData.rr);
+       setCol("備註", formData.remark);
     } 
     else if (type === 'tracking') {
-       sheet.getRange(rowIndex, 3).setValue(formData.trackDate);
-       sheet.getRange(rowIndex, 4).setValue(formData.trackStaff);
-       sheet.getRange(rowIndex, 5).setValue(formData.trackType);
-       sheet.getRange(rowIndex, 6).setValue(formData.content);
+       setCol("追蹤日期", formData.trackDate);
+       setCol("追蹤人員", formData.trackStaff);
+       setCol("追蹤項目", formData.trackType);
+       setCol("追蹤內容", formData.content);
     }
+
+    // 6. 一次性寫回整列 (只寫一次！)
+    // rowIndex + 1 是 sheet 列號, 1 是起始欄, 1 是行數, rowData.length 是總欄數
+    sheet.getRange(rowIndex + 1, 1, 1, rowData.length).setValues([rowData]);
 
     return { success: true, message: "資料更新成功！" };
   } catch (e) { return { success: false, message: "更新失敗: " + e.toString() }; } finally { lock.releaseLock(); }
