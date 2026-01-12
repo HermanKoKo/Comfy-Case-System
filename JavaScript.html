@@ -1516,25 +1516,38 @@ document.addEventListener('keydown', function(event) {
 });
 
 // ==========================================
-// 回到頂部按鈕邏輯
+// 回到頂部按鈕邏輯 (針對 contentArea 滾動監聽)
 // ==========================================
-window.addEventListener('scroll', function() {
+document.addEventListener("DOMContentLoaded", function() {
+  const contentArea = document.getElementById('contentArea');
   const btn = document.getElementById('btnBackToTop');
-  if (!btn) return;
-
-  if (window.scrollY > 300) {
-    btn.classList.remove('hidden');
-    btn.classList.add('animate-bounce-in');
-  } else {
-    btn.classList.add('hidden');
+  
+  if (contentArea && btn) {
+    // 監聽內容區塊的滾動事件
+    contentArea.addEventListener('scroll', function() {
+      // 當往下滾動超過 300px 時顯示按鈕
+      if (contentArea.scrollTop > 300) {
+        btn.classList.remove('hidden');
+        // 加入一個簡單的淡入效果 (Optional, 利用 Tailwind class)
+        btn.classList.add('opacity-100');
+        btn.classList.remove('opacity-0');
+      } else {
+        btn.classList.add('hidden');
+        btn.classList.add('opacity-0');
+        btn.classList.remove('opacity-100');
+      }
+    });
   }
 });
 
 function scrollToTop() {
-  window.scrollTo({
-    top: 0,
-    behavior: 'smooth'
-  });
+  const contentArea = document.getElementById('contentArea');
+  if (contentArea) {
+    contentArea.scrollTo({
+      top: 0,
+      behavior: 'smooth'
+    });
+  }
 }
 
 // ==========================================
