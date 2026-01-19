@@ -887,6 +887,10 @@ function loadTreatmentHistory() {
   }).getClientHistory(currentClient['個案編號'], 'Treatment_Logs');
 }
 
+/**
+ * 渲染治療歷史列表 (v2.0 Optimized)
+ * Fix: 強制編碼單引號，解決 onclick 語法錯誤
+ */
 function renderTreatmentList(logs) {
   const c = document.getElementById('historyListContainer');
   const countBadge = document.getElementById('treatmentHistoryCount');
@@ -899,7 +903,10 @@ function renderTreatmentList(logs) {
   }
 
   c.innerHTML = logs.map(l => {
-    const dataStr = encodeURIComponent(JSON.stringify(l));
+    // 🔥 關鍵修正：encodeURIComponent 不會處理單引號，必須手動 replace 為 %27
+    // 這樣才能安全地放入 onclick 的單引號字串參數中
+    const dataStr = encodeURIComponent(JSON.stringify(l)).replace(/'/g, "%27");
+
     return `
     <div class="bg-white p-5 rounded-[2rem] shadow-sm border border-slate-100 card-hover relative overflow-hidden group print:break-inside-avoid print:border print:border-slate-200 print:shadow-none print:rounded-none">
         <div class="absolute top-0 left-0 w-1.5 h-full bg-emerald-500 print:hidden"></div>
@@ -907,6 +914,8 @@ function renderTreatmentList(logs) {
             <div class="flex justify-between items-center mb-3">
                 <div class="flex items-center gap-2">
                     <span class="text-xs font-bold text-slate-500 font-mono bg-slate-100 px-2 py-1 rounded-lg print:bg-white print:border print:border-slate-200">${formatYmd(l['治療日期'])}</span>
+                    
+                    <!-- 這裡維持使用 startEdit，並透過 JSON.parse(decodeURIComponent(...)) 還原物件 -->
                     <button onclick="startEdit('treatment', JSON.parse(decodeURIComponent('${dataStr}')))" class="text-slate-400 hover:text-emerald-500 transition px-2 print:hidden" title="編輯紀錄">
                         <span class="material-icons-outlined text-sm">edit</span>
                     </button>
@@ -946,6 +955,39 @@ function renderTreatmentList(logs) {
         </div>
     </div>`;
   }).join('');
+}
+
+/**
+ * 處理治療紀錄編輯點擊
+ * v2.0 Fix: 使用 decodeURIComponent 解析資料，解決單引號與換行崩潰問題
+ */
+function onEditTreatmentClick(encodedData) {
+  try {
+    // 1. 解碼並還原 JSON 資料
+    const record = JSON.parse(decodeURIComponent(encodedData));
+    
+    console.log("正在編輯資料:", record);
+
+    // 2. 將資料填入編輯視窗 (Modal)
+    // 請根據您現有的 Modal ID 進行對應 (以下為範例)
+    document.getElementById('editDate').value = record.date || ''; 
+    document.getElementById('editStaff').value = record.staff || '';
+    
+    // 注意：如果是 textarea，要確保能夠正確顯示換行
+    document.getElementById('editChiefComplaint').value = record.chiefComplaint || ''; 
+    document.getElementById('editTreatmentContent').value = record.treatment || '';
+
+    // 紀錄原始索引或 ID (若寫回後端需要)
+    // 假設 record 裡面有 rowIndex 或是您有全域變數紀錄當前編輯 ID
+    // currentEditingRowIndex = record.rowIndex; 
+
+    // 3. 顯示 Modal (維持既有邏輯)
+    document.getElementById('editModal').classList.remove('hidden');
+
+  } catch (e) {
+    console.error("解析資料失敗:", e);
+    alert("讀取資料發生錯誤，請重新整理頁面。");
+  }
 }
 
 function loadMaintenanceHistory() {

@@ -175,7 +175,7 @@ function saveData(sheetName, dataObj) {
         CacheService.getScriptCache().remove("ALL_CLIENT_CACHE_V2");
     }
 
-    return { success: true, message: "資料已新增 (API)" };
+    return { success: true, message: "資料已新增" };
   } catch (e) { throw new Error(e.message); }
 }
 
