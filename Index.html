@@ -633,7 +633,7 @@
         
         <div class="p-6 space-y-4">
            <!-- 上傳區域開始: 拖曳支援 (id="uploadDropZone" 與 id="uploadInput") -->
-           <div id="uploadDropZone" class="relative w-full h-40 border-2 border-dashed border-slate-200 rounded-2xl bg-slate-50 flex flex-col items-center justify-center transition-all duration-200 hover:border-emerald-400 hover:bg-emerald-50/30 group">
+           <div id="uploadDropZone" class="relative w-full min-h-[10rem] border-2 border-dashed border-slate-200 rounded-2xl bg-slate-50 flex flex-col items-center justify-center transition-all duration-200 hover:border-emerald-400 hover:bg-emerald-50/30 group">
                 <!-- 隱藏的 Input (ID=uploadInput 以配合 JS 邏輯, multiple 支援多檔) -->
                 <input type="file" id="uploadInput" accept="image/*" multiple class="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10" onchange="handleFileSelect(this)">
 

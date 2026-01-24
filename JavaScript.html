@@ -201,7 +201,7 @@ function handleFileSelect(input) {
       previewZone.classList.remove('bg-emerald-100', 'rounded-full', 'px-3', 'py-1', 'text-emerald-600');
       
       // 加入列表佈局樣式 (垂直排列、限制高度、可滾動)
-      previewZone.classList.add('w-full', 'flex', 'flex-col', 'gap-2', 'px-8', 'max-h-24', 'overflow-y-auto', 'custom-scrollbar');
+      previewZone.classList.add('w-full', 'flex', 'flex-col', 'gap-2', 'px-8', 'custom-scrollbar');
 
       // 4. 迴圈讀取所有檔案，並生成 HTML
       const files = Array.from(input.files);
