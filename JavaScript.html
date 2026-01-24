@@ -179,21 +179,41 @@ function initDropZone() {
 }
 
 /**
- * 處理檔案選擇後的 UI 更新
- * 支援：拖曳放下 & 點擊選擇
+ * 處理檔案選擇後的 UI 更新 (v2.1 Multi-file Support)
+ * Fix: 支援顯示多個檔案名稱，並維持 Emerald 配色風格
  */
 function handleFileSelect(input) {
   const textZone = document.getElementById('dropZoneText');
   const previewZone = document.getElementById('filePreviewText');
   
-  if (input.files && input.files[0]) {
-    const fileName = input.files[0].name;
+  if (input.files && input.files.length > 0) {
     
-    // 隱藏原本提示，顯示檔案名稱
+    // 1. 隱藏原本的「點擊或拖曳」提示文字
     if(textZone) textZone.classList.add('hidden');
+
     if(previewZone) {
-      previewZone.textContent = `📄 ${fileName}`; // 顯示檔名
+      // 2. 顯示預覽區域
       previewZone.classList.remove('hidden');
+
+      // 3. 樣式重構：
+      // 因為現在要顯示多個檔案，所以我们要移除容器原本的「單一膠囊」樣式
+      // 改成一個可以容納多個膠囊的列表容器
+      previewZone.classList.remove('bg-emerald-100', 'rounded-full', 'px-3', 'py-1', 'text-emerald-600');
+      
+      // 加入列表佈局樣式 (垂直排列、限制高度、可滾動)
+      previewZone.classList.add('w-full', 'flex', 'flex-col', 'gap-2', 'px-8', 'max-h-24', 'overflow-y-auto', 'custom-scrollbar');
+
+      // 4. 迴圈讀取所有檔案，並生成 HTML
+      const files = Array.from(input.files);
+      
+      const html = files.map(file => `
+        <div class="flex items-center justify-center gap-2 bg-emerald-100 text-emerald-600 px-3 py-1.5 rounded-full text-xs font-bold shadow-sm animate-fade-in transition-all hover:bg-emerald-200">
+           <span class="material-icons-outlined text-sm">description</span>
+           <span class="truncate max-w-[200px]">${file.name}</span>
+        </div>
+      `).join('');
+
+      previewZone.innerHTML = html;
     }
   }
 }
