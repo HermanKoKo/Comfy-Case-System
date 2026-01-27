@@ -97,7 +97,6 @@ window.onload = function() {
 
   // 初始化個案資料庫 (預載)
   initClientDatabase(); 
-  initDropZone();
   
   // ★ [修復問題一] 統一載入所有下拉選單 (治療師、醫師、項目等)
   // 移除舊的 loadTreatmentItems 和 loadTherapistOptions，改用這個統一管理
@@ -127,100 +126,6 @@ function loadSystemStaff() {
     renderStaffOptions(staff);
   }).getSystemStaff();
 }
-
-/**
- * 初始化拖曳上傳區域 (v2.0 Optimized)
- * 請在 window.onload 或開啟 Modal 時呼叫此函式
- */
-function initDropZone() {
-  const dropZone = document.getElementById('uploadDropZone');
-  const fileInput = document.getElementById('uploadInput');
-
-  if (!dropZone || !fileInput) return;
-
-  // 1. 阻止瀏覽器預設行為 (避免瀏覽器直接打開圖片)
-  ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
-    dropZone.addEventListener(eventName, preventDefaults, false);
-  });
-
-  function preventDefaults(e) {
-    e.preventDefault();
-    e.stopPropagation();
-  }
-
-  // 2. 視覺回饋：拖曳進來時改變樣式
-  ['dragenter', 'dragover'].forEach(eventName => {
-    dropZone.addEventListener(eventName, () => {
-      dropZone.classList.add('border-emerald-500', 'bg-emerald-50', 'scale-[1.02]');
-    }, false);
-  });
-
-  // 3. 視覺回饋：拖曳離開時還原樣式
-  ['dragleave', 'drop'].forEach(eventName => {
-    dropZone.addEventListener(eventName, () => {
-      dropZone.classList.remove('border-emerald-500', 'bg-emerald-50', 'scale-[1.02]');
-    }, false);
-  });
-
-  // 4. 核心邏輯：處理「放下 (Drop)」事件
-  dropZone.addEventListener('drop', (e) => {
-    const dt = e.dataTransfer;
-    const files = dt.files;
-
-    if (files && files.length > 0) {
-      // 關鍵魔法：將拖曳的檔案「塞」進 input 標籤中
-      // 這樣原本的「開始上傳」按鈕邏輯完全不用改，因為它只認 input 的內容
-      fileInput.files = files;
-      
-      // 手動觸發 onchange 事件以更新 UI
-      handleFileSelect(fileInput);
-    }
-  }, false);
-}
-
-/**
- * 處理檔案選擇後的 UI 更新 (v2.2 Logic Fix)
- * Fix: 同步更新 filesToUpload 全域變數，修復 startUpload 讀不到檔案的問題
- */
-function handleFileSelect(input) {
-  const textZone = document.getElementById('dropZoneText');
-  const previewZone = document.getElementById('filePreviewText');
-  
-  if (input.files && input.files.length > 0) {
-    
-    // 🔥 關鍵修正：將 DOM 的檔案列表轉存到全域變數 filesToUpload
-    // 這樣 startUpload() 才能讀取到檔案
-    filesToUpload = Array.from(input.files); 
-
-    // 1. 隱藏原本的「點擊或拖曳」提示文字
-    if(textZone) textZone.classList.add('hidden');
-
-    if(previewZone) {
-      // 2. 顯示預覽區域
-      previewZone.classList.remove('hidden');
-
-      // 3. 樣式重構 (移除單一膠囊樣式，改為列表)
-      previewZone.classList.remove('bg-emerald-100', 'rounded-full', 'px-3', 'py-1', 'text-emerald-600');
-      
-      // 移除舊的限制高度設定 (解決顯示不全的問題)
-      previewZone.classList.add('w-full', 'flex', 'flex-col', 'gap-2', 'px-8', 'custom-scrollbar');
-
-      // 4. 生成 HTML
-      const html = filesToUpload.map(file => `
-        <div class="flex items-center justify-center gap-2 bg-emerald-100 text-emerald-600 px-3 py-1.5 rounded-full text-xs font-bold shadow-sm animate-fade-in transition-all hover:bg-emerald-200">
-           <span class="material-icons-outlined text-sm">description</span>
-           <span class="truncate max-w-[200px]">${file.name}</span>
-        </div>
-      `).join('');
-
-      previewZone.innerHTML = html;
-    }
-  }
-}
-
-// 自動啟動監聽 (確保元素存在後執行)
-// 您原本的 window.onload 中可以加入這一行，或者直接放在 script 尾端執行：
-setTimeout(initDropZone, 1000); // 延遲 1 秒確保 DOM 載入完成
 
 /**
  * 渲染所有下拉選單

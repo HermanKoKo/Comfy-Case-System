@@ -486,8 +486,7 @@
                       <span class="bg-rose-100 text-rose-600 text-[10px] font-bold px-2 py-0.5 rounded">Nursing</span>
                       <label class="text-sm font-bold">護理紀錄</label>
                   </div>
-                  <!-- Fix: 高度增加為 3 倍 (rows="6") -->
-                  <textarea id="nursingRecord" rows="6" class="w-full px-4 py-2 bg-slate-50 border border-slate-100 rounded-2xl focus:border-emerald-500 outline-none transition-all resize-none"></textarea>
+                  <textarea id="nursingRecord" rows="2" class="w-full px-4 py-2 bg-slate-50 border border-slate-100 rounded-2xl focus:border-emerald-500 outline-none transition-all resize-none"></textarea>
               </div>
 
               <div class="md:col-span-2 space-y-1">
@@ -537,10 +536,12 @@
               <div class="flex items-center gap-3 w-full xl:w-auto bg-slate-50 p-2 rounded-2xl border border-slate-100 flex-shrink-0">
                  <span class="text-xs font-bold text-slate-400 pl-2 hidden md:inline">日期</span>
                  <div class="relative flex-1 xl:w-40">
+                    <!-- 修改處：改為 type="date"，移除絕對定位的圖示以免重疊，調整 padding -->
                     <input type="date" id="overviewStartDate" onchange="filterOverviewTable()" class="w-full px-3 py-2.5 bg-white rounded-xl text-sm border border-slate-200 focus:border-emerald-500 outline-none transition text-center cursor-pointer font-mono text-slate-700 shadow-sm">
                  </div>
                  <span class="text-slate-300">→</span>
                  <div class="relative flex-1 xl:w-40">
+                    <!-- 修改處：改為 type="date"，移除絕對定位的圖示以免重疊，調整 padding -->
                     <input type="date" id="overviewEndDate" onchange="filterOverviewTable()" class="w-full px-3 py-2.5 bg-white rounded-xl text-sm border border-slate-200 focus:border-emerald-500 outline-none transition text-center cursor-pointer font-mono text-slate-700 shadow-sm">
                  </div>
               </div>
@@ -623,7 +624,7 @@
      </div>
   </div>
 
-  <!-- Modal: 上傳影像 (Fix: 拖曳上傳版本) -->
+  <!-- Modal: 上傳影像 -->
   <div id="uploadImageModal" class="hidden fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[60] flex items-center justify-center p-4 no-print">
      <div class="bg-white w-full max-w-lg rounded-[2.5rem] overflow-hidden shadow-2xl relative">
         <div class="p-6 border-b border-slate-100 flex justify-between items-center">
@@ -632,28 +633,14 @@
         </div>
         
         <div class="p-6 space-y-4">
-           <!-- 上傳區域開始: 拖曳支援 (id="uploadDropZone" 與 id="uploadInput") -->
-           <div id="uploadDropZone" class="relative w-full min-h-[10rem] border-2 border-dashed border-slate-200 rounded-2xl bg-slate-50 flex flex-col items-center justify-center transition-all duration-200 hover:border-emerald-400 hover:bg-emerald-50/30 group">
-                <!-- 隱藏的 Input (ID=uploadInput 以配合 JS 邏輯, multiple 支援多檔) -->
-                <input type="file" id="uploadInput" accept="image/*" multiple class="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10" onchange="handleFileSelect(this)">
-
-                <!-- 視覺內容 -->
-                <div class="text-center pointer-events-none transition-transform duration-200 group-hover:scale-105">
-                    <div class="w-12 h-12 bg-white rounded-full shadow-sm flex items-center justify-center mx-auto mb-3 text-emerald-500">
-                        <span class="material-icons-outlined">add_photo_alternate</span>
-                    </div>
-                    <div id="dropZoneText" class="space-y-1">
-                        <div class="text-slate-500 font-bold text-sm">點擊或拖曳圖片至此</div>
-                        <div class="text-slate-400 text-xs">支援 JPG, PNG, WEBP</div>
-                    </div>
-                    <!-- 預覽文字區 -->
-                    <div id="filePreviewText" class="hidden text-emerald-600 font-bold text-sm bg-emerald-100 px-3 py-1 rounded-full">
-                        已選擇檔案
-                    </div>
-                </div>
+           <div onclick="document.getElementById('uploadInput').click()" class="relative w-full h-40 rounded-3xl border-2 border-dashed border-slate-200 bg-slate-50 hover:bg-slate-100 transition flex flex-col items-center justify-center group cursor-pointer">
+              <input type="file" id="uploadInput" accept="image/*" multiple class="hidden" onchange="previewFiles(this)">
+              <div class="p-4 bg-white rounded-full shadow-sm mb-2 group-hover:scale-110 transition text-emerald-500">
+                 <span class="material-icons-outlined text-2xl">add_photo_alternate</span>
+              </div>
+              <p class="text-slate-500 font-bold text-sm">點擊或拖曳圖片至此</p>
+              <p class="text-slate-400 text-xs mt-1">支援 JPG, PNG, WEBP</p>
            </div>
-           <!-- 上傳區域結束 -->
-
            <div id="uploadPreviewArea" class="hidden space-y-2">
               <p class="text-xs font-bold text-slate-400 uppercase tracking-widest">待上傳列表</p>
               <div id="previewList" class="max-h-32 overflow-y-auto custom-scrollbar space-y-2"></div>
@@ -714,7 +701,7 @@
       </div>
   </div>
 
-  <!-- 全域 Loading 遮罩 -->
+  <!-- ★★★ 優化：新增全域 Loading 遮罩 ★★★ -->
   <div id="global-loader" class="hidden fixed inset-0 z-[999] bg-white/80 backdrop-blur-sm flex flex-col items-center justify-center transition-opacity duration-300">
     <div class="relative w-20 h-20">
       <div class="absolute inset-0 border-4 border-slate-200 rounded-full"></div>
